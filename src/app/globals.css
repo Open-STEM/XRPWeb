@@ -19,3 +19,20 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+svg[display="none"] {
+  display: none;
+}
+
+/** 
+TODO: temporilary setting these here for now. need to create a theme
+*/
+.blocklySvg {
+  background-color: #222 !important;
+}
+
+.blocklyToolboxDiv,.blocklyFlyoutBackground {
+  background-color: #444;
+  fill: #444;
+  color: #ddd;
+}
