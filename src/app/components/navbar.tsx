@@ -220,7 +220,7 @@ function NavBar() {
                   )}
                 </p>
                 {item.children && (
-                  <div className='absolute left-2 top-[52] hidden mx-auto flex-col py-3 bg-[#4984ac] shadow-md transition-all z-30 group-hover:flex'>
+                  <div className='absolute left-2 top-[52] hidden mx-auto flex-col py-3 bg-[#4984ac] shadow-md transition-all group-hover:flex z-[100]'>
                     <ul id="pythonId" className='flex flex-col cursor-pointer'>
                       { item.children.map((child, ci) => (
                         <li

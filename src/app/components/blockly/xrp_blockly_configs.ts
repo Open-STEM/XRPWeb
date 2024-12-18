@@ -1,5 +1,6 @@
 
 import './xrp_blocks';
+import './xrp_blocks_python'
 
 const InitialJson = {};
 
