@@ -1,11 +1,12 @@
 import { Layout, Model, IJsonModel, TabNode } from 'flexlayout-react';
-import React from 'react'
+import React, { useEffect } from 'react'
 // import XRPShell from './xrpshell';
 import 'flexlayout-react/style/dark.css';
 import Folder from './folder';
-import XRPEditor from './editor';
+import MicroPythonEditor from './editor';
 import dynamic from 'next/dynamic';
 import BlocklyEditor from './blockly';
+import EditorChooser from './editor_chooser';
 
 const XRPShell = dynamic(() => import('../components/xrpshell'));
 
@@ -44,15 +45,10 @@ const layout_json : IJsonModel = {
                           weight: 70,
                           children: [
                               {
+                                  id: "chooserId",
                                   type: "tab",
-                                  name: "Editor",
-                                  component: "editor",
-                                  enableClose: true
-                              },
-                              {
-                                  type: "tab",
-                                  name: "Blockly",
-                                  component: "blockly",
+                                  name: "Choose Mode",
+                                  component: "editor-chooser",
                                   enableClose: true
                               }
                           ]
@@ -76,27 +72,41 @@ const layout_json : IJsonModel = {
   };
 
 const model = Model.fromJson(layout_json);
+let layoutRef : React.RefObject<Layout> = {
+    current: null
+  };  
   
 const factory = (node: TabNode) => {
     const component = node.getComponent();
     if (component == "editor") {
-        return <XRPEditor />
+        return <MicroPythonEditor />
     } else if (component == "xterm") {
         return <XRPShell />
     } else if (component == "folders") {
         return <Folder />
     } else if (component == "blockly") {
       return <BlocklyEditor />
+    } else if (component == "editor-chooser") {
+        return <EditorChooser ref={layoutRef} />
     }
 }
 
-const layoutRef : React.RefObject<Layout> = {
-  current: null
-};
+/**
+ * 
+ * @returns React XRPLayout component
+ */
+function XRPLayout({forwardedref}) {
+    
+    useEffect(() => {
+        layoutRef = forwardedref;
+    }, []);
 
-function XRPLayout() {
     return (
-        <Layout ref={layoutRef} model={model} factory={factory} />
+        <Layout 
+            ref={forwardedref} 
+            model={model} 
+            factory={factory} 
+        />
     ) 
 }
 

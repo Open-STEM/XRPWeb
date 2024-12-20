@@ -3,9 +3,9 @@ import { Editor, Monaco } from '@monaco-editor/react';
 
 type Props = {}
 
-function XRPEditor({}: Props) {
+function MicroPythonEditor({}: Props) {
     const editorRef = useRef(null);
-    const monacoRef = useRef(null)
+    const monacoRef = useRef(null);
 
     function handleEditorDidMount(editor, monaco: Monaco) {
         // here is the editor instance
@@ -23,4 +23,4 @@ function XRPEditor({}: Props) {
     )
 }
 
-export default XRPEditor
+export default MicroPythonEditor

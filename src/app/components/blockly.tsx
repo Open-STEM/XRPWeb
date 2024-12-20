@@ -1,5 +1,4 @@
 import React from 'react'
-import * as Blockly from 'blockly/core';
 import {pythonGenerator} from 'blockly/python';
 import { BlocklyWorkspace } from 'react-blockly'
 import BlocklyConfigs from './blockly/xrp_blockly_configs';

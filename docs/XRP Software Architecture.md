@@ -176,39 +176,27 @@ Container_Boundary(xrpweb, "XRP Web Development Application") {
     class Repl
     class FlexLayout
     class Component
-    class Filesys {
-        render()
-    }
-    class Monaco {
-        render()
-    }
-    class Blockly {
-        render()
-    }
+    class Filesys
+    class MicroPythonEditor
+    class BlocklyEditor
     class Main
     class XrpLayout {
         layout_json
         addTab()
         removeTab()
-        render()
     }
-    class Header {
-        render()
-    }
-    class Navbar {
-        render()
-    }
+    class Navbar 
+    class EditorChooser
 
-    Component <|-- Header
     Component <|-- Navbar
     Component <|-- XrpLayout
     Repl *-- Navbar
     FlexLayout *-- XrpLayout
-    Monaco *-- XrpLayout
-    Blockly *-- XrpLayout
+    MicroPythonEditor *-- XrpLayout
+    BlocklyEditor *-- XrpLayout
     Filesys *-- XrpLayout
-    Navbar *-- Header
-    Header *-- Main
+    EditorChooser *-- XrpLayout
+    Navbar *-- Main
     XrpLayout *-- Main
 @enduml
 ```

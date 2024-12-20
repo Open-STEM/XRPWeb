@@ -1,4 +1,3 @@
-import  { Component } from 'react'
 import Image from 'next/image';
 import logo from '@/app/assets/images/xrpstickerbot.png';
 import fileadd from '@/app/assets/images/file_add.svg';
@@ -14,7 +13,10 @@ import autocomplete from '@/app/assets/images/prompt_suggestion.svg';
 import python from '@/app/assets/images/python.svg';
 import convert from '@/app/assets/images/convert.svg';
 import { TiArrowSortedDown } from "react-icons/ti";
+import { IoPlaySharp } from "react-icons/io5";
+import { IoStop } from "react-icons/io5";
 import Link from 'next/link';
+import { useState } from 'react';
 
 type NavItem = {
     label: string;
@@ -52,12 +54,16 @@ function MenuItem({item}) {
     )
 }
 
-function NavBar() {
+
+function NavBar({layoutref}) {
+    const [isConnected, setConnected] = useState(false);
+    const [isRunning, setRunning] = useState(false);
+
     /**
      * NewFile - create either a new Python or Blockly file
      */
     function NewFile() {
-      console.log("New File")
+      console.log("New File", layoutref.current);
     }
 
     /**
@@ -121,6 +127,34 @@ function NavBar() {
      */
     function ToggleAutoComplete() {
       console.log("Toggle Autocomplete")
+    }
+
+    /**
+     * onConnectClicked
+     */
+    function onConnectBtnClicked() {
+      console.log('onConnectBtnClicked');
+      if (isConnected) {
+        setConnected(false);
+        setRunning(false);
+      } else {
+        setConnected(true);
+        setRunning(true);
+      }
+    }
+
+    /**
+     * onRunBtnClicked
+     */
+    function onRunBtnClicked() {
+      console.log('onRunBtnClicked');
+      if (isRunning) {
+        setConnected(true);
+        setRunning(false);
+      } else {
+        setConnected(false);
+        setRunning(true)
+      }
     }
 
     const navItems : NavItem[] = [
@@ -225,7 +259,7 @@ function NavBar() {
                       { item.children.map((child, ci) => (
                         <li
                           key={ci}
-                          className='py-1 pl-4 pr-10 text-neutral-200 hover:bg-[#3a6989]'
+                          className='py-1 pl-4 pr-10 text-neutral-200 hover:bg-[#3a6989]' onClick={child.clicked}
                         >
                           <MenuItem item={child} />
                         </li>
@@ -236,7 +270,7 @@ function NavBar() {
                       { item.childrenExt?.map((child, ci) => 
                         <li
                           key={ci}
-                          className='py-1 pl-4 pr-10 text-neutral-200 hover:bg-[#3a6989] '
+                          className='py-1 pl-4 pr-10 text-neutral-200 hover:bg-[#3a6989]' onClick={child.clicked}
                           >
                           { /** menu item */}
                           <MenuItem item={child} />
@@ -250,10 +284,25 @@ function NavBar() {
             ))}
           </div>
           { /** connect */}
-          <button className='p-1 border-2 rounded-md h-full w-[200] flex items-center justify-center gap-2 bg-white hover:bg-green-100'>
-              <svg width="20" height="20" viewBox="0 0 20 20"><polygon points="11 4 12 4 12 8 16 8 16 9 11 9"></polygon><polygon points="4 11 9 11 9 16 8 16 8 12 4 12"></polygon><path fill="none" stroke="#000" strokeWidth="1.1" d="M12,8 L18,2"></path><path fill="none" stroke="#000" strokeWidth="1.1" d="M2,18 L8,12"></path></svg>
-              <span>CONNECT XRP</span>
-          </button>
+          <div className='flex flex-row  items-center'>
+            <button id='connectBtn' className={`p-1 border-2 rounded-md h-full w-[200] flex items-center justify-center gap-2 bg-white hover:bg-green-100 ${isConnected ? 'hidden' : ''}`} onClick={onConnectBtnClicked}>
+                <svg width="20" height="20" viewBox="0 0 20 20"><polygon points="11 4 12 4 12 8 16 8 16 9 11 9"></polygon><polygon points="4 11 9 11 9 16 8 16 8 12 4 12"></polygon><path fill="none" stroke="#000" strokeWidth="1.1" d="M12,8 L18,2"></path><path fill="none" stroke="#000" strokeWidth="1.1" d="M2,18 L8,12"></path></svg>
+                <span>CONNECT XRP</span>
+            </button>
+            <button id='runBtn' className={`p-1 rounded-md h-full w-[120] text-white items-center justify-center ${isRunning ? 'bg-red-500' : 'bg-[#008000]'} ${isConnected ? 'flex' : 'hidden'}`} onClick={onRunBtnClicked}>
+              { isRunning ? (
+                <>
+                  <span>STOP</span>
+                  <IoStop />
+                </>
+              ): (
+                <>
+                  <span>RUN</span>
+                  <IoPlaySharp />
+                </>
+              )}
+            </button>
+          </div>
       </div>
     )
 }
