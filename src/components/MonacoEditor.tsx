@@ -14,6 +14,7 @@ import "vscode/localExtensionHost";
 import { initializedAndStartLanguageClient } from './lsp-client';
 
 const languageId = "python";
+let isClientInitalized : boolean = false;
 
 export type WorkerLoader = () => Worker;
 const workerLoaders: Partial<Record<string, WorkerLoader>> = {
@@ -99,6 +100,10 @@ type MonacoEditorProps = {
      */
     language?: string,
     /**
+     * Path of the file
+     */
+    // path?: string,
+    /**
      * Value of the current model
      */
     value?: string
@@ -139,9 +144,13 @@ const MonacoEditor = ({
 
                 monaco.editor.onDidCreateEditor(codeEditor => {
                     console.log('Editor created', codeEditor.getId);
+                })
+
+                if (!isClientInitalized) {
                     // start web socket lsp client to the Web Worker python server
                     initializedAndStartLanguageClient();
-                })
+                    isClientInitalized = true;
+                }
             }
         };
     }, []);

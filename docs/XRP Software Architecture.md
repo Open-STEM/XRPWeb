@@ -28,7 +28,7 @@ The XRP software architecture shall embrace the software component design patter
 
 The XRP platform is an Open Source and it is not a for profit software product. The development environment leverages mostly Open Source software development tools such as Visual Studio Code and Micro Python and Open Source software libraries.
 
-Nextjs and React can satisfy both the software component design pattern and declarative user interface design paradigm.
+Vite and React can satisfy both the software component design pattern and declarative user interface design paradigm.
 
 ## Use Cases
 
@@ -62,7 +62,7 @@ thirdparty -->rd
 
 This software architecture specifies the following technology stack for development.
 
-- Nextjs and React User Interface framework
+- Vite Development framework and React User Interface framework
 - Typescript programming language
 - HTML/CSS (Tailwindcss)
 - Web browser serial protocol
@@ -167,7 +167,7 @@ Person(csa, "XRP Admin", "XRP Web Administrator")
 title Container diagram for XRP Web
 
 System_Boundary(c1, "XRP Web IDE") {
-    Container(web_app, "Web Application", "Typescript, Nextjs React", "Provides an interactive environment to develop robot program")
+    Container(web_app, "Web Application", "Typescript, React", "Provides an interactive environment to develop robot program")
 }
 
 System_Ext(xrp, "XRP Platform", "The XRP Robot Platform")
@@ -302,7 +302,7 @@ title Deployment Diagram for XRP Web Development Application
 Deployment_Node(xrpwebserver, "XRP Server Infrastructure", "WPI Server Farm"){
     Deployment_Node(dn, "WPI Web server", "Ubuntu 16.04 LTS"){
         Deployment_Node(apache, "Apache Tomcat", "Apache Tomcat 8.x"){
-            Container(xrpWeb, "XRP Web Server", "Nextjs & React", "Provides Integrated Robot Software Development")
+            Container(xrpWeb, "XRP Web Server", "Vite & React", "Provides Integrated Robot Software Development")
         }
     }
 }
@@ -310,7 +310,7 @@ Deployment_Node(xrpwebserver, "XRP Server Infrastructure", "WPI Server Farm"){
 
 Deployment_Node(comp, "Customer's computer", "Microsoft Windows or Apple macOS"){
     Deployment_Node(browser, "Web Browser", "Google Chrome, Mozilla Firefox, Apple Safari or Microsoft Edge"){
-        Container(xrpserver, "Single Page Web Application", "Nextjs & React", "Provides Integrated Robot Software Development")
+        Container(xrpserver, "Single Page Web Application", "Vite & React", "Provides Integrated Robot Software Development")
     }
 }
 
@@ -322,7 +322,7 @@ SHOW_LEGEND()
 
 ## Architecture Decisions
 
-Nextjs and React was choosen as the user interface development framework as they are supported by the Open Source community as well as companies like Facebook and Vercel. Both are respected UI framework which are used by a large development comminity.
+Vite and React was choosen as the user interface development framework as they are supported by the Open Source community as well as companies like Facebook and Vercel. Both are respected UI framework which are used by a large development comminity.
 
 ## Quality Requirements
 

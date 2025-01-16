@@ -1,12 +1,20 @@
+import { useRef } from 'react';
 import './App.css'
-import MonacoEditor from './components/MonacoEditor'
+import Navbar from './components/navbar';
+import XRPLayout from './components/xrplayout';
 
 function App() {
-
+  const xrpLayoutRef = useRef();
+  
   return (
     <>
-      <MonacoEditor width='100vw' height='50vh' value="import numpy as np\nprint('Hello world 1!')" />
-      <MonacoEditor width='100vw' height='50vh' value="import sys as s\nprint('Hello world 2!')" />
+      <header className='bg-[#2980b9]'>
+        <Navbar layoutref={xrpLayoutRef}/>
+      </header>
+      <main className='relative h-[calc(100vh-56px)]'>
+        <XRPLayout forwardedref={xrpLayoutRef} />
+      </main>
+
     </>
   )
 }
