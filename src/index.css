@@ -24,3 +24,20 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
+
+
+/** Fixed blockly toolbox slide out scroolbar **/
+svg[display="none"] {
+  display: none;
+}
+
+/** Block CSS - looking how to do theming
+*/.blocklySvg {
+  background-color: #222 !important;
+}
+
+.blocklyToolboxDiv,.blocklyFlyoutBackground {
+  background-color: #444;
+  fill: #444;
+  color: #ddd;
+}
