@@ -226,13 +226,13 @@ This section documents the major classes which are based on the React Component 
 
 ```plantuml
 @startuml
-    class Repl
+    class ConnectionMgr
     class FlexLayout
     class Component
     class Filesys {
         render()
     }
-    class Monaco {
+    class MonacoEditor {
         render()
     }
     class Blockly {
@@ -245,27 +245,54 @@ This section documents the major classes which are based on the React Component 
         removeTab()
         render()
     }
-    class Header {
+    class XRPShell {
         render()
     }
     class Navbar {
         render()
     }
 
-    Component <|-- Header
     Component <|-- Navbar
     Component <|-- XrpLayout
-    Repl *-- Navbar
+    Component <|-- XRPShell
+    Component <|-- Filesys
+    Component <|-- Blockly
+    Component <|-- MonacoEditor
+    ConnectionMgr *-- Navbar
     FlexLayout *-- XrpLayout
-    Monaco *-- XrpLayout
+    MonacoEditor *-- XrpLayout
     Blockly *-- XrpLayout
     Filesys *-- XrpLayout
-    Navbar *-- Header
-    Header *-- Main
+    XRPShell *-- XrpLayout
+    Navbar *-- Main
     XrpLayout *-- Main
 @enduml
 ```
 
+### Application Components
+
+The application components manages the core functionality of the following features.
+
+- Application Management
+- Connection Management (Calble and Bluetooth)
+- File Management (User and System Filesystem)
+- Editor Session Management
+
+```plantuml
+@startuml
+    class AppMgr
+    class ConnectionMgr
+    class FilesysMgr
+    class EditorMgr
+    class StreamWorker
+
+    StreamWorker *-- ConnectionMgr
+    ConnectionMgr *-- AppMgr
+    FilesysMgr *-- AppMgr
+    EditorMgr *-- AppMgr
+
+@enduml
+```
 ## Run Time View
 
 The figure below depicts the runtime view of the system when the users are interacting with the system.
