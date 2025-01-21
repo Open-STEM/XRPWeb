@@ -11,7 +11,7 @@ import getConfigurationServiceOverride, { updateUserConfiguration } from '@codin
 import { ExtensionHostKind, registerExtension } from 'vscode/extensions';
 // we need to import this so monaco-languageclient can use vscode-api
 import "vscode/localExtensionHost";
-import { initializedAndStartLanguageClient } from './lsp-client';
+import { initializedAndStartLanguageClient } from '@components/lsp-client';
 
 const languageId = "python";
 let isClientInitalized : boolean = false;

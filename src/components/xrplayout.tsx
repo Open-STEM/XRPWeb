@@ -3,11 +3,11 @@ import React, { useEffect } from 'react'
 // import XRPShell from './xrpshell';
 import 'flexlayout-react/style/dark.css';
 import Folder from './folder';
-import BlocklyEditor from './blockly';
-import EditorChooser from './editor_chooser';
-import MonacoEditor from './MonacoEditor';
-import XRPShell from './xrpshell';
-import FolderIcon from '../assets/images/folder-24.png';
+import BlocklyEditor from '@components/blockly';
+import EditorChooser from '@components/editor_chooser';
+import MonacoEditor from '@components/MonacoEditor';
+import XRPShell from '@components/xrpshell';
+import FolderIcon from '@assets/images/folder-24.png';
 
 /**
 *  Layout-React's layout JSON to specify the XRPWeb's single page application's layout
@@ -60,13 +60,6 @@ const layout_json : IJsonModel = {
                                   component: "editor-chooser",
                                   enableClose: true
                               },
-                              {
-                                  id: "editorId",
-                                  type: "tab",
-                                  name: "Editor",
-                                  component: "editor",
-                                  enableClose: true
-                              }
                           ]
                       },
                       {
@@ -111,6 +104,7 @@ const factory = (node: TabNode) => {
 }
 
 type XRPLayoutProps = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     forwardedref: any
 }
 

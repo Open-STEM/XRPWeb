@@ -1,6 +1,6 @@
 
-import './xrp_blocks';
-import './xrp_blocks_python'
+import '@components/blockly/xrp_blocks';
+import '@components/blockly/xrp_blocks_python'
 
 const InitialJson = {};
 

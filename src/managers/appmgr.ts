@@ -8,7 +8,7 @@
 export default class AppMgr {
     private static instance: AppMgr;
 
-    // Private constructor to prevent direct instantiation
+    // @ts-expect-error Private constructor to prevent direct instantiation
     private AppMgr() {}
 
     public static getInstance() : AppMgr {

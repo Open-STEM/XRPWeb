@@ -1,6 +1,6 @@
 import React from 'react'
-import blocklyImage from '../assets/images/blockly.svg';
-import pythonImage from '../assets/images/micropython.png';
+import blocklyImage from '@assets/images/blockly.svg';
+import pythonImage from '@assets/images/micropython.png';
 import { Actions, IJsonTabNode, Layout } from 'flexlayout-react';
 
 type EditorChooserProps = {

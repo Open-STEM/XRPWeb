@@ -1,6 +1,6 @@
 import {pythonGenerator} from 'blockly/python';
 import { BlocklyWorkspace, Workspace } from 'react-blockly'
-import BlocklyConfigs from './blockly/xrp_blockly_configs';
+import BlocklyConfigs from '@components/blockly/xrp_blockly_configs';
 
 function BlocklyEditor() {
   function onWorkspaceDidChange(ws: Workspace | undefined) {
