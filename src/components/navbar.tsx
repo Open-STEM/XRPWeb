@@ -11,6 +11,9 @@ import apilink from '../assets/images/api.svg';
 import autocomplete from '../assets/images/prompt_suggestion.svg';
 import python from '../assets/images/python.svg';
 import convert from '../assets/images/convert.svg';
+import forum from '../assets/images/forum.svg';
+import cirriculum from '../assets/images/cirriculum.svg';
+import changelog from '../assets/images/changelog.svg';
 import { TiArrowSortedDown } from "react-icons/ti";
 import { IoPlaySharp } from "react-icons/io5";
 import { IoStop } from "react-icons/io5";
@@ -162,6 +165,13 @@ function NavBar({layoutref}: NavBarProps) {
       }
     }
 
+    /**
+     * ChangeLog
+     */
+    function ChangeLog() {
+
+    }
+
     const navItems : NavItem[] = [
       {
         label: 'File',
@@ -237,6 +247,21 @@ function NavBar({layoutref}: NavBarProps) {
             label: 'API',
             iconImage: apilink,
             link: "https://open-stem.github.io/XRP_MicroPython/"
+          },
+          {
+            label: "Curriculum",
+            iconImage: cirriculum,
+            link: "https://introtoroboticsv2.readthedocs.io/en/latest/"
+          },
+          {
+            label: "User Help Forum",
+            iconImage: forum,
+            link: "https://xrp.discourse.group/"
+          },
+          {
+            label: "Change Log",
+            iconImage: changelog,
+            clicked: ChangeLog
           }
         ]
       }
