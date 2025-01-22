@@ -18,6 +18,7 @@ import { TiArrowSortedDown } from "react-icons/ti";
 import { IoPlaySharp } from "react-icons/io5";
 import { IoStop } from "react-icons/io5";
 import { useState } from 'react';
+import i18n from '@/utils/i18n';
 
 type NavItem = {
     label: string;
@@ -72,70 +73,70 @@ function NavBar({layoutref}: NavBarProps) {
      * NewFile - create either a new Python or Blockly file
      */
     function NewFile() {
-      console.log("New File", layoutref);
+      console.log(i18n.t('newFile'), layoutref);
     }
 
     /**
      * UploadFile - upload a file to XRP
      */
     function UploadFile() {
-      console.log("Upload file to XRP")
+      console.log(i18n.t('uploadFile'));
     }
 
     /**
      * ExportToPC - export the file to PC
      */
     function ExportToPC() {
-      console.log("Export File to PC")
+      console.log(i18n.t('exportToPC'));
     }
 
     /**
      * SaveFile - Save file to XRP
      */
     function SaveFile() {
-      console.log("Save File to XRP")
+      console.log(i18n.t('saveFile'));
     }
 
     /**
      * SaveFileAs - save the current file as to the XRP
      */
     function SaveFileAs() {
-      console.log("Save File as")
+      console.log(i18n.t('saveFileAs'));
     }
 
     /**
      * ViewPythonFile - view the Python file
      */
     function ViewPythonFile() {
-      console.log("View Python File")
+      console.log(i18n.t('viewPythonFile'));
     }
 
     /**
      * ConvertToPython - convert the current blockly file to Python
      */
     function ConvertToPython() {
-      console.log("Convert to Python")
+      console.log(i18n.t('convertToPython'));
     }
 
     /**
      * FontPlusPlus - increase font in the current window
      */
     function FontPlusPlus() {
-      console.log("Increase Font")
+      console.log(i18n.t('increaseFont'))
     }
 
     /**
      * FontMinus - decrease font in the current window
      */
     function FontMinus() {
-      console.log("Decrease Font")
+      console.log(i18n.t('decreaseFont'))
     }
 
     /**
      * ToggleAutoComplete - toggle autocomplete
      */
     function ToggleAutoComplete() {
-      console.log("Toggle Autocomplete")
+      console.log(i18n.t('toggleAutoComplete'));
     }
 
     /**
@@ -175,110 +176,95 @@ function NavBar({layoutref}: NavBarProps) {
 
     const navItems : NavItem[] = [
       {
-        label: 'File',
+        label: i18n.t("file"),
         children: [
           {
-            label: 'New File',
+            label: i18n.t("newFile"),
             iconImage: fileadd,
             clicked: NewFile
           },
           {
-            label: 'Upload to XRP',
+            label: i18n.t("uploadFile"),
             iconImage: fileupload,
             clicked: UploadFile
           },
           {
-            label: 'Export to PC',
+            label: i18n.t("exportToPC"),
             iconImage: fileexport,
             clicked: ExportToPC
           },
           {
-            label: 'Save to XRP',
+            label: i18n.t("saveFile"),
             iconImage: filesave,
             clicked: SaveFile
           },
           {
-            label: 'Sas As to XRP',
+            label: i18n.t("saveFileAs"),
             iconImage: filesaveas,
             clicked: SaveFileAs
           }
         ]
       },
       {
-        label: 'View',
+        label: i18n.t("view"),
         children: [
           {
-            label: 'View Python',
+            label: i18n.t("viewPythonFile"),
             iconImage: python,
             clicked: ViewPythonFile
           },
           {
-            label: 'Convert To Python',
+            label: i18n.t("convertToPython"),
             iconImage: convert,
             clicked: ConvertToPython
           }
         ],
         childrenExt: [
           {
-            label: 'Increase Font',
+            label: i18n.t("increaseFont"),
             iconImage: fontplus,
             clicked: FontPlusPlus
           },
           {
-            label: 'Descrease Font',
+            label: i18n.t("decreaseFont"),
             iconImage: fontminus,
             clicked: FontMinus
           },
           {
-            label: 'Toggle Autocomplete',
+            label: 'i18n.t("toggleAutoComplete")',
             iconImage: autocomplete,
             clicked: ToggleAutoComplete
           }
         ]
       },
       {
-        label: 'Help',
+        label: i18n.t("help"),
         children: [
           {
-            label: 'User Guide',
+            label: i18n.t("userGuide"),
             iconImage: userguide,
             link: "https://xrpusersguide.readthedocs.io/en/latest/course/introduction.html"
           },
           {
-            label: 'API',
+            label: i18n.t("apiReference"),
             iconImage: apilink,
             link: "https://open-stem.github.io/XRP_MicroPython/"
           },
           {
-            label: "Curriculum",
+            label: i18n.t("cirriculum"),
             iconImage: cirriculum,
             link: "https://introtoroboticsv2.readthedocs.io/en/latest/"
           },
           {
-            label: "User Help Forum",
+            label: i18n.t("userHelpForum"),
             iconImage: forum,
             link: "https://xrp.discourse.group/"
           },
           {
-            label: "Change Log",
+            label: i18n.t("changeLog"),
             iconImage: changelog,
             clicked: ChangeLog
           },
-          {
-            label: "Curriculum",
-            iconImage: cirriculum,
-            link: "https://introtoroboticsv2.readthedocs.io/en/latest/"
-          },
-          {
-            label: "User Help Forum",
-            iconImage: forum,
-            link: "https://xrp.discourse.group/"
-          },
-          {
-            label: "Change Log",
-            iconImage: changelog,
-            clicked: ChangeLog
-          }
         ]
       }
     ];

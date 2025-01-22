@@ -8,6 +8,7 @@ import EditorChooser from '@components/editor_chooser';
 import MonacoEditor from '@components/MonacoEditor';
 import XRPShell from '@components/xrpshell';
 import FolderIcon from '@assets/images/folder-24.png';
+import i18n from '@/utils/i18n';
 
 /**
 *  Layout-React's layout JSON to specify the XRPWeb's single page application's layout
@@ -28,7 +29,7 @@ const layout_json : IJsonModel = {
           children: [
             {
                 type: "tab",
-                name: "Folders",
+                name: i18n.t('folders'),
                 component: "folders",
                 enableClose: false,
                 icon: FolderIcon,
@@ -56,7 +57,7 @@ const layout_json : IJsonModel = {
                               {
                                   id: "chooserId",
                                   type: "tab",
-                                  name: "Choose Mode",
+                                  name: i18n.t('chooseMode'),
                                   component: "editor-chooser",
                                   enableClose: true
                               },
@@ -71,7 +72,7 @@ const layout_json : IJsonModel = {
                             {
                                 type: "tab",
                                 id: "shellId",
-                                name: "Shell",
+                                name: i18n.t('shell'),
                                 component: "xterm",
                                 enableClose: false
                             }

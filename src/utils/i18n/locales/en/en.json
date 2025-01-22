@@ -1,0 +1,23 @@
+{
+    "file": "File",
+    "view": "View",
+    "help": "Help",
+    "folders": "Folders",
+    "chooseMode": "Choose Mode",
+    "shell": "Shell",
+    "newFile": "New File",
+    "uploadFile": "Upload File to XRP",
+    "exportToPC": "Export to PC",
+    "saveFile": "Save File to XRP",
+    "saveFileAs": "Save File As to XRP",
+    "viewPythonFile": "View Python File",
+    "convertToPython": "Convert to Python",
+    "increaseFont": "Increase Font",
+    "decreaseFont": "Decrease Font",
+    "toggleAutoComplete": "Toggle Auto Complete",
+    "userGuide": "User Guide",
+    "apiReference": "API Reference",
+    "cirriculum": "Cirriculum",
+    "userHelpForum": "User Help Forum",
+    "changeLog": "Change Log"
+}
