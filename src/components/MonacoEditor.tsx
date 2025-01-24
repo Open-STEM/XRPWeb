@@ -153,7 +153,7 @@ const MonacoEditor = ({
                 }
             }
         };
-    }, []);
+    }, [language, value]);
 
     return (
         <div 

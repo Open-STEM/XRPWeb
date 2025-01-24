@@ -88,7 +88,24 @@ const model = Model.fromJson(layout_json);
 let layoutRef : React.RefObject<Layout> = {
     current: null
   };  
-  
+
+/**
+ * Tree Data in Json
+ */
+const treeData = {
+    "root": {
+        "container": {
+            "item0": null,
+            "item1": null,
+            "item3": {
+                "inner0": null,
+                "inner1": null
+            },
+            "item4": null
+        },
+    }
+}
+
 const factory = (node: TabNode) => {
     const component = node.getComponent();
     if (component == "editor") {
@@ -96,7 +113,7 @@ const factory = (node: TabNode) => {
     } else if (component == "xterm") {
         return <XRPShell />
     } else if (component == "folders") {
-        return <Folder treeItems='json'/>
+        return <Folder treeData={JSON.stringify(treeData)}/>
     } else if (component == "blockly") {
       return <BlocklyEditor />
     } else if (component == "editor-chooser") {

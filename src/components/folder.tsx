@@ -1,39 +1,79 @@
+import AppMgr, { EventType } from '@/managers/appmgr';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { StaticTreeDataProvider, Tree, UncontrolledTreeEnvironment } from 'react-complex-tree';
 import 'react-complex-tree/lib/style-modern.css';
 
-type FolderProps = {
-  treeItems: string
+type TreeProps = {
+    treeData: string | null;
 }
 
-const items = {
-    root: {
-      index: 'root',
-      isFolder: true,
-      children: ['child1', 'child2'],
-      data: 'Root item',
-    },
-    child1: {
-      index: 'child1',
-      children: [],
-      data: 'Child item 1',
-    },
-    child2: {
-      index: 'child2',
-      isFolder: true,
-      children: ['child3'],
-      data: 'Child item 2',
-    },
-    child3: {
-      index: 'child3',
-      children: [],
-      data: 'Child item 3',
-    },
+/**
+ * buildTree - function to build the tree from JSON
+ * @param template - JSON template
+ * @param data - data to build the tree
+ * @returns 
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const buildTree = (template: any, data: any = { items: {} }): any => {
+  for (const [key, value] of Object.entries(template)) {
+      data.items[key] = {
+          index: key,
+          canMove: true,
+          isFolder: value !== null,
+          children:
+            value !== null
+              ? Object.keys(value as Record<string, unknown>)
+              : undefined,
+          data: key,
+          canRename: true,
+      };
+  
+      if (value !== null) {
+          buildTree(value, data);
+      }
+  }
+  return data;
 };
 
-const dataProvider = new StaticTreeDataProvider(items, (item, newName) => ({ ...item, data: newName }));
+// const treeData = buildTree(shortTreeTemplate);
 
-function Folder({treeItems}: FolderProps) {
-    console.log(treeItems);
+/**
+ * Folder component
+ * @param treeProps
+ * @returns 
+ */
+function Folder(treeProps: TreeProps) {
+    const [treeData, setTreeData] = useState({ items: {} });
+    const appMgrRef = useRef<AppMgr>();
+
+    useEffect(() => {
+        // If treeData is passed as a prop, build the tree
+        if (treeProps.treeData) {
+            const treeItems = buildTree(JSON.parse(treeProps.treeData));
+            console.log(treeItems);
+            setTreeData(treeItems);
+        } 
+
+        // If treeData is not passed as a prop, get the tree data from the FilesysMgr's publish event
+        if (!appMgrRef.current && !treeProps.treeData) {
+          appMgrRef.current = AppMgr.getInstance();
+          appMgrRef.current.on(EventType.EVENT_FILESYS, (filesysJson: string) => {
+              console.log('EVENT_FILESYS', filesysJson);
+              const treeItems = buildTree(JSON.parse(filesysJson));
+              setTreeData(treeItems);
+          });
+      }        
+    }, [treeProps.treeData]);
+
+    const items = useMemo(() => ({ ...treeData.items}), [treeData.items]);
+    const dataProvider = useMemo(
+        () => new StaticTreeDataProvider(items, (item, data) => ({
+            ...item,
+            data
+        })),
+        [items]
+    );
+
     return (
       <UncontrolledTreeEnvironment
         dataProvider={dataProvider}
