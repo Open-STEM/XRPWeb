@@ -19,5 +19,16 @@
     "apiReference": "API Reference",
     "cirriculum": "Cirriculum",
     "userHelpForum": "User Help Forum",
-    "changeLog": "Change Log"
+    "changeLog": "Change Log",
+    "okButton": "OK",
+    "cancelButton": "Cancel",
+    "usbConnection": "USB Connection",
+    "bluetoothConnection": "Bluetooth Connection",
+    "pair": "Pair",
+    "saveToXRP": "Save to XRP",
+    "connect": "Connect",
+    "delete": "Delete",
+    "rename": "Rename",
+    "new": "New Folder",
+    "menuicon": "Menu Icon"
 }

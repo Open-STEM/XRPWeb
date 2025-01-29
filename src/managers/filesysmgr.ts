@@ -1,21 +1,5 @@
-import AppMgr, { EventType } from "@/managers/appmgr";
-
-/**
- * Tree Data in Json
- */
-const treeData = {
-    "root": {
-        "container": {
-            "item0": null,
-            "item1": null,
-            "item3": {
-                "inner0": null,
-                "inner1": null
-            },
-            "item4": null
-        },
-    }
-}
+import AppMgr, { EventType } from '@/managers/appmgr';
+import treeData from '@/utils/testdata';
 
 /**
  * FilesysMgr - manages file stores in local storage as well as storing in XRP Robot
@@ -25,9 +9,7 @@ export default class FilesysMgr {
     /**
      * constructor
      */
-    public FilesysMgr() {
-
-    }
+    public FilesysMgr() {}
 
     /**
      * Start and Initialize filesystem objects

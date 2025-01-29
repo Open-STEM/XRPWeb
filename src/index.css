@@ -31,8 +31,8 @@ svg[display="none"] {
   display: none;
 }
 
-/** Block CSS - looking how to do theming
-*/.blocklySvg {
+/** Block CSS - looking how to do theming **/
+.blocklySvg {
   background-color: #222 !important;
 }
 

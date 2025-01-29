@@ -1,10 +1,10 @@
-import FilesysMgr from "@/managers/filesysmgr";
-import mitt from "mitt";
+import FilesysMgr from '@/managers/filesysmgr';
+import mitt from 'mitt';
 
-export enum EventType  {
-    EVENT_FILESYS = "filesys",    // directoy tree from filesystem of the XRP
-    EVENT_SHELL = "shell",        // shell updates from XRP
-    EVENT_CONNECTION_STATUS = "connection-status"   // connection status updates
+export enum EventType {
+    EVENT_FILESYS = 'filesys', // directoy tree from filesystem of the XRP
+    EVENT_SHELL = 'shell', // shell updates from XRP
+    EVENT_CONNECTION_STATUS = 'connection-status', // connection status updates
 }
 
 type Events = {
@@ -27,7 +27,7 @@ export default class AppMgr {
     // @ts-expect-error Private constructor to prevent direct instantiation
     private AppMgr() {}
 
-    public static getInstance() : AppMgr {
+    public static getInstance(): AppMgr {
         if (!AppMgr.instance) {
             AppMgr.instance = new AppMgr();
         }
@@ -44,8 +44,8 @@ export default class AppMgr {
 
     /**
      * Subscribe to events
-     * @param eventName 
-     * @param handler 
+     * @param eventName
+     * @param handler
      */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public on(eventName: EventType, handler: (...args: any[]) => void): void {
@@ -54,8 +54,8 @@ export default class AppMgr {
 
     /**
      * Emit events
-     * @param eventName 
-     * @param eventData 
+     * @param eventName
+     * @param eventData
      */
     public emit(eventName: EventType, eventData: string): void {
         this.emitter.emit(eventName, eventData);
