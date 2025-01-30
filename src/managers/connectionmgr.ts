@@ -292,4 +292,5 @@ export class ConnectionMgr {
         }
         return false;
     }
+    public ConnectionMgr() {}
 }

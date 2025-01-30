@@ -3,11 +3,14 @@ import * as vscode from 'vscode';
 import { CloseAction, ErrorAction, MessageTransports } from 'vscode-languageclient/browser.js';
 import { MonacoLanguageClient } from 'monaco-languageclient';
 import { whenReady } from '@codingame/monaco-vscode-python-default-extension';
-import { BrowserMessageReader, BrowserMessageWriter } from 'vscode-languageserver-protocol/browser.js';
+import {
+    BrowserMessageReader,
+    BrowserMessageWriter,
+} from 'vscode-languageserver-protocol/browser.js';
 import { Uri } from 'vscode';
 import * as JSZip from 'jszip';
 
-const languageId = "python";
+const languageId = 'python';
 let files: { [id: string]: string } = {};
 
 /**
@@ -28,7 +31,7 @@ async function readZipFile(url: string) {
                 // console.info(`Skip directory ${filename}`);
                 continue;
             }
-            if (filename.startsWith("__MACOSX")){
+            if (filename.startsWith('__MACOSX')) {
                 // skip internal files
                 continue;
             }
@@ -52,25 +55,30 @@ export const initializedAndStartLanguageClient = async () => {
 
     let files1: { [id: string]: string } = {};
     let files2: { [id: string]: string } = {};
-    files1 = await readZipFile(new URL('./stdlib-source-with-typeshed-pyi.zip', window.location.href).href);
+    files1 = await readZipFile(
+        new URL('./stdlib-source-with-typeshed-pyi.zip', window.location.href).href,
+    );
     files2 = await readZipFile(new URL('./XRPLib.zip', window.location.href).href);
     files = Object.assign({}, files1, files2);
 
     await whenReady();
 
-    const pythonWorkerUrl = new URL('@typefox/pyright-browser/dist/pyright.worker.js', import.meta.url);
+    const pythonWorkerUrl = new URL(
+        '@typefox/pyright-browser/dist/pyright.worker.js',
+        import.meta.url,
+    );
     console.info(`lsp-client.ts, pythonWorkerUrl: ${pythonWorkerUrl}`);
-    const worker = new Worker(pythonWorkerUrl, {type: 'module'});
+    const worker = new Worker(pythonWorkerUrl, { type: 'module' });
     worker.postMessage({
         type: 'browser/boot',
-        mode: 'foreground'
+        mode: 'foreground',
     });
     const reader = new BrowserMessageReader(worker);
     const writer = new BrowserMessageWriter(worker);
 
     const languageClient = createLanguageClient({
         reader,
-        writer
+        writer,
     });
     languageClient.start();
     reader.onClose(() => languageClient.stop());
@@ -84,10 +92,16 @@ export const initializedAndStartLanguageClient = async () => {
     };
     // always exectute the command with current language client
     await registerCommand('pyright.restartserver', (...args: unknown[]) => {
-        languageClient.sendRequest('workspace/executeCommand', { command: 'pyright.restartserver', arguments: args });
+        languageClient.sendRequest('workspace/executeCommand', {
+            command: 'pyright.restartserver',
+            arguments: args,
+        });
     });
     await registerCommand('pyright.organizeimports', (...args: unknown[]) => {
-        languageClient.sendRequest('workspace/executeCommand', { command: 'pyright.organizeimports', arguments: args });
+        languageClient.sendRequest('workspace/executeCommand', {
+            command: 'pyright.organizeimports',
+            arguments: args,
+        });
     });
 };
 
@@ -100,21 +114,21 @@ const createLanguageClient = (messageTransports: MessageTransports): MonacoLangu
             // disable the default error handler
             errorHandler: {
                 error: () => ({ action: ErrorAction.Continue }),
-                closed: () => ({ action: CloseAction.DoNotRestart })
+                closed: () => ({ action: CloseAction.DoNotRestart }),
             },
             workspaceFolder: {
                 index: 0,
                 name: '/',
-                uri: Uri.file('/')
+                uri: Uri.file('/'),
             },
             synchronize: {
-                fileEvents: [vscode.workspace.createFileSystemWatcher('**')]
+                fileEvents: [vscode.workspace.createFileSystemWatcher('**')],
             },
             initializationOptions: {
-                files
-            }          
+                files,
+            },
         },
         // create a language client connection from the JSON RPC connection on demand
-        messageTransports: messageTransports
+        messageTransports: messageTransports,
     });
 };
