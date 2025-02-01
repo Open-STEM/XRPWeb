@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { FitAddon } from '@xterm/addon-fit';
 import { useXTerm } from 'react-xtermjs';
+import AppMgr, { EventType, Themes } from '@/managers/appmgr';
 
 function XRPShell() {
     const { instance, ref } = useXTerm();
@@ -8,6 +9,21 @@ function XRPShell() {
 
     useEffect(() => {
         instance?.loadAddon(fitAddon);
+        if (instance) {
+            const darkTheme = { foreground: '#ddd', background: '#333333'};
+            const lightTheme = { foreground: '#41393b', background: '#f4f3f2'};
+
+            const theme = AppMgr.getInstance().getTheme() === Themes.DARK ? darkTheme : lightTheme;
+            instance.options.theme = theme;
+
+            AppMgr.getInstance().on(EventType.EVENT_THEME, (theme) => {
+                if (theme === Themes.DARK) {
+                    instance.options.theme = darkTheme;
+                } else {
+                    instance.options.theme = lightTheme;
+                }
+            });
+        }
 
         const handleResize = () => fitAddon.fit();
 
@@ -20,7 +36,7 @@ function XRPShell() {
         };
     });
 
-    return <div ref={ref} className="h-full w-full"></div>;
+    return <div ref={ref} className="h-full w-full" />;
 }
 
 export default XRPShell;

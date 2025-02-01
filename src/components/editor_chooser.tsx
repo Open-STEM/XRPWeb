@@ -70,7 +70,7 @@ function EditorChooser({ flref }: EditorChooserProps) {
         <div className="flex flex-row h-full justify-evenly">
             <button
                 id="blockly"
-                className="bg-[#222222] w-full hover:bg-[#666]"
+                className="bg-curious-blue-600 hover:bg-curious-blue-400 dark:bg-mountain-mist-950 w-full dark:hover:bg-[#666]"
                 onClick={onBlocklyBtnClicked}
                 title="Load a blockly Editor for visual block-based coding"
             >
@@ -82,7 +82,7 @@ function EditorChooser({ flref }: EditorChooserProps) {
             </button>
             <button
                 id="pythonBtn"
-                className="bg-[#222222] w-full hover:bg-[#666]"
+                className="bg-curious-blue-600 hover:bg-curious-blue-400 dark:bg-mountain-mist-950 w-full dark:hover:bg-[#666]"
                 onClick={onPythonBtnClicked}
                 title="Load a MicroPython Editor for normal text-based coding."
             >

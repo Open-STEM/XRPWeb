@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MenuDataItem } from '@/widgets/menutypes';
-import MenuItem from './menu';
+import MenuItem from '@/widgets/menu';
 
 type ContextMenuProps = {
     children: React.ReactNode;

@@ -321,19 +321,19 @@ function NavBar({ layoutref }: NavBarProps) {
                 <img src={logo} alt="logo" width="100" height="50" />
                 {navItems.map((item, index) => (
                     <div key={index} className="relative group transition-all">
-                        <p className="flex ml-2 mt-4 cursor-pointer text-matisse-100 group-hover:bg-blue-500">
+                        <p className="flex ml-2 mt-4 cursor-pointer text-matisse-100 group-hover:bg-curious-blue-700 dark:group-hover:bg-mountain-mist-950">
                             <span>{item.label}</span>
                             {item.children && (
                                 <TiArrowSortedDown className="mt-1 rotate-180 transition-all group-hover:rotate-0" />
                             )}
                         </p>
                         {item.children && (
-                            <div className="absolute left-2 top-[52] hidden mx-auto flex-col py-3 bg-curious-blue-700 shadow-md transition-all group-hover:flex z-[100]">
+                            <div className="absolute left-2 top-[52] hidden mx-auto flex-col py-3 group-hover:flex bg-curious-blue-700 shadow-md transition-all dark:group-hover:bg-mountain-mist-950 z-[100] dark:bg-mountain-mist-950">
                                 <ul id="pythonId" className="flex flex-col cursor-pointer">
                                     {item.children.map((child, ci) => (
                                         <li
                                             key={ci}
-                                            className="py-1 pl-4 pr-10 text-neutral-200 hover:bg-matisse-400"
+                                            className="py-1 pl-4 pr-10 text-neutral-200 hover:bg-matisse-400 dark:hover:bg-shark-500"
                                             onClick={child.clicked}
                                         >
                                             <MenuItem item={child} />
@@ -345,7 +345,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                         {item.childrenExt?.map((child, ci) => (
                                             <li
                                                 key={ci}
-                                                className="py-1 pl-4 pr-10 text-neutral-200 hover:bg-matisse-400"
+                                                className="py-1 pl-4 pr-10 text-neutral-200 hover:bg-matisse-400 dark:hover:bg-shark-500"
                                                 onClick={child.clicked}
                                             >
                                                 <MenuItem item={child} />
@@ -362,7 +362,7 @@ function NavBar({ layoutref }: NavBarProps) {
             <div className="flex flex-row  items-center">
                 <button
                     id="connectBtn"
-                    className={`px-4 py-2 border-2 rounded-3xl h-full w-[200] flex items-center justify-center gap-2 text-matisse-900 text-neutral-900 bg-shark-200 hover:bg-curious-blue-300 ${isConnected ? 'hidden' : ''}`}
+                    className={`px-4 py-2 rounded-3xl h-full w-[200] flex items-center justify-center gap-2 text-matisse-900 text-neutral-900 bg-shark-200 hover:bg-curious-blue-300 dark:bg-shark-600 dark:text-shark-100 dark:hover:bg-shark-500 ${isConnected ? 'hidden' : ''}`}
                     onClick={onConnectBtnClicked}
                 >
                     <svg width="20" height="20" viewBox="0 0 20 20">
