@@ -1,16 +1,19 @@
 import FilesysMgr from '@/managers/filesysmgr';
+import connecionMgr from '@/managers/connectionmgr';
 import mitt from 'mitt';
 
 export enum EventType {
     EVENT_FILESYS = 'filesys', // directoy tree from filesystem of the XRP
     EVENT_SHELL = 'shell', // shell updates from XRP
     EVENT_CONNECTION_STATUS = 'connection-status', // connection status updates
+    EVENT_CONNECTION = 'connection'
 }
 
 type Events = {
     [EventType.EVENT_FILESYS]: string;
     [EventType.EVENT_SHELL]: string;
     [EventType.EVENT_CONNECTION_STATUS]: string;
+    [EventType.EVENT_CONNECTION]: string;
 };
 
 /**
@@ -23,6 +26,9 @@ export default class AppMgr {
     private static instance: AppMgr;
     private emitter = mitt<Events>();
     private filesysMgr: FilesysMgr | null = null;
+
+    // @ts-ignore (just a holder for the instance at this point so ignore the never read error)
+    private connectionMgr: connecionMgr | null = null;
 
     // @ts-expect-error Private constructor to prevent direct instantiation
     private AppMgr() {}
@@ -40,6 +46,7 @@ export default class AppMgr {
     public start(): void {
         this.filesysMgr = new FilesysMgr();
         this.filesysMgr.start();
+        this.connectionMgr = new connecionMgr(); 
     }
 
     /**

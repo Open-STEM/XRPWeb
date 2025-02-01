@@ -1,60 +1,56 @@
+import AppMgr, { EventType } from '@/managers/appmgr';
+import { ConnectionCMD } from '@/utils/types';
+import { XRPDataMgr } from './xrpdatamgr';
+import { CommandToXRPMgr } from './commandstoxrpmgr';
+
+
 /**
  * ConnectionMgr - manages USB and Bluetooth connection to the XRP Robot
  */
-export class ConnectionMgr {
-    PORT: SerialPort | undefined;      // Reference to serial port
-    READER: ReadableStreamDefaultReader<Uint8Array>  | undefined;    // Reference to serial port reader, only one can be locked at a time
-    WRITER: WritableStreamDefaultWriter<Uint8Array> | undefined;    // Reference to serial port writer, only one can be locked at a time
+export default class ConnectionMgr {
+    private appMgr: AppMgr = AppMgr.getInstance();
+    private xrpDataMgr: XRPDataMgr = XRPDataMgr.getInstance();
+    private commandsToXRPMgr: CommandToXRPMgr = CommandToXRPMgr.getInstance();
 
-    TEXT_ENCODER: TextEncoder = new TextEncoder();  // Used to write text to MicroPython
-    TEXT_DECODER: TextDecoder = new TextDecoder();  // Used to read text from MicroPython
-
-    USB_VENDOR_ID: number = 11914;     // For filtering ports during auto or manual selection
-    USB_PRODUCT_ID: number = 5;        // For filtering ports during auto or manual selection
-    USB_PRODUCT_MAC_ID: number = 10;   // For filtering ports during auto or manual selection
+    private PORT: SerialPort | undefined;      // Reference to serial port
+    private READER: ReadableStreamDefaultReader<Uint8Array>  | undefined;    // Reference to serial port reader, only one can be locked at a time
+    private WRITER: WritableStreamDefaultWriter<Uint8Array> | undefined;    // Reference to serial port writer, only one can be locked at a time
+    
+    private USB_VENDOR_ID_BETA: number = 11914;     // For filtering ports during auto or manual selection
+    private USB_VENDOR_ID: number = 6991;     // For filtering ports during auto or manual selection
+    private USB_PRODUCT_ID_BETA: number = 5;        // For filtering ports during auto or manual selection
+    private USB_PRODUCT_ID: number = 70;        // For filtering ports during auto or manual selection 
 
     //bluetooth information
-    BLE_DEVICE: BluetoothDevice | undefined;
-    btService: BluetoothRemoteGATTService | undefined;
-    READBLE: BluetoothRemoteGATTCharacteristic | undefined;
-    WRITEBLE: BluetoothRemoteGATTCharacteristic | undefined;
-    LASTBLEREAD: any; // TODO: unsure of type
-    BLE_DATA: Uint8Array | null = null;
-    BLE_DATA_RESOLVE: ((value: Uint8Array) => void) | null = null;
-    BLE_STOP_MSG: string = "##XRPSTOP##"
-
-
+    private BLE_DEVICE: BluetoothDevice | undefined;
+    private btService: BluetoothRemoteGATTService | undefined;
+    private READBLE: BluetoothRemoteGATTCharacteristic | undefined;
+    private WRITEBLE: BluetoothRemoteGATTCharacteristic | undefined;
+   
     // UUIDs for standard NORDIC UART service and characteristics
-    UART_SERVICE_UUID: string = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-    TX_CHARACTERISTIC_UUID: string = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
-    RX_CHARACTERISTIC_UUID: string = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
-
-    XRP_SEND_BLOCK_SIZE: number = 250;  // wired can handle 255 bytes, but BLE 5.0 is only 250
+    private UART_SERVICE_UUID: string = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+    private TX_CHARACTERISTIC_UUID: string = "6e400002-b5a3-f393-e0a9-e50e24dcca9e"
+    private RX_CHARACTERISTIC_UUID: string = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+    private BLE_DISCONNECT_TIME: number = 0;
 
     // Set true so most terminal output gets passed to javascript terminal
-    DEBUG_CONSOLE_ON: boolean = true;
-
-    COLLECT_RAW_DATA: boolean = false;
-    COLLECTED_RAW_DATA: number[] = [];
-
-    HAS_MICROPYTHON: boolean = false;
+    private DEBUG_CONSOLE_ON: boolean = true;
 
     // Used to stop interaction with the XRP
-    BUSY: boolean = false;
-    RUN_BUSY: boolean = false; //used to distinguish that we are in the RUN of a user program vs other BUSY.
+    private BUSY: boolean = false;
+    private RUN_BUSY: boolean = false; //used to distinguish that we are in the RUN of a user program vs other BUSY.
 
-    DISCONNECT: boolean = true;
+    private DISCONNECT: boolean = true;
 
-    LAST_RUN: string | undefined; //keep track of the last program that was run, don't need to save main if it is the same.
+    private LAST_RUN: string | undefined; //keep track of the last program that was run, don't need to save main if it is the same.
 
-    RUN_ERROR: string | undefined; //The text of any returned error
+    //private RUN_ERROR: string | undefined; //The text of any returned error
 
     //They pressed the STOP button while a program was executing
-    STOP: boolean = false;
+    private STOP: boolean = false;
 
     // ### CALLBACKS ###
     // Functions defined outside this module but used inside
-    onData: ((data: string) => void) | undefined;
     onConnect: (() => void) | undefined;
     IDSet: (() => void) | undefined;
     onDisconnect: (() => void) | undefined;
@@ -67,17 +63,7 @@ export class ConnectionMgr {
     //this.onShowUpdate = undefined;
     showMicropythonUpdate: (() => Promise<void>) | undefined;
 
-    // ### MicroPython Control Commands ###
-    // DOCS: https://docs.micropython.org/en/latest/esp8266/tutorial/repl.html#other-control-commands
-    // UNICODE CTRL CHARS COMBOS: https://unicodelookup.com/#ctrl
-    CTRL_CMD_RAWMODE: string = "\x01";     // ctrl-A (used for waiting to get file information, upload files, run custom python tool, etc)
-    CTRL_CMD_NORMALMODE: string = "\x02";  // ctrl-B (user friendly terminal)
-    CTRL_CMD_KINTERRUPT: string = "\x03";  // ctrl-C (stops a running program)
-    CTRL_CMD_SOFTRESET: string = "\x04";   // ctrl-D (soft reset the board, required after a command is entered in raw!)
-    CTRL_CMD_PASTEMODE: string = "\x05";
-
-    SPECIAL_FORCE_OUTPUT_FLAG: boolean = false;
-    CATCH_OK: boolean = false;
+    
 
     buffer: number[] = []; //buffer of read values to catch escape sequences.
 
@@ -85,13 +71,13 @@ export class ConnectionMgr {
     MANUALLY_CONNECTING: boolean = false;
 
     
-    public ConnectionMgr() {
+    constructor() {
         //constructor
-          //setup serial connect listener
-          //setup serial disconnect listener
+          //setup serial connect listener√
+          //setup serial disconnect listener√
 
-        // Connect USB
-        // USB AutoConnect
+        // Connect USB√
+        // USB AutoConnect√
         // Connect Bluetooth
         //BLE disconnect
         //BLE reconnect
@@ -105,6 +91,22 @@ export class ConnectionMgr {
         //Disconnect
 
 
+        /*** Listen for Subscriptions ***/
+
+        this.appMgr.on(EventType.EVENT_CONNECTION, (subType: string) => {
+            console.log("Connection manager event, sub type: " + subType);
+            switch(subType){
+                case ConnectionCMD.CONNECT_USB:
+                    this.connectCable();
+                    break;
+                case ConnectionCMD.CONNECT_BLUETOOTH:
+                    this.BLE_DISCONNECT_TIME = Date.now();
+                    this.connectBLE();
+                    break;
+            }
+        });
+
+        /*** Setup USB Connect and Disconnect listeners ***/
         // Check if browser can use WebSerial
         if ("serial" in navigator) {
             if (this.DEBUG_CONSOLE_ON) console.log("Serial supported in this browser!");
@@ -138,6 +140,10 @@ export class ConnectionMgr {
 
     }
 
+    /*** Publish items to Pub / Sup ***/
+
+    
+
     /*** USB Connection Routines ***/
 
     async connectCable() {
@@ -147,9 +153,11 @@ export class ConnectionMgr {
 
         var autoConnected = await this.tryAutoConnect();
 
-        const usbVendorId = this.USB_VENDOR_ID;
-        const usbProductId = this.USB_PRODUCT_ID;
-        //const usbProductMacId = this.USB_PRODUCT_MAC_ID;
+        const filters = [
+            { usbVendorId: this.USB_VENDOR_ID_BETA, usbProductId: this.USB_PRODUCT_ID_BETA },
+            { usbVendorId: this.USB_VENDOR_ID, usbProductId: this.USB_PRODUCT_ID }
+          ];
+
 
         if (!autoConnected) {
             if (this.DEBUG_CONSOLE_ON) console.log("fcg: trying manual USB Cable connect");
@@ -157,7 +165,7 @@ export class ConnectionMgr {
             this.BUSY = true;
             this.MANUALLY_CONNECTING = true;
 
-            await navigator.serial.requestPort({ filters: [{ usbVendorId, usbProductId }] }).then(async (port) => {
+            await navigator.serial.requestPort({filters}).then(async (port) => {
                 this.PORT = port;
                 if (this.DEBUG_CONSOLE_ON) console.log("%cManually connected!");
                 if (await this.openPort()) {
@@ -233,7 +241,6 @@ export class ConnectionMgr {
             this.DISCONNECT = false;
             try {
                 await this.PORT.open({ baudRate: 115200 });
-                this.WRITER = this.PORT.writable?.getWriter();     // Make a writer since this is the first time port opened
                 return true;
                 
             } catch (err: any) {
@@ -253,12 +260,159 @@ export class ConnectionMgr {
          return false;
     }
 
+    // Returns true if product and vendor ID match for MicroPython, otherwise false #
+    checkPortMatching(port: SerialPort): boolean {
+        var info = port.getInfo();
+        if((info.usbProductId == this.USB_PRODUCT_ID  && info.usbVendorId == this.USB_VENDOR_ID) || (info.usbProductId == this.USB_PRODUCT_ID_BETA  && info.usbVendorId == this.USB_VENDOR_ID_BETA)){
+            return true;
+        }
+        return false;
+    }
+
+    /*** Bluetooth BLE connection routines ***/
+
+    async connectBLE() {
+
+        if (this.DEBUG_CONSOLE_ON) console.log("fcg: in connectBLE ");
+
+        this.BUSY = true;
+        //this.MANNUALLY_CONNECTING = true;
+        if (this.DEBUG_CONSOLE_ON) console.log("Trying manual connectBLE..");
+
+        this.BLE_DEVICE = undefined; //just in case we were connected before.
+
+        var elapseTime = (Date.now() - this.BLE_DISCONNECT_TIME) / 1000;
+        if (elapseTime > 60) {
+            console.log(elapseTime);
+            //await window.alertMessage("Error while detecting bluetooth devices. \nPlease refresh the browser and try again.");
+            //TODO: Warn of need to refresh
+            return;
+        }
+
+        // Function to connect to the device
+        await navigator.bluetooth.requestDevice({
+            filters: [{
+                namePrefix: 'XRP'
+            }], optionalServices: [this.UART_SERVICE_UUID]
+        })
+            .then(device => {
+                //console.log('Connecting to device...');
+                this.BLE_DEVICE = device;
+                return device.gatt!.connect();
+            })
+            .then(servers => {
+                //console.log('Getting UART Service...');
+                return servers.getPrimaryService(this.UART_SERVICE_UUID);
+            })
+            .then(btService => {
+                this.btService = btService;
+                //console.log('Getting TX Characteristic...');
+                return btService.getCharacteristic(this.TX_CHARACTERISTIC_UUID);
+            })
+            .then(characteristic => {
+                //console.log('Connected to TX Characteristic');
+                this.WRITEBLE = characteristic;
+                //console.log('Getting RX Characteristic...');
+                return this.btService!.getCharacteristic(this.RX_CHARACTERISTIC_UUID);
+                // Now you can use the characteristic to send data
+            }).then(characteristic => {
+                this.READBLE = characteristic;
+                //this.READBLE.addEventListener('characteristicvaluechanged', this.readloopBLE);
+                this.READBLE!.startNotifications();
+                this.BLE_DEVICE!.addEventListener('gattserverdisconnected', () => {this.bleDisconnect()});
+                this.finishConnect();
+            })
+            .catch(error => {
+                console.log('Error: ' + error);
+            });
+
+        //this.MANNUALLY_CONNECTING = false;
+        this.BUSY = false;
+        if (this.DEBUG_CONSOLE_ON) console.log("fcg: out of ConnectBLE");
+
+    }
+
+    /* The bluetooth connection has been lost, it could because of many reasons. 
+        * they hit the STOP button and we did a soft reboot
+        * a brown out
+        * The XRP moved out of range
+    
+        We will wait for 10sec to see if it re-connects, if not then we will declare a disconnect.
+     */
+    bleDisconnect() {
+
+        if (this.DEBUG_CONSOLE_ON) console.log("BLE Disconnected");
+        this.BLE_DISCONNECT_TIME = Date.now();
+        this.WRITEBLE = undefined;
+        this.READBLE = undefined;
+        this.DISCONNECT = true; // Will stop certain events and break any EOT waiting functions
+        if (!this.STOP) { //If they pushed the STOP button then don't make it look disconnected it will be right back
+            //this.onDisconnect?.();
+            console.log("bleDisconnect - they didn't press STOP")
+        }
+        //this.SPECIAL_FORCE_OUTPUT_FLAG = false;
+        this.RUN_BUSY = false;
+        this.STOP = false;
+        this.BUSY = false;
+        this.bleReconnect();
+    }
+
+    async bleReconnect() {
+        if (this.DISCONNECT) {
+            try {
+                if (this.DEBUG_CONSOLE_ON) console.log("Trying ble auto reconnect...");
+                const server = await this.connectWithTimeout(this.BLE_DEVICE!, 10000); //wait for 10seconds to see if it reconnects
+                //const server = await this.BLE_DEVICE.gatt.connect();
+                this.btService = await server.getPrimaryService(this.UART_SERVICE_UUID);
+                //console.log('Getting TX Characteristic...');
+                this.WRITEBLE = await this.btService.getCharacteristic(this.TX_CHARACTERISTIC_UUID);
+                this.READBLE = await this.btService.getCharacteristic(this.RX_CHARACTERISTIC_UUID);
+                this.READBLE.startNotifications();
+                this.finishConnect();
+                if (this.DEBUG_CONSOLE_ON) console.log("fcg: out of tryAutoConnect");
+                return true;
+                // Perform operations after successful connection
+            } catch (error) {
+                console.log('timed out: ', error);
+                this.BLE_DEVICE = undefined;
+                //this.onDisconnect?.();
+                //document.getElementById('IDConnectBTN')!.disabled = false;
+            }
+        }
+    }
+
+    connectWithTimeout(device: BluetoothDevice, timeoutMs: number): Promise<BluetoothRemoteGATTServer> {
+        return new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => {
+                reject(new Error("Connection timed out"));
+            }, timeoutMs);
+
+            device.gatt!.connect()
+                .then(server => {
+                    clearTimeout(timeoutId);
+                    resolve(server);
+                })
+                .catch(err => {
+                    clearTimeout(timeoutId);
+                    reject(err);
+                });
+        });
+    }
+
+
+    /*** Common routines  ***/
 
     async finishConnect() {
         this.DISCONNECT = false;
-        //this.readLoop();
-        //TODO: Start the readloop 
-
+        console.log(this.READER);
+        console.log(this.WRITER);
+        console.log(this.LAST_RUN);
+        console.log(this.RUN_BUSY);
+        console.log(this.WRITEBLE);
+        this.xrpDataMgr.startReadLoop(this.PORT, this.READBLE, this.WRITEBLE);
+        console.log(await this.commandsToXRPMgr.batteryVoltage());
+        console.log(await this.commandsToXRPMgr.getVersionInfo());
+        
         /* TODO: implement
         if (await this.checkIfMP()) {
             if (this.HAS_MICROPYTHON == false) {    //something went wrong, just get out of here
@@ -284,12 +438,5 @@ export class ConnectionMgr {
         */
     }
 
-    // Returns true if product and vendor ID match for MicroPython, otherwise false #
-    checkPortMatching(port: SerialPort): boolean {
-        var info = port.getInfo();
-        if ((info.usbProductId == this.USB_PRODUCT_ID || info.usbProductId == this.USB_PRODUCT_MAC_ID) && info.usbVendorId == this.USB_VENDOR_ID) {
-            return true;
-        }
-        return false;
-    }
+    
 }
