@@ -23,13 +23,16 @@ import Dialog from '@components/dialogs/dialog';
 import ConnectionDlg from './dialogs/connectiondlg';
 import FileSaveAsDialg from './dialogs/filesaveasdlg';
 import treeData from '@/utils/testdata';
-import { ConnectionType } from '@/utils/types';
-import BleParingDlg from '@components/dialogs/ble-pairingdlg';
-import UsbConnectDlg from '@components/dialogs/usb-connectdlg';
+import { ConnectionType, ConnectionCMD } from '@/utils/types';
+//import BleParingDlg from '@components/dialogs/ble-pairingdlg';
+//import UsbConnectDlg from '@components/dialogs/usb-connectdlg';
 import { useFilePicker } from 'use-file-picker';
 import SaveToXRPDlg from '@components/dialogs/save-to-xrpdlg';
 import { MenuDataItem } from '@/widgets/menutypes';
 import MenuItem from '@/widgets/menu';
+import AppMgr, { EventType } from '@/managers/appmgr';
+
+
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -147,14 +150,17 @@ function NavBar({ layoutref }: NavBarProps) {
      * @param connType
      */
     function onConnectionSelected(connType: ConnectionType) {
+      const appMgr: AppMgr = AppMgr.getInstance();
         if (connType === ConnectionType.USB) {
-            setIsFooter(true);
-            setOkButtonLabel(i18n.t('connect'));
-            setDialogContent(<UsbConnectDlg url={'http://localhost:3000'} />);
+          appMgr.emit(EventType.EVENT_CONNECTION, ConnectionCMD.CONNECT_USB);
+            //setIsFooter(true);
+            //setOkButtonLabel(i18n.t('connect'));
+            //setDialogContent(<UsbConnectDlg url={'http://localhost:3000'} />);
         } else if (connType === ConnectionType.BLUETOOTH) {
-            setIsFooter(true);
-            setOkButtonLabel(i18n.t('pair'));
-            setDialogContent(<BleParingDlg url="http://localhost" />);
+            appMgr.emit(EventType.EVENT_CONNECTION, ConnectionCMD.CONNECT_BLUETOOTH);
+            //setIsFooter(true);
+            //setOkButtonLabel(i18n.t('pair'));
+            //setDialogContent(<BleParingDlg url="http://localhost" />);
         }
     }
 
