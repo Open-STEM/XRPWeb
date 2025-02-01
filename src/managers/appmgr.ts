@@ -1,16 +1,24 @@
 import FilesysMgr from '@/managers/filesysmgr';
 import mitt from 'mitt';
 
+export enum Themes {
+    DARK = 'dark',
+    LIGHT = 'light'
+}
+
 export enum EventType {
     EVENT_FILESYS = 'filesys', // directoy tree from filesystem of the XRP
     EVENT_SHELL = 'shell', // shell updates from XRP
     EVENT_CONNECTION_STATUS = 'connection-status', // connection status updates
+    EVENT_THEME = 'theme-change'    // System theme change event
 }
 
 type Events = {
     [EventType.EVENT_FILESYS]: string;
     [EventType.EVENT_SHELL]: string;
     [EventType.EVENT_CONNECTION_STATUS]: string;
+    [EventType.EVENT_THEME]: string
+
 };
 
 /**
@@ -20,6 +28,7 @@ type Events = {
  *          Editors
  */
 export default class AppMgr {
+    private theme: string | undefined;
     private static instance: AppMgr;
     private emitter = mitt<Events>();
     private filesysMgr: FilesysMgr | null = null;
@@ -38,8 +47,34 @@ export default class AppMgr {
      * Start and Initialize system objects
      */
     public start(): void {
+        // onload theme selection
+        this.onThemeChange(window.matchMedia('(prefers-color-scheme: dark)').matches ? Themes.DARK : Themes.LIGHT);
+        // listen to system theme change event
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => this.onThemeChange(e.matches ? Themes.DARK : Themes.LIGHT));
         this.filesysMgr = new FilesysMgr();
         this.filesysMgr.start();
+    }
+
+    /**
+     * onThemeChange event
+     * @param theme
+     */
+    private onThemeChange(theme:string) {
+        if (theme === Themes.DARK) {
+            this.theme = Themes.DARK;
+            this.emitter.emit(EventType.EVENT_THEME, this.theme);
+        } else {
+            this.theme = Themes.LIGHT;
+            this.emitter.emit(EventType.EVENT_THEME, this.theme);
+        }
+    }
+
+    /**
+     * getTheme
+     * @returns theme
+     */
+    public getTheme(): string {
+        return this.theme || Themes.LIGHT;
     }
 
     /**
