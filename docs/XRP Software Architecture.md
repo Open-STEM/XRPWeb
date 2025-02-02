@@ -274,7 +274,7 @@ This section documents the major classes which are based on the React Component 
 The application components manages the core functionality of the following features.
 
 - Application Management
-- Connection Management (Calble and Bluetooth)
+- Connection Management (Cable and Bluetooth)
 - File Management (User and System Filesystem)
 - Editor Session Management
 
@@ -293,6 +293,27 @@ The application components manages the core functionality of the following featu
 
 @enduml
 ```
+
+### Connections
+
+There are two type of connections in the system, i.e., USB or Bluetooth. The connection classes provide interfaces to connect or disconnect and handle the communication between the Web Application and the XRP Robot. Once the connection is established, data transfer from the connection objects to file system manager is handled through publish and subscribe interfaces.
+
+```plantuml
+@startuml
+    class Connection {
+        connect()
+        disconnect()
+        worker
+    }
+    class USBConnection
+    class BluetoothConnection
+
+    USBConnection *-- Connection
+    BluetoothConnection *-- Connection
+
+@enduml
+```
+
 ## Run Time View
 
 The figure below depicts the runtime view of the system when the users are interacting with the system.

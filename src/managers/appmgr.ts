@@ -36,7 +36,7 @@ export default class AppMgr {
     private emitter = mitt<Events>();
     private filesysMgr: FilesysMgr | null = null;
 
-    // @ts-ignore (just a holder for the instance at this point so ignore the never read error)
+    // @ts-expect-error (just a holder for the instance at this point so ignore the never read error)
     private connectionMgr: connecionMgr | null = null;
 
     // @ts-expect-error Private constructor to prevent direct instantiation
@@ -59,7 +59,7 @@ export default class AppMgr {
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => this.onThemeChange(e.matches ? Themes.DARK : Themes.LIGHT));
         this.filesysMgr = new FilesysMgr();
         this.filesysMgr.start();
-        this.connectionMgr = new connecionMgr(); 
+        this.connectionMgr = new connecionMgr(this); 
     }
 
     /**
