@@ -1,14 +1,20 @@
-import { describe, it, expect, vi } from 'vitest';
-import FilesysMgr from '../filesysmgr';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import FilesysMgr from '@managers/filesysmgr';
 import AppMgr, { EventType } from '@/managers/appmgr';
 import treeData from '@/utils/testdata';
 
 describe('FilesysMgr', () => {
-    it('should emit EVENT_FILESYS event with treeData after start is called', () => {
-        const appMgrInstance = AppMgr.getInstance();
-        const emitSpy = vi.spyOn(appMgrInstance, 'emit');
-        const filesysMgr = new FilesysMgr();
+    let filesysMgr: FilesysMgr;
+    let appMgrInstance: AppMgr;
+    let emitSpy: ReturnType<typeof vi.spyOn>;
 
+    beforeEach(() => {
+        appMgrInstance = AppMgr.getInstance();
+        emitSpy = vi.spyOn(appMgrInstance, 'emit');
+        filesysMgr = new FilesysMgr();
+        vi.clearAllMocks(); // Clear mocks before each test
+    });
+    it('should emit EVENT_FILESYS event with treeData after start is called', () => {
         filesysMgr.start();
 
         setTimeout(() => {

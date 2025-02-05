@@ -17,7 +17,7 @@ import changelog from '@assets/images/changelog.svg';
 import { TiArrowSortedDown } from 'react-icons/ti';
 import { IoPlaySharp } from 'react-icons/io5';
 import { IoStop } from 'react-icons/io5';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import i18n from '@/utils/i18n';
 import Dialog from '@components/dialogs/dialog';
 import ConnectionDlg from './dialogs/connectiondlg';
@@ -29,6 +29,7 @@ import SaveToXRPDlg from '@components/dialogs/save-to-xrpdlg';
 import { MenuDataItem } from '@/widgets/menutypes';
 import MenuItem from '@/widgets/menu';
 import AppMgr, { EventType } from '@/managers/appmgr';
+import { ConnectionState } from '@/connections/connection';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -50,6 +51,16 @@ function NavBar({ layoutref }: NavBarProps) {
     const { openFilePicker, filesContent, loading, errors } = useFilePicker({
         multiple: true,
         accept: ['.py', '.blocks'],
+    });
+
+    useEffect(() => {
+        // subscribe to the connection event
+        AppMgr.getInstance().on(EventType.EVENT_CONNECTION_STATUS, (state: string) => {
+            if (state === ConnectionState.Connected.toString()) {
+                setConnected(true);
+                setRunning(false);
+            }
+        });
     });
 
     if (loading) {
@@ -164,13 +175,6 @@ function NavBar({ layoutref }: NavBarProps) {
         setOkButtonLabel(i18n.t('okButton'));
         setDialogContent(<ConnectionDlg callback={onConnectionSelected} />);
         cancelDialog();
-        if (isConnected) {
-            setConnected(false);
-            setRunning(false);
-        } else {
-            setConnected(true);
-            setRunning(true);
-        }
     }
 
     /**
@@ -178,13 +182,6 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function onRunBtnClicked() {
         console.log('onRunBtnClicked');
-        if (isRunning) {
-            setConnected(true);
-            setRunning(false);
-        } else {
-            setConnected(false);
-            setRunning(true);
-        }
     }
 
     /**
