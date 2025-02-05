@@ -5,6 +5,9 @@
     "paths": {
       "@/*": ["src/*"],
       "@components/*": ["./src/components/*"],
+      "@managers/*": ["./src/managers/*"],
+      "@connections/*": ["./src/connections/*"],
+      "@utils/*": ["./src/utils/*"],
       "@assets/*": ["./src/assets/*"],
     }
   },

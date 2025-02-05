@@ -3,6 +3,13 @@ export enum ConnectionType {
     BLUETOOTH,
 }
 
+export enum ConnectionCMD{
+    CONNECT_USB = 'usb-connection',
+    CONNECT_BLUETOOTH = 'bluetooth-connection',
+    CONNECT_RUN = 'run',
+    CONNECT_STOP = 'stop'
+}
+
 export interface FolderItem {
     id: string;
     name: string;

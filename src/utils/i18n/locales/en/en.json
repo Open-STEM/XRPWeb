@@ -30,5 +30,6 @@
     "delete": "Delete",
     "rename": "Rename",
     "new": "New Folder",
-    "menuicon": "Menu Icon"
+    "menuicon": "Menu Icon",
+    "disconnectXterm": "Waiting for connection... (click 'Connect XRP')"
 }

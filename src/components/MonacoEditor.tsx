@@ -14,6 +14,7 @@ import { ExtensionHostKind, registerExtension } from 'vscode/extensions';
 // we need to import this so monaco-languageclient can use vscode-api
 import 'vscode/localExtensionHost';
 import { initializedAndStartLanguageClient } from '@components/lsp-client';
+import AppMgr, { EventType, Themes } from '@/managers/appmgr';
 
 const languageId = 'python';
 let isClientInitalized: boolean = false;
@@ -140,11 +141,17 @@ const MonacoEditor = ({
     );
 
     useEffect(() => {
+        AppMgr.getInstance().on(EventType.EVENT_THEME, (theme) => {
+            console.log('Monaco set theme to ${selectedTheme}');
+            if (editor.current != null)
+                monaco.editor.setTheme(theme === Themes.DARK ? 'Default Dark Modern' : 'vs');
+        });
+
         if (containerRef.current) {
             if (editor.current == null) {
                 updateUserConfiguration(`{
                     "editor.fontSize": 14,
-                    "workbench.colorTheme": "Default Dark Modern"
+                    "workbench.colorTheme": "${AppMgr.getInstance().getTheme() === Themes.DARK ? 'Default Dark Modern' : 'vs'}"
                 }`);
 
                 editor.current = monaco.editor.create(containerRef.current, {
@@ -161,8 +168,8 @@ const MonacoEditor = ({
                     initializedAndStartLanguageClient();
                     isClientInitalized = true;
                 }
-            }
-        }
+            } 
+        } 
     }, [language, value]);
 
     return <div ref={containerRef} style={style} className={className} />;

@@ -23,13 +23,12 @@ import Dialog from '@components/dialogs/dialog';
 import ConnectionDlg from './dialogs/connectiondlg';
 import FileSaveAsDialg from './dialogs/filesaveasdlg';
 import treeData from '@/utils/testdata';
-import { ConnectionType } from '@/utils/types';
-import BleParingDlg from '@components/dialogs/ble-pairingdlg';
-import UsbConnectDlg from '@components/dialogs/usb-connectdlg';
+import { ConnectionType, ConnectionCMD } from '@/utils/types';
 import { useFilePicker } from 'use-file-picker';
 import SaveToXRPDlg from '@components/dialogs/save-to-xrpdlg';
 import { MenuDataItem } from '@/widgets/menutypes';
 import MenuItem from '@/widgets/menu';
+import AppMgr, { EventType } from '@/managers/appmgr';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,8 +37,8 @@ type NavBarProps = {
 
 /**
  * NavBar component - create the navigation bar
- * @param layoutref 
- * @returns 
+ * @param layoutref
+ * @returns
  */
 function NavBar({ layoutref }: NavBarProps) {
     const [isFooter, setIsFooter] = useState(false);
@@ -55,11 +54,11 @@ function NavBar({ layoutref }: NavBarProps) {
 
     if (loading) {
         return <div>Loading...</div>;
-    };
+    }
 
     if (errors.length > 0) {
         return <div>Error: {errors.values.toString()}</div>;
-    };
+    }
 
     /**
      * NewFile - create either a new Python or Blockly file
@@ -147,14 +146,13 @@ function NavBar({ layoutref }: NavBarProps) {
      * @param connType
      */
     function onConnectionSelected(connType: ConnectionType) {
+        const appMgr: AppMgr = AppMgr.getInstance();
         if (connType === ConnectionType.USB) {
-            setIsFooter(true);
-            setOkButtonLabel(i18n.t('connect'));
-            setDialogContent(<UsbConnectDlg url={'http://localhost:3000'} />);
+            appMgr.emit(EventType.EVENT_CONNECTION, ConnectionCMD.CONNECT_USB);
+            cancelDialog();
         } else if (connType === ConnectionType.BLUETOOTH) {
-            setIsFooter(true);
-            setOkButtonLabel(i18n.t('pair'));
-            setDialogContent(<BleParingDlg url="http://localhost" />);
+            appMgr.emit(EventType.EVENT_CONNECTION, ConnectionCMD.CONNECT_BLUETOOTH);
+            cancelDialog();
         }
     }
 
@@ -309,25 +307,25 @@ function NavBar({ layoutref }: NavBarProps) {
     ];
 
     return (
-        <div className="p-1 px-10 flex justify-between items-center">
+        <div className="flex items-center justify-between p-1 px-10">
             <div className="flex flex-row gap-4 transition-all">
                 {/** Logo */}
                 <img src={logo} alt="logo" width="100" height="50" />
                 {navItems.map((item, index) => (
-                    <div key={index} className="relative group transition-all">
-                        <p className="flex ml-2 mt-4 cursor-pointer text-matisse-100 group-hover:bg-blue-500">
+                    <div key={index} className="group relative transition-all">
+                        <p className="ml-2 mt-4 flex cursor-pointer text-matisse-100 group-hover:bg-curious-blue-700 dark:group-hover:bg-mountain-mist-950">
                             <span>{item.label}</span>
                             {item.children && (
                                 <TiArrowSortedDown className="mt-1 rotate-180 transition-all group-hover:rotate-0" />
                             )}
                         </p>
                         {item.children && (
-                            <div className="absolute left-2 top-[52] hidden mx-auto flex-col py-3 bg-curious-blue-700 shadow-md transition-all group-hover:flex z-[100]">
-                                <ul id="pythonId" className="flex flex-col cursor-pointer">
+                            <div className="absolute left-2 top-[52] z-[100] mx-auto hidden flex-col bg-curious-blue-700 py-3 shadow-md transition-all group-hover:flex dark:bg-mountain-mist-950 dark:group-hover:bg-mountain-mist-950">
+                                <ul id="pythonId" className="flex cursor-pointer flex-col">
                                     {item.children.map((child, ci) => (
                                         <li
                                             key={ci}
-                                            className="py-1 pl-4 pr-10 text-neutral-200 hover:bg-matisse-400"
+                                            className="text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500"
                                             onClick={child.clicked}
                                         >
                                             <MenuItem item={child} />
@@ -335,11 +333,11 @@ function NavBar({ layoutref }: NavBarProps) {
                                     ))}
                                 </ul>
                                 {item.childrenExt && (
-                                    <ul id="blockId" className="flex-col cursor-pointer hidden">
+                                    <ul id="blockId" className="hidden cursor-pointer flex-col">
                                         {item.childrenExt?.map((child, ci) => (
                                             <li
                                                 key={ci}
-                                                className="py-1 pl-4 pr-10 text-neutral-200 hover:bg-matisse-400"
+                                                className="text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500"
                                                 onClick={child.clicked}
                                             >
                                                 <MenuItem item={child} />
@@ -353,10 +351,10 @@ function NavBar({ layoutref }: NavBarProps) {
                 ))}
             </div>
             {/** connect */}
-            <div className="flex flex-row  items-center">
+            <div className="flex flex-row items-center">
                 <button
                     id="connectBtn"
-                    className={`px-4 py-2 border-2 rounded-3xl h-full w-[200] flex items-center justify-center gap-2 text-matisse-900 text-neutral-900 bg-shark-200 hover:bg-curious-blue-300 ${isConnected ? 'hidden' : ''}`}
+                    className={`text-neutral-900 flex h-full w-[200] items-center justify-center gap-2 rounded-3xl bg-shark-200 px-4 py-2 text-matisse-900 hover:bg-curious-blue-300 dark:bg-shark-600 dark:text-shark-100 dark:hover:bg-shark-500 ${isConnected ? 'hidden' : ''}`}
                     onClick={onConnectBtnClicked}
                 >
                     <svg width="20" height="20" viewBox="0 0 20 20">
@@ -369,7 +367,7 @@ function NavBar({ layoutref }: NavBarProps) {
                 </button>
                 <button
                     id="runBtn"
-                    className={`px-4 py-2 rounded-3xl h-full w-[120] text-white items-center justify-center ${isRunning ? 'bg-cinnabar-600' : 'bg-chateau-green-500'} ${isConnected ? 'flex' : 'hidden'}`}
+                    className={`text-white h-full w-[120] items-center justify-center rounded-3xl px-4 py-2 ${isRunning ? 'bg-cinnabar-600' : 'bg-chateau-green-500'} ${isConnected ? 'flex' : 'hidden'}`}
                     onClick={onRunBtnClicked}
                 >
                     {isRunning ? (

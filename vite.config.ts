@@ -20,6 +20,14 @@ export default defineConfig({
                 replacement: fileURLToPath(new URL('./src/components', import.meta.url)),
             },
             {
+                find: '@connections',
+                replacement: fileURLToPath(new URL('./src/connections', import.meta.url)),
+            },
+            {
+                find: '@utils',
+                replacement: fileURLToPath(new URL('./src/utils', import.meta.url)),
+            },
+            {
                 find: '@assets',
                 replacement: fileURLToPath(new URL('./src/assets', import.meta.url)),
             },
