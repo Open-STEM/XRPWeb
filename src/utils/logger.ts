@@ -1,12 +1,15 @@
 import pino from 'pino';
-import { StorageKeys, StorageUtility } from '@utils/localstorage';
+import { StorageKeys } from '@utils/localstorage';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const loglevel:any = StorageUtility.getItem(StorageKeys.LOGLEVEL);
+const getLogLevel = () => {
+  const level = localStorage.getItem(StorageKeys.LOGLEVEL);
+  return level ? level : 'info';
+};
+
 
 // Create a logging instance
 export const logger = pino({
-    level: loglevel.Level || 'info',
+    level: getLogLevel(),
     formatters: {
       level: (label) => {
         return { level: label };

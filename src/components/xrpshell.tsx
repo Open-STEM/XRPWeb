@@ -49,6 +49,9 @@ function XRPShell() {
                     setConnection(null);
                 }
             });
+
+            if (connection === null) 
+                instance?.writeln(i18n.t('disconnectXterm'));
         }
 
         const handleResize = () => fitAddon.fit();
@@ -69,7 +72,11 @@ function XRPShell() {
         };
     });
 
-    return <div ref={ref} className="h-full w-full" />;
+    return (
+        <>
+            <div ref={ref} className="h-full w-full" />
+        </>
+    );
 }
 
 export default XRPShell;

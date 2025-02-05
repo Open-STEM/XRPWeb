@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import AppMgr, { EventType } from '../appmgr';
-import FilesysMgr from '../filesysmgr';
+import AppMgr, { EventType } from '@managers/appmgr';
+import FilesysMgr from '@managers/filesysmgr';
 
 vi.mock('../filesysmgr');
 
