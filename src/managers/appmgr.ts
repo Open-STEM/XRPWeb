@@ -1,6 +1,7 @@
 import FilesysMgr from '@/managers/filesysmgr';
 import connecionMgr from '@/managers/connectionmgr';
 import mitt from 'mitt';
+import Connection from '@/connections/connection';
 
 export enum Themes {
     DARK = 'dark',
@@ -35,8 +36,6 @@ export default class AppMgr {
     private static instance: AppMgr;
     private emitter = mitt<Events>();
     private filesysMgr: FilesysMgr | null = null;
-
-    // @ts-expect-error (just a holder for the instance at this point so ignore the never read error)
     private connectionMgr: connecionMgr | null = null;
 
     // @ts-expect-error Private constructor to prevent direct instantiation
@@ -109,4 +108,15 @@ export default class AppMgr {
     public off(): void {
         this.emitter.all.clear();
     }
+
+    /**
+     * getConnection - return the active connection
+     */
+    public getConnection(): Connection | null {
+        if (!this.connectionMgr) {
+            throw new Error('Connection manager is not initialized');
+        }
+        return this.connectionMgr.getConnection();
+    }
+
 }

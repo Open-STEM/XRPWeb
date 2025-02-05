@@ -95,6 +95,7 @@ export class CommandToXRPMgr {
             '            print("ERROR EOF")\n' +
             '            break\n' +
             '        if "__version__ = " in line:\n' +
+            // eslint-disable-next-line no-useless-escape
             "            print(line.split('\\\'')[1])\n" +
             '            break\n' +
             'except:\n' +

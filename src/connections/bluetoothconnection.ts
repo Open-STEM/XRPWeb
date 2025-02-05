@@ -207,7 +207,6 @@ export class BluetoothConnection extends Connection {
         //this.MANNUALLY_CONNECTING = false;
         this.connectionStates = ConnectionState.Connected;
         this.connLogger.debug('Existing BLE connect');
-        this.connLogger.debug(this.bleWriter);
     }
 
     public async disconnect(): Promise<void> {
@@ -225,7 +224,6 @@ export class BluetoothConnection extends Connection {
         //TODO: These are UI states - should we kept in the connection logics?
         // this.RUN_BUSY = false;
         // this.STOP = false;
-        this.connectionStates = ConnectionState.Disconnect;
         this.reconnect();
     }
 
@@ -270,7 +268,7 @@ export class BluetoothConnection extends Connection {
      * @param str 
      */
     public async writeToDevice(str: string | Uint8Array) {
-        this.connLogger.debug(str);
+        this.connLogger.debug('writeToDevice: ' + str);
 
         try {
             if (typeof str == 'string') {

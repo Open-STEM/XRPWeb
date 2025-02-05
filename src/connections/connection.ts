@@ -26,7 +26,7 @@ abstract class Connection {
 
     protected textEncoder: TextEncoder = new TextEncoder();
     private textDecoder: TextDecoder = new TextDecoder();
-    private specialForceOutputFlag: boolean = false;
+    private specialForceOutputFlag: boolean = true;
     private catchOk: boolean = false;
     private collectedData: string = '';
     private collectedRawData: number[] = [];
@@ -175,7 +175,7 @@ abstract class Connection {
      * onData - data received from XRP
      * @param data 
      */
-    protected onData(data: string) {
+    public onData(data: string) {
         this.connLogger.debug('Received data from XRP: ' + data);
     }
 
@@ -299,7 +299,7 @@ abstract class Connection {
      * writeToDevice - write data to device
      * @param str 
      */
-    protected async writeToDevice(str: string | Uint8Array) {
+    public async writeToDevice(str: string | Uint8Array) {
         this.connLogger.debug('Writing to device' + str);
     }
 
@@ -334,7 +334,14 @@ abstract class Connection {
         }
         return;
     }
-    
+
+    /**
+     * isBusy
+     * @returns 
+     */
+    public isBusy(): boolean {
+        return this.connectionStates === ConnectionState.Busy;
+    }
 }
 
 export default Connection;

@@ -1,6 +1,6 @@
 import AppMgr, { EventType } from '@/managers/appmgr';
 import { ConnectionCMD } from '@/utils/types';
-import Connection from '@/connections/connection';
+import Connection, { ConnectionState } from '@/connections/connection';
 import { USBConnection } from '@/connections/usbconnection';
 import { BluetoothConnection } from '@/connections/bluetoothconnection';
 import { CommandToXRPMgr } from './commandstoxrpmgr';
@@ -40,6 +40,7 @@ export default class ConnectionMgr {
     private async connectCallback() {
         console.log(await CommandToXRPMgr.getInstance().batteryVoltage());
         console.log(await CommandToXRPMgr.getInstance().getVersionInfo());
+        this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Connected.toString());
     }
     
     /**
