@@ -53,8 +53,6 @@ export default class ConnectionMgr {
      */
     public async connectCallback(state: ConnectionState, connType: ConnectionType) {
         this.activeConnection = this.connections[connType];
-    public connectCallback(state: ConnectionState, connType: ConnectionType) {
-        this.activeConnection = this.connections[connType];
         if (state === ConnectionState.Connected) {
             this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Connected.toString());
             await this.cmdToXRPMgr.getOnBoardFSTree();
