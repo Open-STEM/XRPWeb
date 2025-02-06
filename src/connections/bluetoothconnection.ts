@@ -1,6 +1,7 @@
 import ConnectionMgr from '@/managers/connectionmgr';
 import { ConnectionType } from '@/utils/types';
 import Connection, { ConnectionState } from '@connections/connection';
+import { promises } from 'dns';
 /**
  * BluetoothConnection class
  * 
@@ -284,18 +285,33 @@ export class BluetoothConnection extends Connection {
      * @param str 
      */
     public async writeToDevice(str: string | Uint8Array) {
-        this.connLogger.debug('writeToDevice: ' + str);
+        this.connLogger.debug('writeToDevice BLE: ' + str);
 
         try {
             if (typeof str == 'string') {
                 //this.connLogger.debug("writing: " + str);
-                await this.bleWriter?.writeValue(this.str2ab(str));
+                await this.bleQueue(this.str2ab(str));
             } else {
                 //this.connLogger.debug("writing: " + this.TEXT_DECODER.decode(str));
-                await this.bleWriter?.writeValue(str);
+                await this.bleQueue(str);
             }
         } catch (error) {
             this.connLogger.debug(error);
         }
+    }
+
+    /**
+     *  bleQueue - If we haven't come back from the ble.writeValue then the GATT is still busy and we will miss items that are being sent
+     * This can be seen if you type very fast in the Shell 
+     */
+    private Queue:Promise<void> = Promise.resolve();
+    private async  bleQueue(value: BufferSource){
+        this.Queue = this.Queue.then(async () => {
+            try {
+                await this.bleWriter?.writeValue(value);
+            } catch (error) {
+                console.error('ble write failed:', error);
+            }
+        });
     }
 }
