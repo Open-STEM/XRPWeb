@@ -51,9 +51,10 @@ export default class ConnectionMgr {
     /**
      * connectCallback
      */
-    public connectCallback(state: ConnectionState, connType: ConnectionType) {
+    public async connectCallback(state: ConnectionState, connType: ConnectionType) {
         this.activeConnection = this.connections[connType];
         if (state === ConnectionState.Connected) {
+            await CommandToXRPMgr.getInstance().getOnBoardFSTree();
             this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Connected.toString());
         } else if (state === ConnectionState.Disconnected) {
             this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Disconnected.toString());
