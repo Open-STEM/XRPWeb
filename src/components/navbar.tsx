@@ -59,6 +59,8 @@ function NavBar({ layoutref }: NavBarProps) {
             if (state === ConnectionState.Connected.toString()) {
                 setConnected(true);
                 setRunning(false);
+            } else if (state === ConnectionState.Disconnected.toString()) {
+                setConnected(false);
             }
         });
     });

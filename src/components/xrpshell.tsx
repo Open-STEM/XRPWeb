@@ -40,11 +40,10 @@ function XRPShell() {
                     if (activeConn != null) {
                         setConnection(activeConn);
                         activeConn.onData = (data) => {
-                            console.log(data);
                             instance.write(data)
                         };
                     }
-                } else if (state === ConnectionState.Disconnect.toString()) {
+                } else if (state === ConnectionState.Disconnected.toString()) {
                     instance?.writeln(i18n.t('disconnectXterm'));
                     setConnection(null);
                 }
