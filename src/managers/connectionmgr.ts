@@ -40,6 +40,7 @@ export default class ConnectionMgr {
     private async connectCallback() {
         console.log(await CommandToXRPMgr.getInstance().batteryVoltage());
         console.log(await CommandToXRPMgr.getInstance().getVersionInfo());
+        await CommandToXRPMgr.getInstance().getOnBoardFSTree();
         this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Connected.toString());
     }
     

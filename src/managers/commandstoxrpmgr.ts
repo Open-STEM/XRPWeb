@@ -53,6 +53,50 @@ export class CommandToXRPMgr {
 
     /*** Initial utilities  ***/
 
+    // if we attached via the cable then make sure we are not trying to output to via the BLE
+    async resetTerminal() {
+        if (this.BUSY == true) {
+            return;
+        }
+        this.BUSY = true;
+
+        var cmd = "import os\n" +
+            "os.dupterm(None)\n";
+
+
+        await this.connection?.writeUtilityCmdRaw(cmd, true, 1);
+
+        await this.connection?.getToNormal(3);
+        this.BUSY = false;
+    }
+
+    async clearIsRunning() {
+        if (this.BUSY == true) {
+            return;
+        }
+        this.BUSY = true;
+        if (this.DEBUG_CONSOLE_ON) console.log("fcg: in clearIsRunning");;
+
+
+        // Got through and make sure entire path already exists
+        const cmd = "import sys\n" +
+            "FILE_PATH = '/lib/ble/isrunning'\n" +
+            "try:\n" +
+            "   with open(FILE_PATH, 'r+b') as file:\n" +
+            "      file.write(b'\\x00')\n" +
+            "except Exception as err:\n" +
+            "    print('Some kind of error clearing is running..' + err)\n";
+
+        await this.connection?.writeUtilityCmdRaw(cmd, true, 1);
+
+        // Get back into normal mode and omit the 3 lines from the normal message,
+        // don't want to repeat (assumes already on a normal prompt)
+        await this.connection?.getToNormal(3);
+
+        this.BUSY = false;
+        if (this.DEBUG_CONSOLE_ON) console.log("fcg: out of clearIsRunning");
+    }
+
     public async batteryVoltage(): Promise<number> {
         if (this.BUSY == true) {
             return 0;
@@ -132,6 +176,118 @@ export class CommandToXRPMgr {
     }
 
     /*** File Routines  ***/
+
+    async getOnBoardFSTree() {
+        if (this.BUSY == true) {
+            return;
+        }
+        if (this.DEBUG_CONSOLE_ON) console.log("fcg: in getOnBoardFSTree");
+
+        this.BUSY = true;
+
+        //window.setPercent(1, "Fetching filesystem...");
+
+        const getFilesystemCmd =
+            "import os\n" +
+            //"import ujson\n" +
+            "import gc\n" +
+            "outstr = ''\n" +
+            "gc.collect()\n" +  //this is needed for the ble it seems like we run out of memory otherwise
+            "def walk(top, structure, dir):\n" +
+            "    global outstr\n" +
+            "    extend = \"\";\n" +
+            "    if top != \"\":\n" +
+            "        extend = extend + \"/\"\n" +
+
+            "    item_index = 0\n" +
+            "    structure[dir] = {}\n" +
+
+            "    for dirent in os.listdir(top):\n" +                        // Loop through and create structure of on-board FS
+            "        if(os.stat(top + extend + dirent)[0] == 32768):\n" +   // File
+            //"            print(str(count) + ',' + dir + ',' + str(item_index) + ',F,' + dirent)\n" +
+            "            outstr = outstr + dir + ',' + str(item_index) + ',F,' + dirent + ';'\n" +
+            //"            structure[dir][item_index] = {\"F\": dirent}\n" +
+            "            item_index = item_index + 1\n" +
+            "        elif(os.stat(top + extend + dirent)[0] == 16384):\n" + // Dir
+            //"            print(str(count) + ',' + dir + ',' + str(item_index) + ',D,' + dirent)\n" +
+            "            outstr = outstr + dir + ',' + str(item_index) + ',D,' + dirent + ';'\n" +
+            //"            structure[dir][item_index] = {\"D\": dirent}\n" +
+            "            item_index = item_index + 1\n" +
+            "            walk(top + extend + dirent, structure[dir], dirent)\n" +
+            "    return structure\n" +
+            "struct = {}\n" +
+            "walk(\"\", struct, \"\")\n" +
+            "print(outstr)\n";
+        //"print(walk(\"\", struct, \"\"))\n";
+        //"print(ujson.dumps(walk(\"\", struct, \"\")))\n";
+
+        const sizeCmd =
+            "a = os.statvfs('/')\n" +
+            "print(a[0], a[2], a[3])\n";
+
+
+        //window.setPercent(25, "Fetching filesystem...");
+        const hiddenLines: string[] | undefined = await this.connection?.writeUtilityCmdRaw(getFilesystemCmd + sizeCmd, true, 1);
+
+        if (hiddenLines != undefined) {
+            this.changeToJSON(hiddenLines);
+            const fsData = JSON.stringify(this.DIR_STRUCT);
+            const szData = hiddenLines[1].split(' ');
+            console.log("File Data: " +fsData);
+            console.log("storage data: ", szData);
+
+            //this.onFSData?.(JSON.stringify(this.DIR_STRUCT), hiddenLines[1].split(' '));
+        }
+
+        //window.setPercent(65, "Fetching filesystem...");
+
+        // Get back into normal mode and omit the 3 lines from the normal message,
+        // don't want to repeat (assumes already on a normal prompt)
+        await this.connection?.getToNormal(3);
+        this.BUSY = false;
+        if (this.DEBUG_CONSOLE_ON) console.log("fcg: out of getOnBoardFSTree");
+        //window.setPercent(100);
+        //window.resetPercentDelay();
+    }
+    
+    private DIR_DATA: string[] = [];
+    private DIR_STRUCT = {};
+    private DIR_INDEX:number = 0;
+
+    changeToJSON(data: string[]) {
+        data[0] = data[0].slice(2);
+        this.DIR_DATA = data[0].split(';');
+        this.DIR_STRUCT = {};
+        this.DIR_INDEX = 0;
+        this.DIR_STRUCT = this.dirRoutine("");
+
+    }
+
+    dirRoutine(dir: string): any {
+        var dir_struct: any = {};
+        dir_struct[dir] = {};
+        while (this.DIR_INDEX < (this.DIR_DATA!.length - 1)) {
+
+            const [path, index, type, name] = this.DIR_DATA![this.DIR_INDEX].split(',');
+            if (dir === path) {
+                this.DIR_INDEX++;
+                dir_struct[dir][index] = {}
+
+                if (type == 'F') {
+                    dir_struct[dir][index]["F"] = name;
+                }
+                else {
+                    dir_struct[dir][index]["D"] = name;
+                    dir_struct[dir] = { ...dir_struct[dir], ...this.dirRoutine(name) };
+                }
+
+            }
+            else {
+                break;
+            }
+        }
+        return dir_struct;
+    }
 
     /*** Run Program routines  ***/
 }
