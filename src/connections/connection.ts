@@ -10,8 +10,10 @@ export enum ConnectionState {
     None,
     Busy,
     Connected,
-    Disconnect
+    Disconnected
 }
+
+export type ConnectionCallback = (state: ConnectionState) => void;
 
 /**
  * Connection class - abstract class handle common connection
@@ -21,13 +23,14 @@ abstract class Connection {
     protected isManualConnection: boolean = false;  // turn on for manual connection
     protected connectionStates: ConnectionState = ConnectionState.None; // connection busy state
     protected lastProgramRan: string | undefined;
-    protected callback: (() => void) | undefined;
+    protected callback: ConnectionCallback | undefined;
     protected connLogger = logger.child({module: 'connections'});
 
     protected textEncoder: TextEncoder = new TextEncoder();
     private textDecoder: TextDecoder = new TextDecoder();
     private specialForceOutputFlag: boolean = true;
     private catchOk: boolean = false;
+    private isRunBusy = false;
     private collectedData: string = '';
     private collectedRawData: number[] = [];
     private isCollectedRawData: boolean = false;
@@ -50,7 +53,7 @@ abstract class Connection {
     }
 
     // abstract methods - implement by derived classes
-    abstract connect(callback: () => void): Promise<void>;
+    abstract connect(): Promise<void>;
     abstract disconnect(): Promise<void>;
     abstract isConnected(): boolean;
 
@@ -120,7 +123,7 @@ abstract class Connection {
             if (tempValue.length > 0) {
                 const index = tempValue.lastIndexOf(27);
                 //TODO: how to check if it is in runmode? Should it be handle this here?
-                if (index != -1 /** && this.RUN_BUSY == true **/) {
+                if (index != -1 && this.isRunBusy === true) {
                     //ignore these escapes if not in run mode.
                     if (tempValue[index + 1] == 101) {
                         //start getting Joystick packets on the input stream
