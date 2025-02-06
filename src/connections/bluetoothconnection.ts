@@ -1,5 +1,4 @@
-import Connection, { ConnectionState } from '@connections/connection';
-import { promises } from 'dns';
+import Connection, { ConnectionCallback, ConnectionState } from '@connections/connection';
 /**
  * BluetoothConnection class
  * 
@@ -22,8 +21,9 @@ export class BluetoothConnection extends Connection {
     private bleData: Uint8Array | null = null;
     private bleDataResolveFunc: ((value: Uint8Array) => void) | null = null;
 
-    constructor() {
+    constructor(callback: ConnectionCallback) {
         super();
+        this.callback = callback;
     }
 
     /**
@@ -129,7 +129,14 @@ export class BluetoothConnection extends Connection {
         //TODO:  start the read looad
         this.lastProgramRan = undefined;
         this.readWorker();
-        this.callback?.();
+        this.callback?.(this.connectionStates);
+    }
+
+    /**
+     * onDisconnected
+     */
+    private onDisconnected() {
+        this.connectionStates = ConnectionState.Disconnected;
     }
 
     /**
@@ -143,8 +150,7 @@ export class BluetoothConnection extends Connection {
      * connect - connecting BLE device
      * @returns
      */
-    public async connect(callback: () => void): Promise<void> {
-        this.callback = callback
+    public async connect(): Promise<void> {
         this.connLogger.debug('Conneting BLE device');
         this.bleDisconnectTime = Date.now();
 
@@ -202,8 +208,12 @@ export class BluetoothConnection extends Connection {
                 this.onConnected();
             })
             .catch((error) => {
-                 //TODO:  !! This happens when they hit Cancel !! Do we want to throw an error?
-                throw new Error('BLE connection failed' + error.message);
+                if (error.code === 8) {
+                    this.connLogger.info(error.message);
+                    this.onDisconnected();
+                } else {
+                    throw new Error('BLE connection failed' + error.message);
+                }
             });
 
         //this.MANNUALLY_CONNECTING = false;
@@ -216,7 +226,7 @@ export class BluetoothConnection extends Connection {
         this.bleDisconnectTime = Date.now();
         this.bleWriter = undefined;
         this.bleReader = undefined;
-        this.connectionStates = ConnectionState.Disconnect; // Will stop certain events and break any EOT waiting functions
+        this.connectionStates = ConnectionState.Disconnected; // Will stop certain events and break any EOT waiting functions
         //TODO: handle UI state here???
         // if (!this.STOP) { //If they pushed the STOP button then don't make it look disconnected it will be right back
         //     //this.onDisconnect?.();
@@ -231,7 +241,7 @@ export class BluetoothConnection extends Connection {
 
     private async reconnect() {
         this.connLogger.debug('Entering reconnect');
-        if (this.connectionStates === ConnectionState.Disconnect) {
+        if (this.connectionStates === ConnectionState.Disconnected) {
             try {
                 const server = await this.connectWithTimeout(this.bleDevice!, 10000); //wait for 10seconds to see if it reconnects
                 //const server = await this.BLE_DEVICE.gatt.connect();

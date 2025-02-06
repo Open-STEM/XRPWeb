@@ -1,4 +1,4 @@
-import Connection, { ConnectionState } from '@connections/connection';
+import Connection, { ConnectionCallback, ConnectionState } from '@connections/connection';
 
 /**
  * USB Connection - establish USB serial connection to the XRP Robot
@@ -15,8 +15,10 @@ export class USBConnection extends Connection {
     readonly USB_PRODUCT_ID_BETA: number = 5; // For filtering ports during auto or manual selection
     readonly USB_PRODUCT_ID: number = 70; // For filtering ports during auto or manual selection
 
-    constructor() {
+    constructor(callback: ConnectionCallback) {
         super();
+        this.callback = callback;
+        this.isManualConnection = false;
 
         // setup USB connection listeners
         // Check if browser can use WebSerial
@@ -24,9 +26,9 @@ export class USBConnection extends Connection {
             this.connLogger.debug('This browser supports serial port');
             // Attempt auto-connect when page validated device plugged in, do not start manual selection menu
             navigator.serial.addEventListener('connect', () => {
+                this.connLogger.debug('USB Connection: detected connect event');
                 if (this.isManualConnection == false) {
                     this.tryAutoConnect();
-                    //TODO: if successful pub message that we connected
                 }
             });
 
@@ -35,13 +37,13 @@ export class USBConnection extends Connection {
                 const disconnectedPort = e.target as SerialPort;
 
                 // Only display disconnect message if there is a matching port on auto detect or not already disconnected
-                if (this.checkPortMatching(disconnectedPort) && this.connectionStates !== ConnectionState.Disconnect) {
+                if (this.checkPortMatching(disconnectedPort) && this.connectionStates !== ConnectionState.Disconnected) {
                     this.connLogger.debug('User unplugged XRP USB connection cable');
                     this.writer = undefined;
                     this.reader = undefined;
                     this.port = undefined;
-                    this.connectionStates = ConnectionState.Connected
-                    //TODO Pub message that we disconnected
+                    this.connectionStates = ConnectionState.Disconnected;
+                    this.onDisconnected();
                 }
             });
         } else {
@@ -83,7 +85,7 @@ export class USBConnection extends Connection {
                 // TODO: Handle non-fatal read error.
                 if (err.name == 'NetworkError') {
                     this.connLogger.debug('Device most likely unplugged, handled');
-                    //this.disconnect();
+                    return;
                     //I think doing numbing is fine as it will see the disconnect in the connectionMgr
                 }
             }
@@ -149,7 +151,7 @@ export class USBConnection extends Connection {
 
     private async openPort(): Promise<boolean> {
         if (this.port != undefined) {
-            this.connectionStates =ConnectionState.Disconnect;
+            this.connectionStates =ConnectionState.Disconnected;
             try {
                 await this.port.open({ baudRate: 115200 });
                 return true;
@@ -181,9 +183,20 @@ export class USBConnection extends Connection {
         if (this.port) this.writer = this.port.writable?.getWriter();
         this.readWorker();
         if (this.callback) {
-            this.callback();
+            this.callback(this.connectionStates);
         }
         this.lastProgramRan = undefined;
+    }
+
+    /**
+     * onDisconnected
+     */
+    private onDisconnected() {
+        this.connLogger.debug('USB connection is lost');
+        this.connectionStates = ConnectionState.Disconnected;
+        if (this.callback) {
+            this.callback(this.connectionStates);
+        }
     }
 
     /**
@@ -196,8 +209,7 @@ export class USBConnection extends Connection {
     /**
      * connection - creates an async connection and return result via promise
      */
-    public async connect(callback: () => void): Promise<void> {
-        this.callback = callback;
+    public async connect(): Promise<void> {
         if (this.connectionStates == ConnectionState.Busy) {
             return;
         }
@@ -226,7 +238,11 @@ export class USBConnection extends Connection {
                     //TODO: How report failure
                 }
             }).catch((err) => {
-                throw new Error('can not manually connect using USB cable: ' + err.message);
+                if (err.code === 8) {
+                    this.connLogger.info(err.message);
+                } else {
+                    throw new Error('can not manually connect using USB cable: ' + err.message);
+                }
                 //document.getElementById('IDConnectBTN')!.style.display = "block";
                 //TODO: Report error
             });
