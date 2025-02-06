@@ -40,7 +40,7 @@ export class USBConnection extends Connection {
                     this.writer = undefined;
                     this.reader = undefined;
                     this.port = undefined;
-                    this.connectionStates = ConnectionState.Connected
+                    this.connectionStates = ConnectionState.Disconnect;
                     //TODO Pub message that we disconnected
                 }
             });

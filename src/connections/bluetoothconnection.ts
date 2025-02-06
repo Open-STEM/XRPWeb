@@ -201,7 +201,11 @@ export class BluetoothConnection extends Connection {
                 this.onConnected();
             })
             .catch((error) => {
-                throw new Error('BLE connection failed' + error.message);
+                if (error.code === 8) {
+                    this.connLogger.info(error.message);
+                } else {
+                    throw new Error('BLE connection failed' + error.message);
+                }
             });
 
         //this.MANNUALLY_CONNECTING = false;
