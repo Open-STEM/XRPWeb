@@ -1,6 +1,7 @@
 import ConnectionMgr from '@/managers/connectionmgr';
 import { ConnectionType } from '@/utils/types';
 import Connection, { ConnectionState } from '@connections/connection';
+import { promises } from 'dns';
 /**
  * BluetoothConnection class
  * 
