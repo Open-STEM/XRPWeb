@@ -1,4 +1,7 @@
-import Connection, { ConnectionCallback, ConnectionState } from '@connections/connection';
+import ConnectionMgr from '@/managers/connectionmgr';
+import { ConnectionType } from '@/utils/types';
+import Connection, { ConnectionState } from '@connections/connection';
+import { promises } from 'dns';
 /**
  * BluetoothConnection class
  * 
@@ -21,9 +24,11 @@ export class BluetoothConnection extends Connection {
     private bleData: Uint8Array | null = null;
     private bleDataResolveFunc: ((value: Uint8Array) => void) | null = null;
 
-    constructor(callback: ConnectionCallback) {
+    constructor(connMgr: ConnectionMgr) {
+    constructor(connMgr: ConnectionMgr) {
         super();
-        this.callback = callback;
+        this.connMgr = connMgr;
+        this.connMgr = connMgr;
     }
 
     /**
@@ -124,12 +129,17 @@ export class BluetoothConnection extends Connection {
     /**
      * onConnected
      */
-    private onConnected() {
+    private async onConnected() {
+    private async onConnected() {
         this.connectionStates = ConnectionState.Connected;
         //TODO:  start the read looad
         this.lastProgramRan = undefined;
+        if (this.connLogger) {
+            this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
+        }
         this.readWorker();
-        this.callback?.(this.connectionStates);
+        await this.getToNormal();
+        await this.getToNormal();
     }
 
     /**
@@ -217,7 +227,6 @@ export class BluetoothConnection extends Connection {
             });
 
         //this.MANNUALLY_CONNECTING = false;
-        this.connectionStates = ConnectionState.Connected;
         this.connLogger.debug('Existing BLE connect');
     }
 

@@ -1,4 +1,4 @@
-import AppMgr from "@/managers/appmgr";
+import ConnectionMgr from "@/managers/connectionmgr";
 import logger from "@/utils/logger";
 
 /**
@@ -11,19 +11,16 @@ export enum ConnectionState {
     Busy,
     Connected,
     Disconnected
-}
-
-export type ConnectionCallback = (state: ConnectionState) => void;
+};
 
 /**
  * Connection class - abstract class handle common connection
  */
 abstract class Connection {
-    protected appMgr: AppMgr = AppMgr.getInstance();
+    protected connMgr: ConnectionMgr | null = null;
     protected isManualConnection: boolean = false;  // turn on for manual connection
     protected connectionStates: ConnectionState = ConnectionState.None; // connection busy state
     protected lastProgramRan: string | undefined;
-    protected callback: ConnectionCallback | undefined;
     protected connLogger = logger.child({module: 'connections'});
 
     protected textEncoder: TextEncoder = new TextEncoder();
