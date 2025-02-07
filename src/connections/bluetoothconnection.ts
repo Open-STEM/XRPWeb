@@ -135,7 +135,6 @@ export class BluetoothConnection extends Connection {
         }
         this.readWorker();
         await this.getToNormal();
-        await this.getToNormal();
     }
 
     /**
