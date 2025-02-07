@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import Connection from '@/connections/connection';
 import { FolderItem } from '@/utils/types';
 import AppMgr, { EventType } from '@/managers/appmgr';
@@ -63,10 +64,9 @@ export class CommandToXRPMgr {
         }
         this.BUSY = true;
 
-        var cmd = "import os\n" +
+        const cmd = "import os\n" +
             "os.dupterm(None)\n";
-
-
+      
         await this.connection?.writeUtilityCmdRaw(cmd, true, 1);
 
         await this.connection?.getToNormal(3);
