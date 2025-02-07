@@ -53,9 +53,12 @@ export default class ConnectionMgr {
      */
     public async connectCallback(state: ConnectionState, connType: ConnectionType) {
         this.activeConnection = this.connections[connType];
+    public connectCallback(state: ConnectionState, connType: ConnectionType) {
+        this.activeConnection = this.connections[connType];
         if (state === ConnectionState.Connected) {
             this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Connected.toString());
             await this.cmdToXRPMgr.getOnBoardFSTree();
+            this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Connected.toString());
         } else if (state === ConnectionState.Disconnected) {
             this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Disconnected.toString());
         }
@@ -66,6 +69,7 @@ export default class ConnectionMgr {
      * @returns Connection object or null
      */
     public getConnection(): Connection | null {
+        return this.activeConnection;
         return this.activeConnection;
     }
 }
