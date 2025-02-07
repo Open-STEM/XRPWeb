@@ -1,3 +1,4 @@
+/* eslint-disable prefer-const */
 import Connection from '@/connections/connection';
 
 /**
@@ -60,9 +61,8 @@ export class CommandToXRPMgr {
         }
         this.BUSY = true;
 
-        var cmd = "import os\n" +
+        const cmd = "import os\n" +
             "os.dupterm(None)\n";
-
 
         await this.connection?.writeUtilityCmdRaw(cmd, true, 1);
 
@@ -263,8 +263,10 @@ export class CommandToXRPMgr {
 
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     dirRoutine(dir: string): any {
-        var dir_struct: any = {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let dir_struct: any = {};
         dir_struct[dir] = {};
         while (this.DIR_INDEX < (this.DIR_DATA!.length - 1)) {
 

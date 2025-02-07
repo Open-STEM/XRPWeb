@@ -27,6 +27,12 @@ export default class ConnectionMgr {
 
         // Instantiate the Bluetooth Connection
         this.connections[ConnectionType.BLUETOOTH] = new BluetoothConnection(this);
+        this.connections[ConnectionType.USB] = new USBConnection(this);
+        this.cmdToXRPMgr.setConnection(this.connections[ConnectionType.USB]);
+        this.activeConnection = this.connections[ConnectionType.USB];
+
+        // Instantiate the Bluetooth Connection
+        this.connections[ConnectionType.BLUETOOTH] = new BluetoothConnection(this);
 
         /*** Listen for Subscriptions ***/
         this.appMgr.on(EventType.EVENT_CONNECTION, (subType: string) => {
@@ -54,7 +60,7 @@ export default class ConnectionMgr {
     public async connectCallback(state: ConnectionState, connType: ConnectionType) {
         this.activeConnection = this.connections[connType];
         if (state === ConnectionState.Connected) {
-            await CommandToXRPMgr.getInstance().getOnBoardFSTree();
+            await this.cmdToXRPMgr.getOnBoardFSTree();
             this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Connected.toString());
         } else if (state === ConnectionState.Disconnected) {
             this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Disconnected.toString());
