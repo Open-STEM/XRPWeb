@@ -1,4 +1,7 @@
 import Connection from '@/connections/connection';
+import { FolderItem } from '@/utils/types';
+import AppMgr, { EventType } from '@/managers/appmgr';
+
 
 /**
  * CommandsToXRPMgr - manages routines that send commands to the XRP REPL
@@ -231,10 +234,11 @@ export class CommandToXRPMgr {
 
         if (hiddenLines != undefined) {
             this.changeToJSON(hiddenLines);
-            const fsData = JSON.stringify(this.DIR_STRUCT);
+            const fsData = JSON.stringify(this.treeData);
             const szData = hiddenLines[1].split(' ');
-            console.log("File Data: " +fsData);
+            //console.log("File Data: " +fsData);
             console.log("storage data: ", szData);
+            AppMgr.getInstance().emit(EventType.EVENT_FILESYS, fsData);
 
             //this.onFSData?.(JSON.stringify(this.DIR_STRUCT), hiddenLines[1].split(' '));
         }
@@ -249,36 +253,67 @@ export class CommandToXRPMgr {
         //window.setPercent(100);
         //window.resetPercentDelay();
     }
-    
+
     private DIR_DATA: string[] = [];
-    private DIR_STRUCT = {};
+    //private DIR_STRUCT = {};
     private DIR_INDEX:number = 0;
 
+    // Initial tree structure
+    treeData: FolderItem[] = [];
+
     changeToJSON(data: string[]) {
+        this.treeData = [
+            {
+                id: "root",
+                name: "/",
+                isReadOnly: false,
+                path: "/",
+                children: []
+            }
+        ];
         data[0] = data[0].slice(2);
         this.DIR_DATA = data[0].split(';');
-        this.DIR_STRUCT = {};
         this.DIR_INDEX = 0;
-        this.DIR_STRUCT = this.dirRoutine("");
-
+        this.dirRoutine("", "", this.treeData[0].children);
     }
 
-    dirRoutine(dir: string): any {
-        var dir_struct: any = {};
-        dir_struct[dir] = {};
+    dirRoutine(dir: string, curPath: string, tree:FolderItem[] | null) {
+        var dir_struct: FolderItem;
         while (this.DIR_INDEX < (this.DIR_DATA!.length - 1)) {
 
             const [path, index, type, name] = this.DIR_DATA![this.DIR_INDEX].split(',');
             if (dir === path) {
                 this.DIR_INDEX++;
-                dir_struct[dir][index] = {}
+                
+                var newPath = curPath;
+                if (curPath === "/"){
+                    newPath += path;
+                }
+                else{
+                    newPath +=  "/" + path;
+                }
 
                 if (type == 'F') {
-                    dir_struct[dir][index]["F"] = name;
+                    dir_struct={
+                        id: path+index,
+                        name: name,
+                        isReadOnly: false,
+                        path: newPath,
+                        children: null
+                    }
+                    tree?.push(dir_struct);                    
                 }
                 else {
-                    dir_struct[dir][index]["D"] = name;
-                    dir_struct[dir] = { ...dir_struct[dir], ...this.dirRoutine(name) };
+                    dir_struct={
+                        id: path+index,
+                        name: name,
+                        isReadOnly: false,
+                        path: newPath,
+                        children: []
+                    }
+                    tree?.push(dir_struct);
+                    this.dirRoutine(name, newPath, dir_struct.children);
+                   // dir_struct[dir] = { ...dir_struct[dir], ...this.dirRoutine(name) };
                 }
 
             }
@@ -286,7 +321,7 @@ export class CommandToXRPMgr {
                 break;
             }
         }
-        return dir_struct;
+        return; //dir_struct;
     }
 
     /*** Run Program routines  ***/
