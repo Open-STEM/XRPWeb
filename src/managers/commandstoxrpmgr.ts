@@ -63,7 +63,7 @@ export class CommandToXRPMgr {
 
         const cmd = "import os\n" +
             "os.dupterm(None)\n";
-
+      
         await this.connection?.writeUtilityCmdRaw(cmd, true, 1);
 
         await this.connection?.getToNormal(3);
@@ -267,6 +267,7 @@ export class CommandToXRPMgr {
     dirRoutine(dir: string): any {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let dir_struct: any = {};
+
         dir_struct[dir] = {};
         while (this.DIR_INDEX < (this.DIR_DATA!.length - 1)) {
 

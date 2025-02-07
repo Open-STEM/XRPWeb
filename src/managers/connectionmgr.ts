@@ -57,6 +57,7 @@ export default class ConnectionMgr {
             this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Connected.toString());
             await this.cmdToXRPMgr.getOnBoardFSTree();
             this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Connected.toString());
+
         } else if (state === ConnectionState.Disconnected) {
             this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Disconnected.toString());
         }
