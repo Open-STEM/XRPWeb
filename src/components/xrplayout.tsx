@@ -7,7 +7,7 @@ import MonacoEditor from '@components/MonacoEditor';
 import XRPShell from '@components/xrpshell';
 import FolderIcon from '@assets/images/folder-24.png';
 import i18n from '@/utils/i18n';
-import treeDaaJson from '@/utils/testdata';
+//import treeDaaJson from '@/utils/testdata';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
 
 /**
@@ -27,6 +27,7 @@ const layout_json: IJsonModel = {
             enableDrop: false,
             enableAutoHide: true,
             size: 250,
+            selected: 0,
             children: [
                 {
                     type: 'tab',
@@ -97,7 +98,7 @@ const factory = (node: TabNode) => {
     } else if (component == 'xterm') {
         return <XRPShell />;
     } else if (component == 'folders') {
-        return <Folder treeData={treeDaaJson} theme="rct-dark" />;
+        return <Folder theme="rct-dark" />;
     } else if (component == 'blockly') {
         return <BlocklyEditor />;
     } else if (component == 'editor-chooser') {
