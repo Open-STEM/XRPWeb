@@ -26,7 +26,6 @@ export class BluetoothConnection extends Connection {
     constructor(connMgr: ConnectionMgr) {
         super();
         this.connMgr = connMgr;
-        this.connMgr = connMgr;
     }
 
     /**
@@ -131,11 +130,8 @@ export class BluetoothConnection extends Connection {
         this.connectionStates = ConnectionState.Connected;
         //TODO:  start the read looad
         this.lastProgramRan = undefined;
-        if (this.connLogger) {
-            this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
-        }
-        if (this.connLogger) {
-            this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
+        if (this.connMgr) {
+            this.connMgr.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
         }
         this.readWorker();
         await this.getToNormal();
