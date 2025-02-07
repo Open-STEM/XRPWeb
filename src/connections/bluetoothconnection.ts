@@ -1,7 +1,7 @@
 import ConnectionMgr from '@/managers/connectionmgr';
 import { ConnectionType } from '@/utils/types';
 import Connection, { ConnectionState } from '@connections/connection';
-import { promises } from 'dns';
+
 /**
  * BluetoothConnection class
  * 
@@ -24,7 +24,6 @@ export class BluetoothConnection extends Connection {
     private bleData: Uint8Array | null = null;
     private bleDataResolveFunc: ((value: Uint8Array) => void) | null = null;
 
-    constructor(connMgr: ConnectionMgr) {
     constructor(connMgr: ConnectionMgr) {
         super();
         this.connMgr = connMgr;
@@ -130,7 +129,6 @@ export class BluetoothConnection extends Connection {
      * onConnected
      */
     private async onConnected() {
-    private async onConnected() {
         this.connectionStates = ConnectionState.Connected;
         //TODO:  start the read looad
         this.lastProgramRan = undefined;
@@ -138,7 +136,6 @@ export class BluetoothConnection extends Connection {
             this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
         }
         this.readWorker();
-        await this.getToNormal();
         await this.getToNormal();
     }
 
