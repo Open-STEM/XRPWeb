@@ -93,6 +93,11 @@ export default class AppMgr {
         this.emitter.on(eventName, handler);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    public turnOff(eventName: EventType, handler: (...args: any[]) => void): void {
+        this.emitter.on(eventName, handler);
+    }
+
     /**
      * Emit events
      * @param eventName

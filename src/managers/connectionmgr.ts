@@ -15,6 +15,8 @@ export default class ConnectionMgr {
     private connections: Connection[] = [];
     private activeConnection: Connection | null = null;
 
+    private xrpID: string | undefined = undefined;
+
     constructor(appMgr: AppMgr) {
         this.appMgr = appMgr;
 
@@ -55,18 +57,55 @@ export default class ConnectionMgr {
         this.activeConnection = this.connections[connType];
         if (state === ConnectionState.Connected) {
             this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Connected.toString());
-            await this.cmdToXRPMgr.getOnBoardFSTree();
+            if(await this.activeConnection.getToREPL()){
+                await this.cmdToXRPMgr.getOnBoardFSTree();
+                await this.activeConnection.getToNormal();
+                if(connType == ConnectionType.USB){ //if we connected via USB then we can release the BLE terminal
+                    await this.cmdToXRPMgr.resetTerminal();
+                }
+                await this.cmdToXRPMgr.clearIsRunning();
+                this.xrpID = await this.cmdToXRPMgr.checkIfNeedUpdate();
+                this.IDSet(connType);
+            }
         } else if (state === ConnectionState.Disconnected) {
             this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Disconnected.toString());
         }
     }
+
+    
+    IDSet = (connType: ConnectionType) => {
+        //ID this would be a good spot to send window.xrpID to the database
+        if(this.xrpID != undefined){
+           const isBLE = connType == ConnectionType.BLUETOOTH;
+           const data = {
+               XRPID: this.xrpID,
+               platform: 'XRPCode2',
+               BLE: isBLE
+           };
+           try{
+                fetch('https://xrpid-464879733234.us-central1.run.app/data', {
+                   method: 'POST',
+                   headers: {
+                       'Content-Type': 'application/json'
+                   },
+                   body: JSON.stringify(data)
+               });
+           }
+           catch{
+               
+           }
+
+           //TODO: display the xrpID somewhere
+           //document.getElementById('IDXRPName').innerHTML = "XRP-" + window.xrpID.slice(-5);
+        }
+
+   }
     
     /**
      * getConnection
      * @returns Connection object or null
      */
     public getConnection(): Connection | null {
-        return this.activeConnection;
         return this.activeConnection;
     }
 }

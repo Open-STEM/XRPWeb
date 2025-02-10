@@ -1,4 +1,4 @@
-// import AppMgr, { EventType } from '@/managers/appmgr';
+//import AppMgr from '@/managers/appmgr';
 import { FolderItem } from '@/utils/types';
 // import { useEffect, useState } from 'react';
 import { Tree, NodeApi, NodeRendererProps } from 'react-arborist';
@@ -16,7 +16,7 @@ import deleteIcon from '@assets/images/delete_24dp.svg';
 import exportIcon from '@assets/images/file_export_24dp.svg';
 
 type TreeProps = {
-    treeData: string;
+    //treeData: string;
     theme: string;
 };
 
@@ -30,6 +30,7 @@ function Folder(treeProps: TreeProps) {
     const appMgrRef = useRef<AppMgr>();
     const { ref, width, height } = useResizeObserver();
 
+/*
     useEffect(() => {
         // If treeData is passed as a prop, build the tree
         if (treeProps.treeData) {
@@ -45,6 +46,17 @@ function Folder(treeProps: TreeProps) {
             });
         }
     }, [treeProps.treeData]);
+*/
+    useEffect(() => {
+        //console.log(treeProps);
+        appMgrRef.current = AppMgr.getInstance();
+        appMgrRef.current.on(EventType.EVENT_FILESYS, (filesysJson: string) => {
+            setTreeData(JSON.parse(filesysJson));
+        });
+        return () => {
+            appMgrRef.current?.turnOff(EventType.EVENT_FILESYS, setTreeData)
+        };
+    }, []);
 
     function Input({ node }: { node: NodeApi<FolderItem> }) {
         return (

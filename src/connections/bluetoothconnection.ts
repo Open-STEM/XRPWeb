@@ -24,6 +24,9 @@ export class BluetoothConnection extends Connection {
     private bleData: Uint8Array | null = null;
     private bleDataResolveFunc: ((value: Uint8Array) => void) | null = null;
 
+    private readonly BLE_STOP_MSG  = "##XRPSTOP##"
+
+
     constructor(connMgr: ConnectionMgr) {
         super();
         this.connMgr = connMgr;
@@ -136,7 +139,7 @@ export class BluetoothConnection extends Connection {
             this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
         }
         this.readWorker();
-        await this.getToNormal();
+        //await this.getToNormal();
     }
 
     /**
@@ -144,6 +147,9 @@ export class BluetoothConnection extends Connection {
      */
     private onDisconnected() {
         this.connectionStates = ConnectionState.Disconnected;
+        if (this.connLogger) {
+            this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
+        }
     }
 
     /**
@@ -184,22 +190,26 @@ export class BluetoothConnection extends Connection {
                 ],
                 optionalServices: [this.UART_SERVICE_UUID],
             })
-            .then((device) => {
-                //this.connLogger.debug('Connecting to device...');
+            .then(async (device) => {
+                this.connLogger.info('Connecting to device...');
                 this.bleDevice = device;
+                if (device.gatt?.connected) {
+                    console.log("Reconnecting...");
+                    await device.gatt!.disconnect();
+                }
                 return device.gatt!.connect();
             })
             .then((servers) => {
-                //this.connLogger.debug('Getting UART Service...');
+                this.connLogger.info('Getting UART Service...');
                 return servers.getPrimaryService(this.UART_SERVICE_UUID);
             })
             .then((btService) => {
                 this.btService = btService;
-                //this.connLogger.debug('Getting TX Characteristic...');
+                this.connLogger.info('Getting TX Characteristic...');
                 return btService.getCharacteristic(this.TX_CHARACTERISTIC_UUID);
             })
             .then((characteristic) => {
-                //this.connLogger.debug('Connected to TX Characteristic');
+                this.connLogger.info('Connected to TX Characteristic');
                 this.bleWriter = characteristic;
                 //this.connLogger.debug('Getting RX Characteristic...');
                 return this.btService!.getCharacteristic(this.RX_CHARACTERISTIC_UUID);
@@ -228,7 +238,7 @@ export class BluetoothConnection extends Connection {
     }
 
     public async disconnect(): Promise<void> {
-        this.connLogger.debug('Entering BLE disconnect');
+        this.connLogger.info('Entering BLE disconnect');
         this.bleDisconnectTime = Date.now();
         this.bleWriter = undefined;
         this.bleReader = undefined;
@@ -246,7 +256,7 @@ export class BluetoothConnection extends Connection {
     }
 
     private async reconnect() {
-        this.connLogger.debug('Entering reconnect');
+        this.connLogger.info('Entering reconnect');
         if (this.connectionStates === ConnectionState.Disconnected) {
             try {
                 const server = await this.connectWithTimeout(this.bleDevice!, 10000); //wait for 10seconds to see if it reconnects
@@ -266,12 +276,11 @@ export class BluetoothConnection extends Connection {
             } catch (error) {
                 this.connLogger.debug('timed out: ', error);
                 this.bleDevice = undefined;
-                throw new Error('Failed BLE reconnect' + error);
-                //this.onDisconnect?.();
-                //document.getElementById('IDConnectBTN')!.disabled = false;
+                this.onDisconnected();
+                //throw new Error('Failed BLE reconnect' + error); TODO: I don't think we want to throw an error here
             }
         }
-        this.connLogger.debug('Existing reconnect');
+        this.connLogger.info('Existing reconnect');
     }
 
     private str2ab(str: string): ArrayBuffer {
@@ -314,5 +323,14 @@ export class BluetoothConnection extends Connection {
                 console.error('ble write failed:', error);
             }
         });
+    }
+
+    public async getToREPL():Promise<boolean>{
+        this.connLogger.info("BLE getToREPL")
+        if(await this.checkPrompt()){
+            return true;
+        }
+        await this.writeToDevice(this.BLE_STOP_MSG);
+        return true;
     }
 }

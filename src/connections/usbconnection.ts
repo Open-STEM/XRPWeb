@@ -193,7 +193,7 @@ export class USBConnection extends Connection {
             this.connMgr.connectCallback(this.connectionStates, ConnectionType.USB);
         }
         this.readWorker();
-        await this.getToNormal();
+        //await this.getToNormal();
         this.lastProgramRan = undefined;
     }
 
@@ -202,10 +202,34 @@ export class USBConnection extends Connection {
      */
     private onDisconnected() {
         this.connLogger.debug('USB connection is lost');
-        this.connectionStates = ConnectionState.Disconnected;
-        if (this.connMgr) {
-            this.connMgr.connectCallback(this.connectionStates, ConnectionType.USB);
+        if(this.port != undefined){
+            //this.disconnect = true;
+            if(this.reader != undefined){
+                this.reader.cancel();
+                this.reader.releaseLock();
+            }
+            if(this.writer != undefined){
+                this.writer.releaseLock();
+            }
+            this.port.close();
+
+            this.reader = undefined;
+            this.reader = undefined;
+            this.port = undefined;
         }
+        this.connectionStates = ConnectionState.Disconnected;
+    }
+
+    
+    /**
+     * getToREPL - Make sure the XRP is at the REPL prompt and not running a program.
+     * @returns boolean
+     */
+    public async getToREPL():Promise<boolean>{
+        if(await this.checkPrompt()){
+            return true;
+        }
+        return await this.stopTheRobot();
     }
 
     /**
@@ -263,6 +287,7 @@ export class USBConnection extends Connection {
         this.connLogger.debug('Existing connect');
     }
 
+
     /**
      * disconnection - disconnect the USB connection
      */
@@ -282,8 +307,10 @@ export class USBConnection extends Connection {
         this.connLogger.debug('Writing to device' + str);
         if (this.writer != undefined) {
             if (typeof str == 'string') {
+                await this.writer.ready;
                 await this.writer.write(this.textEncoder.encode(str));
             } else {
+                await this.writer.ready;
                 await this.writer.write(str);
             }
         }
