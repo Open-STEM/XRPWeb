@@ -25,13 +25,15 @@ abstract class Connection {
 
     protected textEncoder: TextEncoder = new TextEncoder();
     private textDecoder: TextDecoder = new TextDecoder();
-    private specialForceOutputFlag: boolean = true;
+    private specialForceOutputFlag: boolean = false;
     private catchOk: boolean = false;
     private isRunBusy = false;
+    private runError: string | undefined = undefined;
     private collectedData: string = '';
     private collectedRawData: number[] = [];
     private isCollectedRawData: boolean = false;
     private buffer: Uint8Array = new Uint8Array(0);
+    private STOP: boolean = false;
 
     // Set to something not "" to halt until this.READ_UNTIL_STRING found and collect lines in this.COLLECTED_DATA
     private readUntilStr = '';
@@ -42,9 +44,9 @@ abstract class Connection {
     private readonly CTRL_CMD_RAWMODE: string = '\x01'; // ctrl-A (used for waiting to get file information, upload files, run custom python tool, etc)
     private readonly CTRL_CMD_NORMALMODE: string = '\x02'; // ctrl-B (user friendly terminal)
     private readonly CTRL_CMD_KINTERRUPT: string = '\x03'; // ctrl-C (stops a running program)
-    private readonly CTRL_CMD_SOFTRESET: string = '\x04'; // ctrl-D (soft reset the board, required after a command is entered in raw!)
+    readonly CTRL_CMD_SOFTRESET: string = '\x04'; // ctrl-D (soft reset the board, required after a command is entered in raw!)
 
-    private readonly XRP_SEND_BLOCK_SIZE: number = 250; // wired can handle 255 bytes, but BLE 5.0 is only 250
+    readonly XRP_SEND_BLOCK_SIZE: number = 250; // wired can handle 255 bytes, but BLE 5.0 is only 250
 
     constructor() {
     }
@@ -108,6 +110,7 @@ abstract class Connection {
         if (values) {
             // Reading from serial is done in chunks of a inconsistent/non-guaranteed size,
             this.connLogger.debug(this.textDecoder.decode(values));
+            //console.log(this.textDecoder.decode(values));
 
             //We need to handle the case where esc sequences are broken up into multiple reads.
             // look for esc sequences that mean something to us:
@@ -173,21 +176,12 @@ abstract class Connection {
 
     /**
      * onData - data received from XRP
+     *   This gets overridden in xrpShell
      * @param data 
      */
     public onData(data: string) {
-        this.connLogger.debug('Received data from XRP: ' + data);
-    }
-
-    //TODO: not sure what this functions does???
-    startCollectRawData() {
-        this.isCollectedRawData = true;
-        this.collectedRawData = [];
-    }
-
-    //TODO: not sure what this functions does???
-    endCollectRawData() {
-        this.isCollectedRawData = false;
+        //this.connLogger.debug('Received data from XRP: ' + data);
+        console.log(data);
     }
 
     startReaduntil(str: string) {
@@ -227,9 +221,9 @@ abstract class Connection {
 
                     for (let j = i + omitOffset; j < tempLines.length; j++) {
                         if (j != tempLines.length - 1) {
-                            this.onData?.(tempLines[j] + '\r\n');
+                            this.onData(tempLines[j] + '\r\n');
                         } else {
-                            this.onData?.(tempLines[j]);
+                            this.onData(tempLines[j]);
                         }
                     }
 
@@ -251,7 +245,7 @@ abstract class Connection {
         //await this.haltUntilRead(3);
     }
 
-    private async getToRaw() {
+    async getToRaw() {
         this.startReaduntil('raw REPL; CTRL-B to exit');
         // Refer to pyboard.py for "\r" https://github.com/micropython/micropython/blob/master/tools/pyboard.py#L326-L334
         await this.writeToDevice('\r' + this.CTRL_CMD_KINTERRUPT + this.CTRL_CMD_KINTERRUPT); // ctrl-C twice: interrupt any running program
@@ -297,13 +291,14 @@ abstract class Connection {
 
     /**
      * writeToDevice - write data to device
+     *    This is extended and handled in usbconnection and bluetoothconnection.
      * @param str 
      */
     public async writeToDevice(str: string | Uint8Array) {
         this.connLogger.debug('Writing to device' + str);
     }
 
-    // Goes into raw mode and writes a command according to the THUMBY_SEND_BLOCK_SIZE then executes
+    // Goes into raw mode and writes a command according to the XRP_SEND_BLOCK_SIZE then executes
     public async writeUtilityCmdRaw(
         cmdStr: string,
         waitForCmdEnd: boolean = false,
@@ -320,7 +315,7 @@ abstract class Connection {
                 b * this.XRP_SEND_BLOCK_SIZE,
                 (b + 1) * this.XRP_SEND_BLOCK_SIZE,
             );
-            console.log(writeDataCMD);
+            // console.log(writeDataCMD);
             await this.writeToDevice(writeDataCMD);
         }
 
@@ -335,6 +330,85 @@ abstract class Connection {
         return;
     }
 
+    async goCommand(lines: string) {
+        
+        // Get into raw mode
+        await this.getToRaw();
+
+        // Not really needed for hiding output to terminal since raw does not echo
+        // but is needed to only grab the FS lines/data
+
+        this.isRunBusy = true;
+        this.startReaduntil(">");
+
+        // Send the cmd string
+        var numberOfChunks = Math.ceil(lines.length / this.XRP_SEND_BLOCK_SIZE) + 1;
+        for (var b = 0; b < numberOfChunks; b++) {
+            var writeDataCMD = lines.slice(b * this.XRP_SEND_BLOCK_SIZE, (b + 1) * this.XRP_SEND_BLOCK_SIZE);
+            await this.writeToDevice(writeDataCMD);
+        }
+
+        await this.writeToDevice("\x04");
+        this.specialForceOutputFlag = true;  //you see the OK, but also get any fast output
+        this.catchOk = true;
+        //await this.waitUntilOK();
+        var result = await this.haltUntilRead(1);
+
+        /*
+                This is where errors can be checked for that were returned incase we want to give a better explanation
+                The error information is put into a global variable for end processing if needed.
+
+                If we get an exception here it means that the unplugged or reset the XRP while the program was running.
+        */
+        this.runError = undefined;
+        try {
+            for (let i = 0; i < result.length; i++) {
+                if (result[i].includes("[Errno", 0)) {
+                    this.runError = result[i];
+                    console.log("run time error: " + this.runError);
+                }
+            }
+        }
+        catch {
+            this.specialForceOutputFlag = false;
+            this.isRunBusy = false;
+            return;
+        }
+
+        // Get back into normal mode and omit the 3 lines from the normal message,
+        // don't want to repeat (assumes already on a normal prompt)
+        this.specialForceOutputFlag = false;
+        await this.getToRaw();
+        this.specialForceOutputFlag = true;
+
+        //TODO: this.doPrintSeparator?.();
+
+        this.startReaduntil("MicroPython");
+        await this.writeToDevice("\r" + this.CTRL_CMD_NORMALMODE);
+        await this.haltUntilRead(3);
+
+        // if they pushed the stop button while lines was executing
+        if (this.STOP) {
+            this.specialForceOutputFlag = false;
+            this.STOP = false
+            //We were hammering on ctrl-c up to get the program to stop (because timer routines don't stop).
+            //Meaning finally did not run. We will run the resetbot routine
+            var cmd = "import sys\n" +
+                "if 'XRPLib.resetbot' in sys.modules:\n" +
+                "   del sys.modules['XRPLib.resetbot']\n" +
+                "from XRPLib.resetbot import reset_hard\n" +
+                "reset_hard()\n"
+            await this.writeUtilityCmdRaw(cmd, true, 1);
+        }
+
+        //TODO: this.stopJoyPackets?.(); //just incase they were running.
+
+        this.isRunBusy = false;
+        // Make sure to update the filesystem after modifying it
+        this.specialForceOutputFlag = false;
+    }
+    
+
     /**
      * isBusy
      * @returns 
@@ -342,6 +416,74 @@ abstract class Connection {
     public isBusy(): boolean {
         return this.connectionStates === ConnectionState.Busy;
     }
+
+    public async getToREPL():Promise<boolean> {
+        this.connLogger.debug('Getting to REPL');
+        return false;
+    }
+
+    async checkPrompt(): Promise<boolean> {
+        this.startReaduntil(">>>");
+        await this.writeToDevice("\r"); //do a linefeed and see if the REPL responds
+        var result = await this.haltUntilRead(1, 10); //this should be fast
+        if(result.length == 0){
+            return false;
+        }
+        else{
+            return true;
+        }
+
+    }
+
+     /**
+     * stopTheRobot - Get the robot to the REPL and not running a program.
+     * @returns boolean
+     */
+    async stopTheRobot(): Promise<boolean> {
+        //This is a complicated task since the different conditions. The Micropython could be in one of 2 states
+        //  1 - Sitting at the REPL prompt ready to go
+        //  2 - Running a program
+        //
+        //    If running a program then we need to send a ctrl-c to stop the program.
+        //    This brings up 3 conditions:
+        //       1 - The ctrl-c stopped the program and we are back at the prompt
+        //       2 - We were in RAW mode, so try going to NORMAL mode(get REPL output again), if we get a prompt then done
+        //       3 - It took the ctrl-c but since the program was in a different thread (timers are the most likely) it didn't stop the program
+        //          For this one we need to try a few more times in hopes the program will be in a state we can interrupt. If not ask the user to
+        //             reset and try again.
+        //
+        //  3 - We are connecting via Bluetooth. In that case we will use the Bluetooth STOP if not at the REPL
+
+
+        // We already checked if it was at the prompt 
+
+        this.startReaduntil("KeyboardInterrupt:");
+        await this.writeToDevice("\r" + this.CTRL_CMD_KINTERRUPT);  // ctrl-C to interrupt any running program
+        var result = await this.haltUntilRead(1, 20);
+        if (result == undefined) {
+            this.startReaduntil(">>>");
+            await this.writeToDevice("\r" + this.CTRL_CMD_NORMALMODE);  // ctrl-C to interrupt any running program
+            result = await this.haltUntilRead(1, 20);
+            if (result != undefined) {
+                return true;
+            }
+        }
+        //try multiple times to get to the prompt
+        var gotToPrompt = false;
+        for (let i = 0; i < 20; i++) {
+            this.startReaduntil(">>>");
+            await this.writeToDevice("\r" + this.CTRL_CMD_KINTERRUPT);
+            result = await this.haltUntilRead(2, 5); //this should be fast
+            if (result != undefined) {
+                gotToPrompt = true;
+                break;
+            }
+        }
+        return gotToPrompt;
+    }
+
 }
+
+
 
 export default Connection;
