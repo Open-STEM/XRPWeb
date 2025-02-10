@@ -19,8 +19,8 @@ import { IoStop } from 'react-icons/io5';
 import { useEffect, useRef, useState } from 'react';
 import i18n from '@/utils/i18n';
 import Dialog from '@components/dialogs/dialog';
-import ConnectionDlg from './dialogs/connectiondlg';
-import FileSaveAsDialg from './dialogs/filesaveasdlg';
+import ConnectionDlg from '@/components/dialogs/connectiondlg';
+import FileSaveAsDialg from '@/components/dialogs/filesaveasdlg';
 import {
     ConnectionType,
     ConnectionCMD,
@@ -35,21 +35,21 @@ import { MenuDataItem } from '@/widgets/menutypes';
 import MenuItem from '@/widgets/menu';
 import AppMgr, { EventType } from '@/managers/appmgr';
 import { ConnectionState } from '@/connections/connection';
-import SettingsDlg from './dialogs/settings';
-import NewFileDlg from './dialogs/newfiledlg';
+import SettingsDlg from '@/components/dialogs/settings';
+import NewFileDlg from '@/components/dialogs/newfiledlg';
 import { IJsonTabNode } from 'flexlayout-react';
 import { Constants } from '@/utils/constants';
 import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
-import UploadFileDlg from './dialogs/uploadfiledlg';
+import UploadFileDlg from '@/components/dialogs/uploadfiledlg';
 import EditorMgr, { EditorSession } from '@/managers/editormgr';
 import { useLocalStorage } from 'usehooks-ts';
 import { StorageKeys } from '@/utils/localstorage';
 import FileSaver from 'file-saver';
-import PowerSwitchAlert from './dialogs/power-switchdlg';
-import ViewPythonDlg from './dialogs/view-pythondlg';
-import AlertDialog from './dialogs/alertdlg';
-import BatteryBadDlg from './dialogs/battery-baddlg';
-import SaveToXRPDlg from './dialogs/save-to-xrpdlg';
+import PowerSwitchAlert from '@/components/dialogs/power-switchdlg';
+import ViewPythonDlg from '@/components/dialogs/view-pythondlg';
+import AlertDialog from '@/components/dialogs/alertdlg';
+import BatteryBadDlg from '@/components/dialogs/battery-baddlg';
+import SaveProgressDlg from '@/components/dialogs/save-progressdlg';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -252,7 +252,9 @@ function NavBar({ layoutref }: NavBarProps) {
                     FileSaver.saveAs(blob, session.id);
                 });
         } else {
-            setDialogContent(<AlertDialog alertMessage={i18n.t('no-activetab')} toggleDialog={toggleDialog}/>);
+            setDialogContent(
+                <AlertDialog alertMessage={i18n.t('no-activetab')} toggleDialog={toggleDialog} />,
+            );
             toggleDialog();
         }
     }
@@ -264,9 +266,16 @@ function NavBar({ layoutref }: NavBarProps) {
         console.log(i18n.t('saveFile'));
         if (EditorMgr.getInstance().hasEditorSession(activeTab)) {
             AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
-            setDialogContent(<SaveToXRPDlg />);
+            setDialogContent(<SaveProgressDlg />);
+            AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, () => {
+                toggleDialog();
+                AppMgr.getInstance().eventOff(EventType.EVENT_UPLOAD_DONE);
+                setDialogContent(<div />);
+            });
         } else {
-            setDialogContent(<AlertDialog alertMessage={i18n.t('no-activetab')} toggleDialog={toggleDialog}/>);
+            setDialogContent(
+                <AlertDialog alertMessage={i18n.t('no-activetab')} toggleDialog={toggleDialog} />,
+            );
         }
         toggleDialog();
     }
@@ -276,11 +285,21 @@ function NavBar({ layoutref }: NavBarProps) {
      * @param fileData
      */
     function handleSaveFileAs(fileData: NewFileData) {
+        // close the save as dialog first
         const editorMgr = EditorMgr.getInstance();
         const session = editorMgr.getEditorSession(activeTab);
         if (session) {
             session.path = fileData.path + '/' + fileData.name;
             AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
+            // start the progress dialog
+            setDialogContent(<SaveProgressDlg />);
+            toggleDialog();
+            // subscribe to the UploadFile complete event
+            AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, () => {
+                toggleDialog();
+                AppMgr.getInstance().eventOff(EventType.EVENT_UPLOAD_DONE);
+                setDialogContent(<div />);
+            });
             editorMgr.RenameEditor(activeTab, fileData.name);
         }
         toggleDialog();
@@ -376,59 +395,65 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     async function onRunBtnClicked() {
         console.log('onRunBtnClicked');
-        let continueExecution = true;
-        if (!isConnected) {
-            setDialogContent(
-                <AlertDialog
-                    alertMessage={i18n.t('XRP-not-connected')}
-                    toggleDialog={toggleDialog}
-                />,
-            );
-            toggleDialog();
-            return;
-        }
 
-        // Check battery voltage && version
-        await CommandToXRPMgr.getInstance()
-            .batteryVoltage()
-            .then((voltage) => {
-                const connectionType = AppMgr.getInstance().getConnectionType();
-                if (connectionType === ConnectionType.BLUETOOTH) {
-                    if (voltage < 0.4) {
-                        // display a confirmation message to ask the user to turn on the power switch
-                        setDialogContent(<PowerSwitchAlert cancelCallback={toggleDialog} />);
-                        toggleDialog();
-                        continueExecution = false;
-                    }
-                } else if (connectionType === ConnectionType.USB) {
-                    if (voltage < 0.4) {
-                        // display a confirmation message to ask the user to turn on the power switch
-                        setDialogContent(<PowerSwitchAlert cancelCallback={toggleDialog} />);
-                        toggleDialog();
-                    } else if (voltage < 5.0) {
-                        setDialogContent(<BatteryBadDlg cancelCallback={toggleDialog} />);
-                        toggleDialog();
-                        continueExecution = false;
-                    }
-                }
-            });
-
-        if (continueExecution) {
-            // Update the main.js
-            const session: EditorSession | undefined =
-                EditorMgr.getInstance().getEditorSession(activeTab);
-            if (session) {
-                // Save the current editor before running
-                //TODO - signal activeTab editor to save the file
-                await CommandToXRPMgr.getInstance()
-                    .updateMainFile(session.path)
-                    .then(async (lines) => {
-                        await CommandToXRPMgr.getInstance().executeLines(lines);
-                    });
+        if (!isRunning) {
+            let continueExecution = true;
+            if (!isConnected) {
+                setDialogContent(
+                    <AlertDialog
+                        alertMessage={i18n.t('XRP-not-connected')}
+                        toggleDialog={toggleDialog}
+                    />,
+                );
+                toggleDialog();
+                return;
             }
+
+            setRunning(true);
+
+            // Check battery voltage && version
+            await CommandToXRPMgr.getInstance()
+                .batteryVoltage()
+                .then((voltage) => {
+                    const connectionType = AppMgr.getInstance().getConnectionType();
+                    if (connectionType === ConnectionType.BLUETOOTH) {
+                        if (voltage < 0.4) {
+                            // display a confirmation message to ask the user to turn on the power switch
+                            setDialogContent(<PowerSwitchAlert cancelCallback={toggleDialog} />);
+                            toggleDialog();
+                            continueExecution = false;
+                        }
+                    } else if (connectionType === ConnectionType.USB) {
+                        if (voltage < 0.4) {
+                            // display a confirmation message to ask the user to turn on the power switch
+                            setDialogContent(<PowerSwitchAlert cancelCallback={toggleDialog} />);
+                            toggleDialog();
+                        } else if (voltage < 5.0) {
+                            setDialogContent(<BatteryBadDlg cancelCallback={toggleDialog} />);
+                            toggleDialog();
+                        }
+                        continueExecution = true;
+                    }
+                });
+
+            if (continueExecution) {
+                // Update the main.js
+                const session: EditorSession | undefined =
+                    EditorMgr.getInstance().getEditorSession(activeTab);
+                if (session) {
+                    // Save the current editor before running
+                    //TODO - signal activeTab editor to save the file
+                    await CommandToXRPMgr.getInstance()
+                        .updateMainFile(session.path)
+                        .then(async (lines) => {
+                            await CommandToXRPMgr.getInstance().executeLines(lines);
+                        });
+                }
+                setRunning(true);
+            }
+        } else {
             setRunning(false);
-            // Disable menu temporilary
-            setConnected(false);
+            CommandToXRPMgr.getInstance().stopProgram();
         }
     }
 
@@ -577,7 +602,10 @@ function NavBar({ layoutref }: NavBarProps) {
                                             className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500 ${child.isFile && !isConnected ? 'pointer-events-none' : 'pointer-events-auto'} ${child.isView && !isBlockly ? 'hidden' : 'visible'}`}
                                             onClick={child.clicked}
                                         >
-                                            <MenuItem isConnected={isConnected} item={child} />
+                                            <MenuItem
+                                                isConnected={isConnected && !isRunning}
+                                                item={child}
+                                            />
                                         </li>
                                     ))}
                                 </ul>
@@ -592,7 +620,10 @@ function NavBar({ layoutref }: NavBarProps) {
                                                 className="text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500"
                                                 onClick={child.clicked}
                                             >
-                                                <MenuItem isConnected={isConnected} item={child} />
+                                                <MenuItem
+                                                    isConnected={isConnected && !isRunning}
+                                                    item={child}
+                                                />
                                             </li>
                                         ))}
                                     </ul>

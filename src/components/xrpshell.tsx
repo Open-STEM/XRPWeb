@@ -43,12 +43,6 @@ function XRPShell() {
                             activeConn.onData = (data) => {
                                 instance.write(data);
                             };
-                            instance?.onData((data) => {
-                                if (activeConn.isBusy()) {
-                                    return;
-                                }
-                                activeConn.writeToDevice(data);
-                            });
                         }
                     } else if (state === ConnectionState.Disconnected.toString()) {
                         instance?.clear();
@@ -56,6 +50,16 @@ function XRPShell() {
                     }
                 });
             }
+
+            instance?.onData((data) => {
+                const activeConn: Connection | null = AppMgr.getInstance().getConnection();
+                if (activeConn) {
+                    if (activeConn.isBusy()) {
+                        return;
+                    }
+                    activeConn.writeToDevice(data);
+                }
+            });
         }
 
         const handleResize = () => fitAddon.fit();

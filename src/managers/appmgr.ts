@@ -24,6 +24,8 @@ export enum EventType {
     EVENT_GENPYTHON = 'gen-python',     // change python requestion
     EVENT_GENPYTHON_DONE = 'gen-python-done',   // python code generation completed
     EVENT_SAVE_EDITOR = 'save-editor',          // save editor event
+    EVENT_PROGRESS = 'progress',        // progressbar event
+    EVENT_UPLOAD_DONE = 'progress-done',      // progress done event
 }
 
 type Events = {
@@ -40,6 +42,8 @@ type Events = {
     [EventType.EVENT_GENPYTHON]: string;
     [EventType.EVENT_GENPYTHON_DONE]: string;
     [EventType.EVENT_SAVE_EDITOR]: string;
+    [EventType.EVENT_PROGRESS]: string;
+    [EventType.EVENT_UPLOAD_DONE]: string;
 };
 
 /**

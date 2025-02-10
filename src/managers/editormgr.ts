@@ -1,7 +1,7 @@
 import { EditorType } from "@/utils/types";
-import { CommandToXRPMgr } from "./commandstoxrpmgr";
+import { CommandToXRPMgr } from "@/managers/commandstoxrpmgr";
 import { Actions, Model } from "flexlayout-react";
-import AppMgr, { EventType } from "./appmgr";
+import AppMgr, { EventType } from "@/managers/appmgr";
 
 /**
  * EditorSession - Editor session object
@@ -170,7 +170,9 @@ export default class EditorMgr {
     public async saveEditor(id: string, code: string) {
         const session = this.editorSessions.get(id);
         if (session) {
-            await CommandToXRPMgr.getInstance().uploadFile(session.path, code);
+            await CommandToXRPMgr.getInstance().uploadFile(session.path, code, true).then(() =>{
+                AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
+            });
         }
     }
 }

@@ -1,13 +1,16 @@
 {
-  "name": "vite-monaco",
+  "name": "xrpweb",
+  "description": "XRP Web Development Environment",
+  "homepage": "https://experientialrobotics.org/",
+  "license": "GPL-2.0-only",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
+    "preview": "vite preview --base=./ --open",
     "test": "vitest"
   },
   "dependencies": {
@@ -20,7 +23,6 @@
     "@codingame/monaco-vscode-textmate-service-override": "^11.1.2",
     "@codingame/monaco-vscode-theme-defaults-default-extension": "^11.1.2",
     "@codingame/monaco-vscode-theme-service-override": "^11.1.2",
-    "@ramonak/react-progress-bar": "^5.3.0",
     "@typefox/pyright-browser": "^1.1.299",
     "@xterm/addon-attach": "^0.11.0",
     "@xterm/addon-fit": "^0.10.0",
@@ -35,10 +37,10 @@
     "monaco-languageclient": "^9.1.0",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
-    "radix-ui": "^1.1.2",
     "react": "^18.3.1",
     "react-arborist": "^3.4.0",
     "react-blockly": "^9.0.0",
+    "react-customizable-progressbar": "^2.0.1",
     "react-dom": "^18.3.1",
     "react-hotkeys-hook": "^4.6.1",
     "react-i18next": "^15.4.0",
@@ -75,12 +77,13 @@
     "postcss": "^8.5.1",
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.11",
+    "rollup-plugin-visualizer": "^5.14.0",
     "tailwindcss": "^3.4.17",
     "tailwindcss-debug-screens": "^2.2.1",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.18.2",
     "vite": "^6.0.5",
-    "vite-bundle-visualizer": "^1.2.1",
+    "vite-plugin-static-copy": "^2.3.0",
     "vitest": "^3.0.0"
   }
 }

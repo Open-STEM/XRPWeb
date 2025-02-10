@@ -705,9 +705,8 @@ export class CommandToXRPMgr {
         await this.buildPath(pathToFile);
 
         this.BUSY = true;
-        //TODO: Show percentage
-        //if (usePercent) window.setPercent?.(1, "Saving file...");
-        //if (usePercent) window.setPercent?.(2);
+        if (usePercent)
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '0');
 
         // Convert strings to binary
         let bytes: Uint8Array | undefined = undefined;
@@ -779,12 +778,13 @@ export class CommandToXRPMgr {
         //}
         //await this.writeToDevice(bytesLenStr);
 
-        if(usePercent){ /* empty */ }
-        //if (usePercent) window.setPercent?.(3); TODO: show percentage
+        if(usePercent) {
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '3');
+        }
 
         const numberOfChunks = Math.ceil(bytes.length / this.connection!.XRP_SEND_BLOCK_SIZE);
         let currentPercent = 3;
-        const endingPercent = 98;
+        const endingPercent = 100;
         const percentStep = (endingPercent - currentPercent) / numberOfChunks;
 
 
@@ -820,12 +820,14 @@ export class CommandToXRPMgr {
             */
 
             currentPercent = currentPercent + percentStep;
+            console.log('UploadFile current percent: ', currentPercent);
             //if (usePercent) window.setPercent?.(currentPercent); TODO: show percentage
+            if (usePercent) 
+                AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, currentPercent.toString());    
         }
 
         // await this.haltUntilRead(1);
         await this.connection?.getToNormal(3);
-        //if (usePercent) window.resetPercentDelay?.(); TODO:
         this.BUSY = false;
     }
 
@@ -1012,5 +1014,13 @@ export class CommandToXRPMgr {
         // Make sure to update the filesystem as there is a small chance that the program saved something like a log file.
         await this.getOnBoardFSTree();
         }
-    
+
+    /**
+     * stopProgram - stop program execution on the XRP
+     */
+    stopProgram() {
+        if (this.connection) {
+            this.connection.getToREPL();
+        }
+    }
 }
