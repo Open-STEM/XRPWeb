@@ -15,7 +15,7 @@ import forum from '@assets/images/forum.svg';
 import cirriculum from '@assets/images/cirriculum.svg';
 import changelog from '@assets/images/changelog.svg';
 import { TiArrowSortedDown } from 'react-icons/ti';
-import { IoPlaySharp } from 'react-icons/io5';
+import { IoPlaySharp, IoSettings } from 'react-icons/io5';
 import { IoStop } from 'react-icons/io5';
 import { useEffect, useRef, useState } from 'react';
 import i18n from '@/utils/i18n';
@@ -23,13 +23,18 @@ import Dialog from '@components/dialogs/dialog';
 import ConnectionDlg from './dialogs/connectiondlg';
 import FileSaveAsDialg from './dialogs/filesaveasdlg';
 import treeData from '@/utils/testdata';
-import { ConnectionType, ConnectionCMD } from '@/utils/types';
+import { ConnectionType, ConnectionCMD, NewFileData, FileType } from '@/utils/types';
 import { useFilePicker } from 'use-file-picker';
 import SaveToXRPDlg from '@components/dialogs/save-to-xrpdlg';
 import { MenuDataItem } from '@/widgets/menutypes';
 import MenuItem from '@/widgets/menu';
 import AppMgr, { EventType } from '@/managers/appmgr';
 import { ConnectionState } from '@/connections/connection';
+import SettingsDlg from './dialogs/settings';
+import NewFileDlg from './dialogs/newfiledlg';
+import { IJsonTabNode } from 'flexlayout-react';
+import { Constants } from '@/utils/constants';
+import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,16 +47,18 @@ type NavBarProps = {
  * @returns
  */
 function NavBar({ layoutref }: NavBarProps) {
-    const [isFooter, setIsFooter] = useState(false);
     const [isConnected, setConnected] = useState(false);
     const [isRunning, setRunning] = useState(false);
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
-    const [okButtonlabel, setOkButtonLabel] = useState('');
     const { openFilePicker, filesContent, loading, errors } = useFilePicker({
         multiple: true,
         accept: ['.py', '.blocks'],
+        onFilesSuccessfullySelected: (data) => {
+            console.log('onFilesSuccessfullySelected', data.files, filesContent);
+        }
     });
+    const [xprID, setXrpId] = useState<{ platform?: string; XRPID?: string }>({});
 
     useEffect(() => {
         // subscribe to the connection event
@@ -61,7 +68,12 @@ function NavBar({ layoutref }: NavBarProps) {
                 setRunning(false);
             } else if (state === ConnectionState.Disconnected.toString()) {
                 setConnected(false);
+                setXrpId({});
             }
+        });
+
+        AppMgr.getInstance().on(EventType.EVENT_ID, (id: string) => {
+            setXrpId(JSON.parse(id));
         });
     });
 
@@ -74,10 +86,47 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
+     * onNewFileSubmitted - get the form data and create a new file on the layout
+     */
+    async function onNewFileSubmitted(data: NewFileData) {
+        console.log(data);
+        switch (data.filetype) {
+            case FileType.BLOCKLY: {
+                    const tabInfo: IJsonTabNode = {
+                        component: 'blockly',
+                        name: data.name,
+                        id: data.name,
+                        helpText: data.path
+                    };
+                    layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
+                }
+                break;
+            case FileType.PYTHON: 
+            case FileType.OTHER: {
+                    const tabInfo: IJsonTabNode = {
+                        component: 'editor',
+                        name: data.name,
+                        id: data.name,
+                        helpText: data.path
+                    }
+                    layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
+                }
+                break;
+        }
+        // create the file in XRP
+        await CommandToXRPMgr.getInstance().uploadFile(data.path, "").then(() => {
+            CommandToXRPMgr.getInstance().getOnBoardFSTree();
+        });
+        toggleDialog();
+    }
+
+    /**
      * NewFile - create either a new Python or Blockly file
      */
     function NewFile() {
         console.log(i18n.t('newFile'), layoutref);
+        setDialogContent(<NewFileDlg submitCallback={onNewFileSubmitted} toggleDialog={toggleDialog}/>);
+        toggleDialog();
     }
 
     /**
@@ -86,7 +135,6 @@ function NavBar({ layoutref }: NavBarProps) {
     function UploadFile() {
         console.log(i18n.t('uploadFile'));
         openFilePicker();
-        console.log(filesContent);
     }
 
     /**
@@ -103,9 +151,8 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function SaveFile() {
         console.log(i18n.t('saveFile'));
-        setIsFooter(false);
         setDialogContent(<SaveToXRPDlg />);
-        cancelDialog();
+        toggleDialog();
     }
 
     /**
@@ -113,10 +160,8 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function SaveFileAs() {
         console.log(i18n.t('saveFileAs'));
-        setOkButtonLabel(i18n.t('okButton'));
-        setIsFooter(true);
-        setDialogContent(<FileSaveAsDialg treeData={treeData} />);
-        cancelDialog();
+        setDialogContent(<FileSaveAsDialg treeData={treeData} toggleDialog={toggleDialog} />);
+        toggleDialog();
     }
 
     /**
@@ -162,10 +207,10 @@ function NavBar({ layoutref }: NavBarProps) {
         const appMgr: AppMgr = AppMgr.getInstance();
         if (connType === ConnectionType.USB) {
             appMgr.emit(EventType.EVENT_CONNECTION, ConnectionCMD.CONNECT_USB);
-            cancelDialog();
+            toggleDialog();
         } else if (connType === ConnectionType.BLUETOOTH) {
             appMgr.emit(EventType.EVENT_CONNECTION, ConnectionCMD.CONNECT_BLUETOOTH);
-            cancelDialog();
+            toggleDialog();
         }
     }
 
@@ -174,9 +219,8 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function onConnectBtnClicked() {
         console.log('onConnectBtnClicked');
-        setOkButtonLabel(i18n.t('okButton'));
         setDialogContent(<ConnectionDlg callback={onConnectionSelected} />);
-        cancelDialog();
+        toggleDialog();
     }
 
     /**
@@ -187,6 +231,14 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
+     * onSettingsClicked - handle the setting button click event
+     */
+    function onSettingsClicked() {
+        setDialogContent(<SettingsDlg toggleDialog={toggleDialog} />);
+        toggleDialog();
+    }
+
+    /**
      * ChangeLog
      */
     function ChangeLog() {}
@@ -194,20 +246,12 @@ function NavBar({ layoutref }: NavBarProps) {
     /**
      * cancelDialog - toggle the dialog open and closed
      */
-    function cancelDialog() {
+    function toggleDialog() {
         if (!dialogRef.current) {
             return;
         }
         if (dialogRef.current.hasAttribute('open')) dialogRef.current.close();
         else dialogRef.current.showModal();
-    }
-
-    /**
-     * okDialog - callback function from dialog information
-     */
-    function okDialog() {
-        // process ok dialog form data here first
-        cancelDialog();
     }
 
     const navItems: MenuDataItem[] = [
@@ -218,26 +262,31 @@ function NavBar({ layoutref }: NavBarProps) {
                     label: i18n.t('newFile'),
                     iconImage: fileadd,
                     clicked: NewFile,
+                    isFile: true
                 },
                 {
                     label: i18n.t('uploadFile'),
                     iconImage: fileupload,
                     clicked: UploadFile,
+                    isFile: true
                 },
                 {
                     label: i18n.t('exportToPC'),
                     iconImage: fileexport,
                     clicked: ExportToPC,
+                    isFile: true
                 },
                 {
                     label: i18n.t('saveFile'),
                     iconImage: filesave,
                     clicked: SaveFile,
+                    isFile: true
                 },
                 {
                     label: i18n.t('saveFileAs'),
                     iconImage: filesaveas,
                     clicked: SaveFileAs,
+                    isFile: true
                 },
             ],
         },
@@ -248,11 +297,13 @@ function NavBar({ layoutref }: NavBarProps) {
                     label: i18n.t('viewPythonFile'),
                     iconImage: python,
                     clicked: ViewPythonFile,
+                    isFile: false
                 },
                 {
                     label: i18n.t('convertToPython'),
                     iconImage: convert,
                     clicked: ConvertToPython,
+                    isFile: false
                 },
             ],
             childrenExt: [
@@ -260,16 +311,19 @@ function NavBar({ layoutref }: NavBarProps) {
                     label: i18n.t('increaseFont'),
                     iconImage: fontplus,
                     clicked: FontPlusPlus,
+                    isFile: false
                 },
                 {
                     label: i18n.t('decreaseFont'),
                     iconImage: fontminus,
                     clicked: FontMinus,
+                    isFile: false
                 },
                 {
                     label: 'i18n.t("toggleAutoComplete")',
                     iconImage: autocomplete,
                     clicked: ToggleAutoComplete,
+                    isFile: false
                 },
             ],
         },
@@ -280,26 +334,31 @@ function NavBar({ layoutref }: NavBarProps) {
                     label: i18n.t('userGuide'),
                     iconImage: userguide,
                     link: 'https://xrpusersguide.readthedocs.io/en/latest/course/introduction.html',
+                    isFile: false
                 },
                 {
                     label: i18n.t('apiReference'),
                     iconImage: apilink,
                     link: 'https://open-stem.github.io/XRP_MicroPython/',
+                    isFile: false
                 },
                 {
                     label: i18n.t('cirriculum'),
                     iconImage: cirriculum,
                     link: 'https://introtoroboticsv2.readthedocs.io/en/latest/',
+                    isFile: false
                 },
                 {
                     label: i18n.t('userHelpForum'),
                     iconImage: forum,
                     link: 'https://xrp.discourse.group/',
+                    isFile: false
                 },
                 {
                     label: i18n.t('changeLog'),
                     iconImage: changelog,
                     clicked: ChangeLog,
+                    isFile: false
                 },
             ],
         },
@@ -324,10 +383,10 @@ function NavBar({ layoutref }: NavBarProps) {
                                     {item.children.map((child, ci) => (
                                         <li
                                             key={ci}
-                                            className="text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500"
+                                            className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500 ${(child.isFile && !isConnected) ? 'pointer-events-none' : 'pointer-events-auto'}`}
                                             onClick={child.clicked}
                                         >
-                                            <MenuItem item={child} />
+                                            <MenuItem isConnected={isConnected} item={child} />
                                         </li>
                                     ))}
                                 </ul>
@@ -339,7 +398,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                                 className="text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500"
                                                 onClick={child.clicked}
                                             >
-                                                <MenuItem item={child} />
+                                                <MenuItem isConnected={isConnected} item={child} />
                                             </li>
                                         ))}
                                     </ul>
@@ -349,8 +408,11 @@ function NavBar({ layoutref }: NavBarProps) {
                     </div>
                 ))}
             </div>
-            {/** connect */}
-            <div className="flex flex-row items-center">
+            {/** platform infor and connect button*/}
+            <div className="flex flex-row items-center gap-4">
+                <div className='flex flex-col items-center text-sm text-shark-300'>
+                    <span>{`${xprID['platform']}-${xprID['XRPID']}`}</span>
+                </div>
                 <button
                     id="connectBtn"
                     className={`text-neutral-900 flex h-full w-[200] items-center justify-center gap-2 rounded-3xl bg-shark-200 px-4 py-2 text-matisse-900 hover:bg-curious-blue-300 dark:bg-shark-600 dark:text-shark-100 dark:hover:bg-shark-500 ${isConnected ? 'hidden' : ''}`}
@@ -381,12 +443,15 @@ function NavBar({ layoutref }: NavBarProps) {
                         </>
                     )}
                 </button>
+                <button 
+                    id="settingsId"
+                    onClick={onSettingsClicked}
+                >
+                    <IoSettings size={'1.5em'} />
+                </button>
             </div>
             <Dialog
-                cancelDialog={cancelDialog}
-                okDialog={okDialog}
-                okBtnLabel={okButtonlabel}
-                footter={isFooter}
+                toggleDialog={toggleDialog}
                 ref={dialogRef}
             >
                 {dialogContent}

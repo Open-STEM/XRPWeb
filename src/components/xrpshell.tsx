@@ -15,7 +15,7 @@ function XRPShell() {
 
         if (instance) {
             const darkTheme = { foreground: '#ddd', background: '#333333' };
-            const lightTheme = { foreground: '#41393b', background: '#f4f3f2' };
+            const lightTheme = { foreground: '#41393b', background: '#f0eff0' };
 
             const theme = AppMgr.getInstance().getTheme() === Themes.DARK ? darkTheme : lightTheme;
             instance.options = {
@@ -44,21 +44,23 @@ function XRPShell() {
                         };
                     }
                 } else if (state === ConnectionState.Disconnected.toString()) {
-                    instance?.writeln(i18n.t('disconnectXterm'));
+                    instance?.clear();
                     setConnection(null);
                 }
             });
 
-            if (connection === null) 
+            if (connection === null)  {
+                instance?.clear();
                 instance?.writeln(i18n.t('disconnectXterm'));
+            }
         }
 
         const handleResize = () => fitAddon.fit();
 
+        // send shell terminal input to device
         if (connection) {
             instance?.onData((data) => {
                 if (connection?.isBusy()) {
-                    //TODO: add run busy
                     return;
                 }
                 connection?.writeToDevice(data);

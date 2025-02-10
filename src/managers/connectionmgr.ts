@@ -5,7 +5,6 @@ import { USBConnection } from '@/connections/usbconnection';
 import { BluetoothConnection } from '@/connections/bluetoothconnection';
 import { CommandToXRPMgr } from './commandstoxrpmgr';
 
-
 /**
  * ConnectionMgr - manages USB and Bluetooth connection to the XRP Robot
  */
@@ -32,8 +31,8 @@ export default class ConnectionMgr {
 
         /*** Listen for Subscriptions ***/
         this.appMgr.on(EventType.EVENT_CONNECTION, (subType: string) => {
-            console.log("Connection manager event, sub type: " + subType);
-            switch(subType){
+            console.log('Connection manager event, sub type: ' + subType);
+            switch (subType) {
                 case ConnectionCMD.CONNECT_USB:
                     if (this.connections[ConnectionType.USB]) {
                         this.connections[ConnectionType.USB].connect();
@@ -56,11 +55,15 @@ export default class ConnectionMgr {
     public async connectCallback(state: ConnectionState, connType: ConnectionType) {
         this.activeConnection = this.connections[connType];
         if (state === ConnectionState.Connected) {
-            this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Connected.toString());
-            if(await this.activeConnection.getToREPL()){
+            this.appMgr.emit(
+                EventType.EVENT_CONNECTION_STATUS,
+                ConnectionState.Connected.toString(),
+            );
+            if (await this.activeConnection.getToREPL()) {
                 await this.cmdToXRPMgr.getOnBoardFSTree();
                 await this.activeConnection.getToNormal();
-                if(connType == ConnectionType.USB){ //if we connected via USB then we can release the BLE terminal
+                if (connType == ConnectionType.USB) {
+                    //if we connected via USB then we can release the BLE terminal
                     await this.cmdToXRPMgr.resetTerminal();
                 }
                 await this.cmdToXRPMgr.clearIsRunning();
@@ -68,39 +71,42 @@ export default class ConnectionMgr {
                 this.IDSet(connType);
             }
         } else if (state === ConnectionState.Disconnected) {
-            this.appMgr.emit(EventType.EVENT_CONNECTION_STATUS, ConnectionState.Disconnected.toString());
+            this.appMgr.emit(
+                EventType.EVENT_CONNECTION_STATUS,
+                ConnectionState.Disconnected.toString(),
+            );
+            // notify the folder tree to clear its data
+            this.appMgr.emit(EventType.EVENT_FILESYS, "{}");
         }
     }
 
-    
     IDSet = (connType: ConnectionType) => {
         //ID this would be a good spot to send window.xrpID to the database
-        if(this.xrpID != undefined){
-           const isBLE = connType == ConnectionType.BLUETOOTH;
-           const data = {
-               XRPID: this.xrpID,
-               platform: 'XRPCode2',
-               BLE: isBLE
-           };
-           try{
+        if (this.xrpID != undefined) {
+            const isBLE = connType === ConnectionType.BLUETOOTH;
+            const data = {
+                XRPID: this.xrpID.slice(-5),
+                platform: 'XRP',
+                BLE: isBLE,
+            };
+
+            // Send this information back to the WPI server
+            try {
                 fetch('https://xrpid-464879733234.us-central1.run.app/data', {
-                   method: 'POST',
-                   headers: {
-                       'Content-Type': 'application/json'
-                   },
-                   body: JSON.stringify(data)
-               });
-           }
-           catch{
-               
-           }
-
-           //TODO: display the xrpID somewhere
-           //document.getElementById('IDXRPName').innerHTML = "XRP-" + window.xrpID.slice(-5);
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+            } catch (err) {
+                console.log(err);
+            }
+            // notify to display to the UI
+            this.appMgr.emit(EventType.EVENT_ID, JSON.stringify(data));
         }
+    };
 
-   }
-    
     /**
      * getConnection
      * @returns Connection object or null

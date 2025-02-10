@@ -1,12 +1,7 @@
 import i18n from '@/utils/i18n';
 import Bluetooth from '@assets/images/Bluetooth_FM_Black.png';
 import Usb from '@assets/images/USB_icon.svg.png';
-import { ConnectionType } from '@/utils/types';
-
-type ListItem = {
-    label: string;
-    image: string;
-};
+import { ConnectionType, ListItem } from '@/utils/types';
 
 type ConnProps = {
     callback: (connection: ConnectionType) => void;
@@ -49,7 +44,10 @@ function ConnectionDlg(connprops: ConnProps) {
     };
 
     return (
-        <div className="border-shark-800 dark:border-shark-500 dark:bg-shark-950 flex h-auto w-96 flex-col items-center border p-4 shadow-md transition-all">
+        <div className="dark:border-shark-500 dark:bg-shark-950 flex h-auto w-96 flex-col items-center gap-2 p-4 shadow-md transition-all">
+            <h1 className='text-lg font-bold text-mountain-mist-700'>{i18n.t('connections')}</h1>
+            <p className='text-sm text-mountain-mist-700'>{i18n.t('selectConnection')}</p>
+            <hr className="w-full border-mountain-mist-600" />
             <ul>
                 {items.map((item) => (
                     <li

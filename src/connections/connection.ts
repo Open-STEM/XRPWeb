@@ -342,9 +342,9 @@ abstract class Connection {
         this.startReaduntil(">");
 
         // Send the cmd string
-        var numberOfChunks = Math.ceil(lines.length / this.XRP_SEND_BLOCK_SIZE) + 1;
-        for (var b = 0; b < numberOfChunks; b++) {
-            var writeDataCMD = lines.slice(b * this.XRP_SEND_BLOCK_SIZE, (b + 1) * this.XRP_SEND_BLOCK_SIZE);
+        const numberOfChunks = Math.ceil(lines.length / this.XRP_SEND_BLOCK_SIZE) + 1;
+        for (let b = 0; b < numberOfChunks; b++) {
+            const writeDataCMD = lines.slice(b * this.XRP_SEND_BLOCK_SIZE, (b + 1) * this.XRP_SEND_BLOCK_SIZE);
             await this.writeToDevice(writeDataCMD);
         }
 
@@ -352,7 +352,7 @@ abstract class Connection {
         this.specialForceOutputFlag = true;  //you see the OK, but also get any fast output
         this.catchOk = true;
         //await this.waitUntilOK();
-        var result = await this.haltUntilRead(1);
+        const result = await this.haltUntilRead(1);
 
         /*
                 This is where errors can be checked for that were returned incase we want to give a better explanation
@@ -393,7 +393,7 @@ abstract class Connection {
             this.STOP = false
             //We were hammering on ctrl-c up to get the program to stop (because timer routines don't stop).
             //Meaning finally did not run. We will run the resetbot routine
-            var cmd = "import sys\n" +
+            const cmd = "import sys\n" +
                 "if 'XRPLib.resetbot' in sys.modules:\n" +
                 "   del sys.modules['XRPLib.resetbot']\n" +
                 "from XRPLib.resetbot import reset_hard\n" +
@@ -425,7 +425,7 @@ abstract class Connection {
     async checkPrompt(): Promise<boolean> {
         this.startReaduntil(">>>");
         await this.writeToDevice("\r"); //do a linefeed and see if the REPL responds
-        var result = await this.haltUntilRead(1, 10); //this should be fast
+        const result = await this.haltUntilRead(1, 10); //this should be fast
         if(result.length == 0){
             return false;
         }
@@ -459,7 +459,7 @@ abstract class Connection {
 
         this.startReaduntil("KeyboardInterrupt:");
         await this.writeToDevice("\r" + this.CTRL_CMD_KINTERRUPT);  // ctrl-C to interrupt any running program
-        var result = await this.haltUntilRead(1, 20);
+        let result = await this.haltUntilRead(1, 20);
         if (result == undefined) {
             this.startReaduntil(">>>");
             await this.writeToDevice("\r" + this.CTRL_CMD_NORMALMODE);  // ctrl-C to interrupt any running program
@@ -469,7 +469,7 @@ abstract class Connection {
             }
         }
         //try multiple times to get to the prompt
-        var gotToPrompt = false;
+        let gotToPrompt = false;
         for (let i = 0; i < 20; i++) {
             this.startReaduntil(">>>");
             await this.writeToDevice("\r" + this.CTRL_CMD_KINTERRUPT);

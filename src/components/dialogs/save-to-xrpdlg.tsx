@@ -14,8 +14,9 @@ function SaveToXRPDlg() {
     }, []);
 
     return (
-        <div className="border-shark-800 dark:border-shark-500 dark:bg-shark-950 flex h-auto w-96 flex-col gap-2 p-4">
-            <h2>{i18n.t('saveToXRP')}</h2>
+        <div className="border-shark-800 dark:border-shark-500 dark:bg-shark-950 flex h-auto w-96 flex-col gap-4 p-8">
+            <h2 className="text-lg font-bold text-mountain-mist-700">{i18n.t('saveToXRP')}</h2>
+            <hr className="w-full border-mountain-mist-600" />
             <ProgressBar
                 completed={completed}
                 bgColor="#0a96ed"

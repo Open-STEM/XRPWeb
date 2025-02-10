@@ -45,7 +45,7 @@ function ContextMenu({children, items}: ContextMenuProps) {
                             className='hover:bg-curious-blue-400'
                             onClick={item.clicked}
                         >
-                            <MenuItem key={index} item={item} />
+                            <MenuItem key={index} item={item} isConnected={true} />
                         </li>
                     ))}
                 </ul>

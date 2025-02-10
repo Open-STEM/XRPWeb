@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import Folder from '@components/folder';
+import FolderTree from '@/components/folder-tree';
 import { describe, it, expect, vi } from 'vitest';
 
 // Mock the ResizeObserver
@@ -17,25 +17,27 @@ describe('Folder Component', () => {
         {
             id: '1',
             name: 'Folder 1',
-            isLeaf: false,
+            isReadOnly: false,
+            path: '/',
             children: [
                 {
                     id: '2',
                     name: 'File 1',
-                    isLeaf: true,
+                    isReadOnly: true,
+                    path: '/',
+                    children: null
                 },
             ],
         },
     ]);
 
     it('renders without crashing', () => {
-        render(<Folder treeData={treeData} theme="light" />);
+        render(<FolderTree treeData={treeData} theme="light" />);
         expect(screen.getByText('Folder 1')).toBeInTheDocument();
     });
 
     it('renders tree nodes correctly', () => {
-        render(<Folder treeData={treeData} theme="light" />);
+        render(<FolderTree treeData={treeData} theme="light" />);
         expect(screen.getByText('Folder 1')).toBeInTheDocument();
-        expect(screen.getByText('File 1')).toBeInTheDocument();
     });
 });

@@ -1,14 +1,14 @@
 import { Layout, Model, IJsonModel, TabNode } from 'flexlayout-react';
 import React, { useEffect } from 'react';
-import Folder from './folder';
 import BlocklyEditor from '@components/blockly';
-import EditorChooser from '@components/editor_chooser';
 import MonacoEditor from '@components/MonacoEditor';
 import XRPShell from '@components/xrpshell';
 import FolderIcon from '@assets/images/folder-24.png';
 import i18n from '@/utils/i18n';
 //import treeDaaJson from '@/utils/testdata';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
+import FolderTree from './folder-tree';
+import { Constants } from '@/utils/constants';
 
 /**
  *  Layout-React's layout JSON to specify the XRPWeb's single page application's layout
@@ -26,11 +26,12 @@ const layout_json: IJsonModel = {
             location: 'left',
             enableDrop: false,
             enableAutoHide: true,
-            size: 250,
+            size: 300,
             selected: 0,
             children: [
                 {
                     type: 'tab',
+                    id: Constants.FOLDER_TAB_ID,
                     name: i18n.t('folders'),
                     component: 'folders',
                     enableClose: false,
@@ -52,22 +53,14 @@ const layout_json: IJsonModel = {
                 children: [
                     {
                         type: 'tabset',
-                        id: 'editorTabSetId',
+                        id: Constants.EDITOR_TABSET_ID,
                         name: 'editorTabset',
                         weight: 70,
-                        children: [
-                            {
-                                id: 'chooserId',
-                                type: 'tab',
-                                name: i18n.t('chooseMode'),
-                                component: 'editor-chooser',
-                                enableClose: true,
-                            },
-                        ],
+                        children: [],
                     },
                     {
                         type: 'tabset',
-                        id: 'shellTabsetId',
+                        id: Constants.SHELL_TABSET_ID,
                         name: 'shellTabset',
                         weight: 30,
                         children: [
@@ -98,11 +91,11 @@ const factory = (node: TabNode) => {
     } else if (component == 'xterm') {
         return <XRPShell />;
     } else if (component == 'folders') {
-        return <Folder theme="rct-dark" />;
+        return <FolderTree treeData={null} theme='rct-dark' isHeader={true}/>;
     } else if (component == 'blockly') {
         return <BlocklyEditor />;
-    } else if (component == 'editor-chooser') {
-        return <EditorChooser flref={layoutRef} />;
+    // } else if (component == 'editor-chooser') {
+        // return <EditorChooser flref={layoutRef} />;
     }
 };
 

@@ -187,7 +187,6 @@ export class USBConnection extends Connection {
      */
     private async onConnected() {
         this.connectionStates = ConnectionState.Connected;
-        //TODO:  start the read looad
         if (this.port) this.writer = this.port.writable?.getWriter();
         if (this.connMgr) {
             this.connMgr.connectCallback(this.connectionStates, ConnectionType.USB);
@@ -218,6 +217,7 @@ export class USBConnection extends Connection {
             this.port = undefined;
         }
         this.connectionStates = ConnectionState.Disconnected;
+        this.connMgr?.connectCallback(this.connectionStates, ConnectionType.USB);
     }
 
     

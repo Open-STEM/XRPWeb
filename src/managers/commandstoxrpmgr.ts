@@ -1,10 +1,11 @@
-/* eslint-disable prefer-const */
 import Connection from '@/connections/connection';
 import { FolderItem } from '@/utils/types';
 import AppMgr, { EventType } from '@/managers/appmgr';
+import logger from '@/utils/logger';
 
 declare global {
     interface Window {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       showDirectoryPicker?: (options?: { mode?: 'read' | 'readwrite' }) => Promise<any>;
     }
   }
@@ -14,6 +15,7 @@ declare global {
  **/
 export class CommandToXRPMgr {
     private static instance: CommandToXRPMgr;
+    private cmdLogger = logger.child({module: 'command'})
     // private xrpDataMgr: XRPDataMgr = XRPDataMgr.getInstance();
     private connection: Connection | null = null;
 
@@ -42,11 +44,15 @@ export class CommandToXRPMgr {
     constructor(){
         this.getLibVersion();
     }
+
+    /**
+     * getLibVersion - get the XRP library version
+     */
     async getLibVersion(){
-        let response = await fetch("lib/package.json"); // do we need to cache bust? + "?version=" + showChangelogVersion //need an await?
-        let responseTxt = await response.text();
-        let jresp = JSON.parse(responseTxt);
-        let v = jresp.version
+        const response = await fetch("lib/package.json"); // do we need to cache bust? + "?version=" + showChangelogVersion //need an await?
+        const responseTxt = await response.text();
+        const jresp = JSON.parse(responseTxt);
+        const v = jresp.version
         // This should match what is in /lib/XRPLib/version.py as '__version__'
         this.latestLibraryVersion = v.split(".");
     }
@@ -81,6 +87,10 @@ export class CommandToXRPMgr {
         return this.instance;
     }
 
+    /**
+     * setConnection - set the proper connection for the command to work with
+     * @param connection 
+     */
     public setConnection(connection: Connection) {
         this.connection = connection;
     }
@@ -108,7 +118,7 @@ export class CommandToXRPMgr {
             return;
         }
         this.BUSY = true;
-        if (this.DEBUG_CONSOLE_ON) console.log("fcg: in clearIsRunning");;
+        if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: in clearIsRunning");;
 
 
         // Got through and make sure entire path already exists
@@ -127,7 +137,7 @@ export class CommandToXRPMgr {
         await this.connection?.getToNormal(3);
 
         this.BUSY = false;
-        if (this.DEBUG_CONSOLE_ON) console.log("fcg: out of clearIsRunning");
+        if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: out of clearIsRunning");
     }
 
     public async batteryVoltage(): Promise<number> {
@@ -156,7 +166,7 @@ export class CommandToXRPMgr {
             return [];
         }
         this.BUSY = true;
-        if (this.DEBUG_CONSOLE_ON) console.log('fcg: in getVersionInfo');
+        if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug('fcg: in getVersionInfo');
 
         const cmd =
             'import os\n' +
@@ -183,7 +193,7 @@ export class CommandToXRPMgr {
 
         await this.connection?.getToNormal(3);
         this.BUSY = false;
-        if (this.DEBUG_CONSOLE_ON) console.log('fcg: out of getVerionINfo');
+        if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug('fcg: out of getVerionINfo');
 
         if (hiddenLines != undefined) {
             if (hiddenLines[0].substring(2) != 'ERROR') {
@@ -215,7 +225,7 @@ export class CommandToXRPMgr {
 
         //if no micropython on the XRP
         if (!this.HAS_MICROPYTHON) {
-            console.log("no MicroPython");
+            this.cmdLogger.debug("no MicroPython");
             //await this.showMicropythonUpdate?.();
             //TODO: Need to ask users if they want to update
             return this.XRPId;
@@ -223,7 +233,7 @@ export class CommandToXRPMgr {
 
         
         //get version information from the XRP
-        let info = await this.getVersionInfo();
+        const info = await this.getVersionInfo();
 
         if (info == undefined) {
             return this.XRPId; //this happens if the XRP is rebooting we are under BLE and no other way to stop it.
@@ -231,7 +241,7 @@ export class CommandToXRPMgr {
 
         this.XRPId = info[2]; //store off the unique ID for this XRP
 
-        info[0] = info[0]!.replace(/[\(\)]/g, "").replace(/,\s/g, "."); //convert to a semantic version
+        info[0] = info[0]!.replace(/[()]/g, "").replace(/,\s/g, "."); //convert to a semantic version
         //if the microPython is out of date
         if (this.isVersionNewer(this.MP_VERSION, info[0]!)) {
             // Need to update MicroPython
@@ -253,8 +263,8 @@ export class CommandToXRPMgr {
           if(typeof v1 == "string"){
               return false;
           }
-        let v1parts = v1;
-        let v2parts = v2.split('.').map(Number);
+        const v1parts = v1;
+        const v2parts = v2.split('.').map(Number);
 
         while (v1parts.length < v2parts.length) v1parts.push(0);
         while (v2parts.length < v1parts.length) v2parts.push(0);
@@ -296,14 +306,14 @@ export class CommandToXRPMgr {
         document.getElementById("IdProgress_TitleText")!.innerText = 'Update in Progress...';
         */
 
-        let response = await fetch("lib/package.json");
-        let responseTxt = await response.text();
-        let jresp = JSON.parse(responseTxt);
-        var urls = jresp.urls;
+        const response = await fetch("lib/package.json");
+        const responseTxt = await response.text();
+        const jresp = JSON.parse(responseTxt);
+        const urls = jresp.urls;
 
         //TODO: show percent updated
         //window.setPercent?.(1, "Updating XRPLib...");
-        let percent_per = Math.round(99 / (urls.length + this.phewList.length + this.bleList.length + 1));
+        const percent_per = Math.round(99 / (urls.length + this.phewList.length + this.bleList.length + 1));
         let cur_percent = 1 + percent_per;
 
         await this.deleteFileOrDir("/lib/XRPLib");  //delete all the files first to avoid any confusion.
@@ -311,8 +321,8 @@ export class CommandToXRPMgr {
         for (let i = 0; i < urls.length; i++) {
             //window.setPercent?.(cur_percent, "Updating XRPLib..."); TODO: percentage
             //added a version number to ensure that the browser does not cache it.
-            let next = urls[i];
-            var parts = next[0];
+            const next = urls[i];
+            let parts = next[0];
             parts = parts.replace("XRPLib", "lib/XRPLib");
             await this.uploadFile(parts, await this.downloadFile(parts.replace("XRPExamples", "lib/Examples") + "?version=" + this.latestLibraryVersion[2]));
             cur_percent += percent_per;
@@ -339,6 +349,7 @@ export class CommandToXRPMgr {
         }
 
         //needed for this BLE release. Replace the main.py file so that the BLE support will be available.
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         cur_percent = 100;
         //window.setPercent?.(cur_percent, "Updating XRPLib..."); TODO: show percentage
         await this.uploadFile("/main.py", await this.downloadFile("lib/main.py" + "?version=" + this.latestLibraryVersion[2]));
@@ -362,7 +373,7 @@ export class CommandToXRPMgr {
         //window.setPercent?.(1, "Updating MicroPython..."); TODO: show percentage
 
         if (this.HAS_MICROPYTHON) {
-            let cmd = "import machine\n" +
+            const cmd = "import machine\n" +
                 "machine.bootloader()\n";
 
             await this.connection?.getToRaw();
@@ -371,16 +382,16 @@ export class CommandToXRPMgr {
             await this.connection?.writeToDevice(cmd + this.connection!.CTRL_CMD_SOFTRESET);
         }
 
-        var writable: FileSystemWritableFileStream;
+        let writable: FileSystemWritableFileStream;
         //window.setPercent?.(3); TODO: Show percentage
         try {
             //message select the RPI-RP2
             //let dirHandler = await (window as any).showDirectoryPicker({ mode: "readwrite" });
-            let dirHandler = await this.showDialogAndPickDirectory();
-            let fileHandle = await dirHandler?.getFileHandle("firmware.uf2", { create: true });
+            const dirHandler = await this.showDialogAndPickDirectory();
+            const fileHandle = await dirHandler?.getFileHandle("firmware.uf2", { create: true });
             writable = await fileHandle!.createWritable();
         } catch (err) {
-            console.log(err);
+            this.cmdLogger.debug(err);
             //UIkit.modal(document.getElementById("IDProgressBarParent")).hide();
             window.alert("Error updating MicroPython. Please try again.");
             this.BUSY = false;
@@ -389,10 +400,10 @@ export class CommandToXRPMgr {
 
         //window.setPercent?.(35); TODO: show percentage
         let mpver = "firmware2350.uf2"
-        if(this.PROCESSOR = 2040){
+        if(this.PROCESSOR === 2040){
             mpver = "firmware2040.uf2"
         }
-        let data = await (await fetch("micropython/" + mpver)).arrayBuffer();
+        const data = await (await fetch("micropython/" + mpver)).arrayBuffer();
         //window.setPercent?.(85); TODO: show percentage
         //message to click on Edit Files
         await writable.write(data);
@@ -403,7 +414,7 @@ export class CommandToXRPMgr {
             await writable.close();
         }
         catch {
-            console.log("PICO rebooted before close - this is ok");
+            this.cmdLogger.debug("PICO rebooted before close - this is ok");
         }
 
         this.BUSY = false;
@@ -412,7 +423,7 @@ export class CommandToXRPMgr {
     }
 
     async  downloadFile(filePath:string) {
-        let response = await fetch(filePath);
+        const response = await fetch(filePath);
     
         if(response.status != 200) {
             throw new Error("Server Error");
@@ -451,6 +462,7 @@ export class CommandToXRPMgr {
                 document.body.removeChild(modal); // Remove the modal
     
                 try {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const dirHandle = await (window as any).showDirectoryPicker();
                     resolve(dirHandle); // Resolve the promise with the selected directory handle
                 } catch (error) {
@@ -467,7 +479,7 @@ export class CommandToXRPMgr {
         if (this.BUSY == true) {
             return;
         }
-        if (this.DEBUG_CONSOLE_ON) console.log("fcg: in getOnBoardFSTree");
+        if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: in getOnBoardFSTree");
 
         this.BUSY = true;
 
@@ -520,7 +532,7 @@ export class CommandToXRPMgr {
             const fsData = JSON.stringify(this.treeData);
             const szData = hiddenLines[1].split(' ');
             //console.log("File Data: " +fsData);
-            console.log("storage data: ", szData);
+            this.cmdLogger.debug("storage data: ", szData);
             AppMgr.getInstance().emit(EventType.EVENT_FILESYS, fsData);
 
             //this.onFSData?.(JSON.stringify(this.DIR_STRUCT), hiddenLines[1].split(' '));
@@ -532,7 +544,7 @@ export class CommandToXRPMgr {
         // don't want to repeat (assumes already on a normal prompt)
         await this.connection?.getToNormal(3);
         this.BUSY = false;
-        if (this.DEBUG_CONSOLE_ON) console.log("fcg: out of getOnBoardFSTree");
+        if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: out of getOnBoardFSTree");
         //window.setPercent(100);
         //window.resetPercentDelay();
     }
@@ -561,14 +573,14 @@ export class CommandToXRPMgr {
     }
 
     dirRoutine(dir: string, curPath: string, tree:FolderItem[] | null) {
-        var dir_struct: FolderItem;
+        let dir_struct: FolderItem;
         while (this.DIR_INDEX < (this.DIR_DATA!.length - 1)) {
 
             const [path, index, type, name] = this.DIR_DATA![this.DIR_INDEX].split(',');
             if (dir === path) {
                 this.DIR_INDEX++;
                 
-                var newPath = curPath;
+                let newPath = curPath;
                 if (curPath === "/"){
                     newPath += path;
                 }
@@ -617,8 +629,8 @@ export class CommandToXRPMgr {
             this.BUSY = true;
             //window.setPercent?.(1, "Renaming file..."); TODO:
 
-            var newPath = oldPath.substring(0, oldPath.lastIndexOf("/") + 1) + newName;
-            var cmd = "import uos\n" +
+            const newPath = oldPath.substring(0, oldPath.lastIndexOf("/") + 1) + newName;
+            const cmd = "import uos\n" +
                 "exists = 1\n" +
                 "try:\n" +
                 "   f = open('" + newPath + "', 'r')\n" +
@@ -653,11 +665,11 @@ export class CommandToXRPMgr {
             return;
         }
         this.BUSY = true;
-        if (this.DEBUG_CONSOLE_ON) console.log("fcg: in buildPath");;
+        if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: in buildPath");;
 
 
         // Got through and make sure entire path already exists
-        var cmd = "import uos\n" +
+        const cmd = "import uos\n" +
             "try:\n" +
             "    path = '" + path + "'\n" +
             "    path = path.split('/')\n" +
@@ -679,7 +691,7 @@ export class CommandToXRPMgr {
         await this.connection?.getToNormal(3);
 
         this.BUSY = false;
-        if (this.DEBUG_CONSOLE_ON) console.log("fcg: out of buildPath");
+        if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: out of buildPath");
 
     }
 
@@ -689,7 +701,7 @@ export class CommandToXRPMgr {
             return true;
         }
 
-        var pathToFile = filePath.substring(0, filePath.lastIndexOf('/'));
+        const pathToFile = filePath.substring(0, filePath.lastIndexOf('/'));
         await this.buildPath(pathToFile);
 
         this.BUSY = true;
@@ -698,10 +710,10 @@ export class CommandToXRPMgr {
         //if (usePercent) window.setPercent?.(2);
 
         // Convert strings to binary
-        var bytes: Uint8Array | undefined = undefined;
+        let bytes: Uint8Array | undefined = undefined;
         if (typeof fileContents == "string") {
             bytes = new Uint8Array(fileContents.length);
-            for (var i = 0; i < fileContents.length; i++) {
+            for (let i = 0; i < fileContents.length; i++) {
                 bytes[i] = fileContents.charCodeAt(i);
             }
         } else {
@@ -716,7 +728,7 @@ export class CommandToXRPMgr {
 
 
         // https://forum.micropython.org/viewtopic.php?t=10659&p=58710
-        var writeFileScript = "import micropython\n" +
+        const writeFileScript = "import micropython\n" +
             "import sys\n" +
             "import time\n" +
             "blocksize = " + this.connection?.XRP_SEND_BLOCK_SIZE + "\n" +
@@ -767,28 +779,28 @@ export class CommandToXRPMgr {
         //}
         //await this.writeToDevice(bytesLenStr);
 
-        if(usePercent){}
+        if(usePercent){ /* empty */ }
         //if (usePercent) window.setPercent?.(3); TODO: show percentage
 
-        var numberOfChunks = Math.ceil(bytes.length / this.connection!.XRP_SEND_BLOCK_SIZE);
-        var currentPercent = 3;
-        var endingPercent = 98;
-        var percentStep = (endingPercent - currentPercent) / numberOfChunks;
+        const numberOfChunks = Math.ceil(bytes.length / this.connection!.XRP_SEND_BLOCK_SIZE);
+        let currentPercent = 3;
+        const endingPercent = 98;
+        const percentStep = (endingPercent - currentPercent) / numberOfChunks;
 
 
-        var bytesSent = 0;
-        for (var b = 0; b < numberOfChunks; b++) {
-            var writeDataCMD = bytes.slice(b * this.connection!.XRP_SEND_BLOCK_SIZE, (b + 1) * this.connection!.XRP_SEND_BLOCK_SIZE);
+        let bytesSent = 0;
+        for (let b = 0; b < numberOfChunks; b++) {
+            let writeDataCMD = bytes.slice(b * this.connection!.XRP_SEND_BLOCK_SIZE, (b + 1) * this.connection!.XRP_SEND_BLOCK_SIZE);
 
             bytesSent = bytesSent + writeDataCMD.length;
 
             if (bytesSent == bytes.length && writeDataCMD.length < this.connection!.XRP_SEND_BLOCK_SIZE) {
-                var fillerArray = new Uint8Array(this.connection!.XRP_SEND_BLOCK_SIZE - writeDataCMD.length);
-                for (var i = 0; i < fillerArray.length; i++) {
+                const fillerArray = new Uint8Array(this.connection!.XRP_SEND_BLOCK_SIZE - writeDataCMD.length);
+                for (let i = 0; i < fillerArray.length; i++) {
                     fillerArray[i] = 255;
                 }
 
-                var finalArray = new Uint8Array(writeDataCMD.length + fillerArray.length);
+                const finalArray = new Uint8Array(writeDataCMD.length + fillerArray.length);
                 finalArray.set(writeDataCMD, 0);
                 finalArray.set(fillerArray, writeDataCMD.length);
                 writeDataCMD = finalArray;
@@ -824,11 +836,12 @@ export class CommandToXRPMgr {
         //UIkit.modal(document.getElementById("IDProgressBarParent")).show(); TODO:
 
         //window.setPercent?.(1, "Saving files...");
-        let percent_per = 99 / fileHandles.length;
+        const percent_per = 99 / fileHandles.length;
         let cur_percent = 1 + percent_per;
 
-        for (var i = 0; i < fileHandles.length; i++) {
+        for (let i = 0; i < fileHandles.length; i++) {
             //window.setPercent?.(cur_percent);
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             cur_percent += percent_per;
             const file = await fileHandles[i].getFile();
 
@@ -853,7 +866,7 @@ export class CommandToXRPMgr {
         }
         this.BUSY = true;
 
-        var cmd = "import sys\n" +
+        const cmd = "import sys\n" +
             "chunk_size = 200\n" +
             "onboard_file = open('" + filePath + "', 'rb')\n" +
             "while True:\n" +
@@ -865,8 +878,8 @@ export class CommandToXRPMgr {
             "onboard_file.close()\n" +
             "sys.stdout.write('###DONE READING FILE###')\n";
 
-        var hiddenLines = await this.connection?.writeUtilityCmdRaw(cmd, true, 1, "###DONE READING FILE###");
-        var lines = hiddenLines!.join('\r\n');
+        const hiddenLines = await this.connection?.writeUtilityCmdRaw(cmd, true, 1, "###DONE READING FILE###");
+        let lines = hiddenLines!.join('\r\n');
 
         lines = lines.slice(2, lines[0].length - 27);  // Get rid of 'OK' and '###DONE READING FILE###'
 
@@ -886,7 +899,7 @@ export class CommandToXRPMgr {
             this.BUSY = true;
 
             //window.setPercent?.(1, "Deleting..."); TODO:
-            var cmd = "import os\n" +
+            const cmd = "import os\n" +
                 "def rm(d):  # Remove file or tree\n" +
                 "   try:\n" +
                 "       if os.stat(d)[0] & 0x4000:  # Dir\n" +
@@ -927,12 +940,12 @@ export class CommandToXRPMgr {
         }
         this.BUSY = true;
 
-        var fileToEx2 = fileToEx;
+        let fileToEx2 = fileToEx;
         if (fileToEx.startsWith('/')) {
             fileToEx2 = fileToEx.slice(1);
         }
 
-        var value = "import os\n" +
+        const value = "import os\n" +
             "import sys\n" +
             //"from machine import Pin\n" +
             "import time\n" +
@@ -989,12 +1002,12 @@ export class CommandToXRPMgr {
         if (this.BUSY == true) {
             return;
         }
-        if (this.DEBUG_CONSOLE_ON) console.log("fcg: in executeLines");
+        if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: in executeLines");
 
         this.BUSY = true;
         this.connection?.goCommand(lines);
         this.BUSY = false;
-        if (this.DEBUG_CONSOLE_ON) console.log("fcg: out of executeLines");
+        if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: out of executeLines");
 
         // Make sure to update the filesystem as there is a small chance that the program saved something like a log file.
         await this.getOnBoardFSTree();

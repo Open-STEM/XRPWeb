@@ -30,7 +30,6 @@ export class BluetoothConnection extends Connection {
     constructor(connMgr: ConnectionMgr) {
         super();
         this.connMgr = connMgr;
-        this.connMgr = connMgr;
     }
 
     /**
