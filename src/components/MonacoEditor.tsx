@@ -15,6 +15,11 @@ import { ExtensionHostKind, registerExtension } from 'vscode/extensions';
 import 'vscode/localExtensionHost';
 import { initializedAndStartLanguageClient } from '@components/lsp-client';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
+import i18n from '@/utils/i18n';
+import { StorageKeys } from '@/utils/localstorage';
+import EditorMgr from '@/managers/editormgr';
+import { FontSize } from '@/utils/types';
+import { Constants } from '@/utils/constants';
 
 const languageId = 'python';
 let isClientInitalized: boolean = false;
@@ -95,6 +100,10 @@ registerExtension(extension, ExtensionHostKind.LocalProcess);
 
 type MonacoEditorProps = {
     /**
+     * name of the editor container
+     */
+    name: string;
+    /**
      * Height of the editor container
      */
     width: number | string;
@@ -121,6 +130,7 @@ type MonacoEditorProps = {
 };
 
 const MonacoEditor = ({
+    name,
     width = '100vw',
     height = '100vh',
     language = 'python',
@@ -140,17 +150,71 @@ const MonacoEditor = ({
         [fixedWidth, fixedHeight],
     );
 
+    /**
+     * SaveEditor save the current editor session to XRP
+     * @param code
+     */
+    function SaveEditor(code: string) {
+        const activeTab = localStorage.getItem(StorageKeys.ACTIVETAB)?.replace(/^"|"$/g, '');
+        if (activeTab === name) {
+            EditorMgr.getInstance().saveEditor(name, code);
+        }
+    }
+
     useEffect(() => {
-        AppMgr.getInstance().on(EventType.EVENT_THEME, (theme) => {
-            console.log('Monaco set theme to ${selectedTheme}');
-            if (editor.current != null)
-                monaco.editor.setTheme(theme === Themes.DARK ? 'Default Dark Modern' : 'vs');
-        });
+        if (
+            EditorMgr.getInstance().hasEditorSession(name) &&
+            !EditorMgr.getInstance().hasSubscription(name)
+        ) {
+            AppMgr.getInstance().on(EventType.EVENT_THEME, (theme) => {
+                console.log('Monaco set theme to ${selectedTheme}');
+                if (editor.current != null)
+                    monaco.editor.setTheme(theme === Themes.DARK ? 'Default Dark Modern' : 'vs');
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_EDITOR_LOAD, (content) => {
+                console.log('Editor Content', content);
+                const activeTab = localStorage
+                    .getItem(StorageKeys.ACTIVETAB)
+                    ?.replace(/^"|"$/g, '');
+                if (activeTab !== name) return;
+                if (containerRef.current && editor.current) {
+                    const model = monaco.editor.createModel(content, languageId);
+                    editor.current.setModel(model);
+                }
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_FONTCHANGE, (change) => {
+                const activeTab = localStorage
+                    .getItem(StorageKeys.ACTIVETAB)
+                    ?.replace(/^"|"$/g, '');
+                if (activeTab !== name) return;
+                if (change === FontSize.INCREASE) {
+                    const fontsize = EditorMgr.getInstance().getFontsize(name) + 1;
+                    EditorMgr.getInstance().setFontsize(name, fontsize);
+                    editor.current?.updateOptions({ fontSize: fontsize });
+                } else if (change === FontSize.DESCREASE) {
+                    const fontsize = EditorMgr.getInstance().getFontsize(name) - 1;
+                    EditorMgr.getInstance().setFontsize(name, fontsize);
+                    editor.current?.updateOptions({ fontSize: fontsize });
+                }
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_SAVE_EDITOR, () => {
+                const code = editor.current?.getValue();
+                if (code !== undefined) {
+                    SaveEditor(code);
+                }
+            });
+
+            EditorMgr.getInstance().setFontsize(name, Constants.DEFAULT_FONTSIZE);
+            EditorMgr.getInstance().setSubscription(name);
+        }
 
         if (containerRef.current) {
-            if (editor.current == null) {
+            if (editor.current === null) {
                 updateUserConfiguration(`{
-                    "editor.fontSize": 14,
+                    "editor.fontSize": ${Constants.DEFAULT_FONTSIZE},
                     "workbench.colorTheme": "${AppMgr.getInstance().getTheme() === Themes.DARK ? 'Default Dark Modern' : 'vs'}"
                 }`);
 
@@ -160,7 +224,24 @@ const MonacoEditor = ({
                 });
 
                 monaco.editor.onDidCreateEditor((codeEditor) => {
-                    console.log('Editor created', codeEditor.getId);
+                    console.log('Editor created', codeEditor.getId());
+                });
+
+                editor.current.addAction({
+                    id: 'save',
+                    label: i18n.t('save'),
+                    keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
+                    contextMenuGroupId: 'navigation',
+                    contextMenuOrder: 1.5,
+                    precondition: '',
+                    keybindingContext: '',
+                    run: (ed) => {
+                        console.log('Save', ed);
+                        const code = editor.current?.getValue();
+                        if (code !== undefined) {
+                            SaveEditor(code);
+                        }
+                    },
                 });
 
                 if (!isClientInitalized) {
@@ -168,9 +249,9 @@ const MonacoEditor = ({
                     initializedAndStartLanguageClient();
                     isClientInitalized = true;
                 }
-            } 
-        } 
-    }, [language, value]);
+            }
+        }
+    }, [name, language, value]);
 
     return <div ref={containerRef} style={style} className={className} />;
 };

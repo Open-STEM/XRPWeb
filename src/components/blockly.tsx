@@ -4,10 +4,14 @@ import BlocklyConfigs from '@components/blockly/xrp_blockly_configs';
 import * as Blockly from 'blockly/core';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
 import { useEffect } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { StorageKeys } from '@/utils/localstorage';
+import EditorMgr, { EditorSession } from '@/managers/editormgr';
+import moment from 'moment';
 
 const blocklyDarkTheme = Blockly.Theme.defineTheme('dark', {
-    'base': Blockly.Themes.Classic,
-    'componentStyles': {
+    base: Blockly.Themes.Classic,
+    componentStyles: {
         workspaceBackgroundColour: '#1e1e1e',
         toolboxBackgroundColour: '#444',
         toolboxForegroundColour: '#ddd',
@@ -20,7 +24,7 @@ const blocklyDarkTheme = Blockly.Theme.defineTheme('dark', {
         scrollbarOpacity: 0.4,
         cursorColour: '#d0d0d0',
     },
-    name: 'dark'
+    name: 'dark',
 });
 
 const blocklyMpdernTheme = Blockly.Theme.defineTheme('modern', {
@@ -109,32 +113,101 @@ const blocklyMpdernTheme = Blockly.Theme.defineTheme('modern', {
     },
     componentStyles: {},
     fontStyle: {},
-    name: 'modern'
+    name: 'modern',
 });
+
+interface BlocklyEditorProps {
+    name: string;
+}
 
 /**
  * BlocklyEditor component
- * @returns 
+ * @returns
  */
-function BlocklyEditor() {
+function BlocklyEditor({ name }: BlocklyEditorProps) {
+    /**
+     * saveEditor
+     */
+    function saveEditor() {
+        const ws = Blockly.getMainWorkspace();
+        if (ws) {
+            const activeTab = localStorage.getItem(StorageKeys.ACTIVETAB)?.replace(/^"|"$/g, '');
+            if (activeTab === name) {
+                const pythonCode = pythonGenerator
+                    .workspaceToCode(ws)
+                    .replace('from numbers import Number\n', 'Number = int\n');
+                const blocklyCode = JSON.stringify(Blockly.serialization.workspaces.save(ws));
+                const date = moment();
+                const formatedDate = date.format('YYYY-MM-DD HH:MM:SS');
+                const code =
+                    pythonCode + '\n\n\n## ' + formatedDate + '\n##XRPBLOCKS ' + blocklyCode;
+                console.log('Saving blockly', activeTab, code);
+                EditorMgr.getInstance().saveEditor(name, code);
+            }
+        }
+    }
+
+    useHotkeys('ctrl+s, meta+s', (event) => {
+        event.preventDefault();
+        saveEditor();
+    });
+
     function onWorkspaceDidChange(ws: Workspace | undefined) {
         const code = pythonGenerator.workspaceToCode(ws);
         console.log(code);
     }
 
     useEffect(() => {
-        AppMgr.getInstance().on(EventType.EVENT_THEME, (theme) => {
-            const ws = Blockly.getMainWorkspace();
+        if (
+            EditorMgr.getInstance().hasEditorSession(name) &&
+            !EditorMgr.getInstance().hasSubscription(name)
+        ) {
+            AppMgr.getInstance().on(EventType.EVENT_THEME, (theme) => {
+                const ws = Blockly.getMainWorkspace();
 
-            if (ws) {
-                // Not sure why the compiler complain but it works at runtime
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error
-                ws.setTheme(theme === Themes.DARK ? blocklyDarkTheme : blocklyMpdernTheme);
-            }
-        });
+                if (ws) {
+                    // Not sure why the compiler complain but it works at runtime
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    // @ts-expect-error
+                    ws.setTheme(theme === Themes.DARK ? blocklyDarkTheme : blocklyMpdernTheme);
+                }
+            });
 
-    }, []);
+            AppMgr.getInstance().on(EventType.EVENT_EDITOR_LOAD, (content) => {
+                const activeTab = localStorage
+                    .getItem(StorageKeys.ACTIVETAB)
+                    ?.replace(/^"|"$/g, '');
+                if (activeTab !== name) return;
+
+                const ws = Blockly.getMainWorkspace();
+                if (ws) {
+                    Blockly.serialization.workspaces.load(JSON.parse(content), ws);
+                }
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_GENPYTHON, (activeTab) => {
+                if (name === activeTab) {
+                    const ws = Blockly.getMainWorkspace();
+                    const code = pythonGenerator.workspaceToCode(ws);
+
+                    if (ws && code) {
+                        const session: EditorSession | undefined =
+                            EditorMgr.getInstance().getEditorSession(activeTab);
+                        if (session) {
+                            session.content = code;
+                        }
+                        AppMgr.getInstance().emit(EventType.EVENT_GENPYTHON_DONE, code);
+                    }
+                }
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_SAVE_EDITOR, () => {
+                saveEditor();
+            });
+
+            EditorMgr.getInstance().setSubscription(name);
+        }
+    });
 
     return (
         <BlocklyWorkspace
@@ -147,7 +220,10 @@ function BlocklyEditor() {
                     colour: '#ccc',
                     snap: true,
                 },
-                theme: AppMgr.getInstance().getTheme() === Themes.DARK ? blocklyDarkTheme : blocklyMpdernTheme
+                theme:
+                    AppMgr.getInstance().getTheme() === Themes.DARK
+                        ? blocklyDarkTheme
+                        : blocklyMpdernTheme,
             }}
             initialJson={BlocklyConfigs.InitialJson}
             onWorkspaceChange={onWorkspaceDidChange}

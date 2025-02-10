@@ -41,7 +41,7 @@ function SettingsDlg({toggleDialog}: SettingsProps) {
   }
 
   return (
-    <div className='flex flex-col gap-4 p-8 items-center shadow-md transition-all dark:border-shark-500 dark:bg-shark-950'>
+    <div className='border rounded-md border-mountain-mist-700 flex flex-col gap-4 p-8 items-center shadow-md transition-all dark:border-shark-500 dark:bg-shark-950'>
         <div className='flex flex-col items-center w-[80%]'>
             <h1 className='text-lg font-bold text-mountain-mist-700'>{i18n.t('viewSettings')}</h1>
             <p className='text-sm text-mountain-mist-700'>{i18n.t('settingDescription')}</p>

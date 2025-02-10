@@ -8,7 +8,6 @@ import fontplus from '@assets/images/text_increase.svg';
 import fontminus from '@assets/images/text_decrease.svg';
 import userguide from '@assets/images/developer_guide.svg';
 import apilink from '@assets/images/api.svg';
-import autocomplete from '@assets/images/prompt_suggestion.svg';
 import python from '@assets/images/python.svg';
 import convert from '@assets/images/convert.svg';
 import forum from '@assets/images/forum.svg';
@@ -22,10 +21,16 @@ import i18n from '@/utils/i18n';
 import Dialog from '@components/dialogs/dialog';
 import ConnectionDlg from './dialogs/connectiondlg';
 import FileSaveAsDialg from './dialogs/filesaveasdlg';
-import treeData from '@/utils/testdata';
-import { ConnectionType, ConnectionCMD, NewFileData, FileType } from '@/utils/types';
+import {
+    ConnectionType,
+    ConnectionCMD,
+    NewFileData,
+    FileType,
+    FileData,
+    EditorType,
+    FontSize,
+} from '@/utils/types';
 import { useFilePicker } from 'use-file-picker';
-import SaveToXRPDlg from '@components/dialogs/save-to-xrpdlg';
 import { MenuDataItem } from '@/widgets/menutypes';
 import MenuItem from '@/widgets/menu';
 import AppMgr, { EventType } from '@/managers/appmgr';
@@ -35,11 +40,23 @@ import NewFileDlg from './dialogs/newfiledlg';
 import { IJsonTabNode } from 'flexlayout-react';
 import { Constants } from '@/utils/constants';
 import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
+import UploadFileDlg from './dialogs/uploadfiledlg';
+import EditorMgr, { EditorSession } from '@/managers/editormgr';
+import { useLocalStorage } from 'usehooks-ts';
+import { StorageKeys } from '@/utils/localstorage';
+import FileSaver from 'file-saver';
+import PowerSwitchAlert from './dialogs/power-switchdlg';
+import ViewPythonDlg from './dialogs/view-pythondlg';
+import AlertDialog from './dialogs/alertdlg';
+import BatteryBadDlg from './dialogs/battery-baddlg';
+import SaveToXRPDlg from './dialogs/save-to-xrpdlg';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     layoutref: any;
 };
+
+let hasSubscribed = false;
 
 /**
  * NavBar component - create the navigation bar
@@ -49,32 +66,84 @@ type NavBarProps = {
 function NavBar({ layoutref }: NavBarProps) {
     const [isConnected, setConnected] = useState(false);
     const [isRunning, setRunning] = useState(false);
+    const [isBlockly, setBlockly] = useState(false);
     const dialogRef = useRef<HTMLDialogElement>(null);
+    const [isDlgOpen, setDlgOpen] = useState(false);
     const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
-    const { openFilePicker, filesContent, loading, errors } = useFilePicker({
+    const { openFilePicker, loading, errors } = useFilePicker({
         multiple: true,
         accept: ['.py', '.blocks'],
-        onFilesSuccessfullySelected: (data) => {
-            console.log('onFilesSuccessfullySelected', data.files, filesContent);
-        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onFilesSuccessfullySelected: (data: any) => {
+            console.log(data.plainFiles);
+            const fileData: FileData[] = [];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            data.filesContent.forEach((content: any) => {
+                console.log(content.path);
+                fileData.push({ name: content.path, content: content.content });
+            });
+            setDialogContent(<UploadFileDlg files={fileData} toggleDialog={toggleDialog} />);
+            setDlgOpen(true);
+        },
     });
-    const [xprID, setXrpId] = useState<{ platform?: string; XRPID?: string }>({});
+    const [xprID, setXrpId] = useState<{ platform?: string; XRPID?: string } | null>(null);
+    const [activeTab, setActiveTab] = useLocalStorage(StorageKeys.ACTIVETAB, '');
 
     useEffect(() => {
-        // subscribe to the connection event
-        AppMgr.getInstance().on(EventType.EVENT_CONNECTION_STATUS, (state: string) => {
-            if (state === ConnectionState.Connected.toString()) {
-                setConnected(true);
-                setRunning(false);
-            } else if (state === ConnectionState.Disconnected.toString()) {
-                setConnected(false);
-                setXrpId({});
-            }
-        });
+        if (!hasSubscribed) {
+            // subscribe to the connection event
+            AppMgr.getInstance().on(EventType.EVENT_CONNECTION_STATUS, (state: string) => {
+                if (state === ConnectionState.Connected.toString()) {
+                    setConnected(true);
+                    setRunning(false);
+                } else if (state === ConnectionState.Disconnected.toString()) {
+                    setConnected(false);
+                    setXrpId({});
+                }
+            });
 
-        AppMgr.getInstance().on(EventType.EVENT_ID, (id: string) => {
-            setXrpId(JSON.parse(id));
-        });
+            AppMgr.getInstance().on(EventType.EVENT_ID, (id: string) => {
+                setXrpId(JSON.parse(id));
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_EDITOR, (type: EditorType) => {
+                if (type === EditorType.BLOCKLY) {
+                    setBlockly(true);
+                } else if (type === EditorType.PYTHON) {
+                    setBlockly(false);
+                }
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_OPEN_FILE, async (filepath: string) => {
+                const filename = filepath.split('/').pop();
+                if (filename && EditorMgr.getInstance().hasEditorSession(filename)) return;
+                const fileType = filename?.includes('.blocks') ? FileType.BLOCKLY : FileType.PYTHON;
+                const fileData: NewFileData = {
+                    parentId: '',
+                    path: filepath,
+                    name: filename || '',
+                    filetype: fileType,
+                };
+                createEditorTab(fileData);
+                await CommandToXRPMgr.getInstance()
+                    .getFileContents(filepath)
+                    .then((content) => {
+                        // if the file is a block files, extract the blockly JSON out of the comment ##XRPBLOCKS
+                        let bytes = content;
+                        if (fileType === FileType.BLOCKLY) {
+                            const data: string = new TextDecoder().decode(new Uint8Array(bytes));
+                            const lines: string[] = data.split('##XRPBLOCKS ');
+                            bytes = Array.from(new TextEncoder().encode(lines.slice(-1)[0]));
+                        }
+                        const text =
+                            typeof bytes === 'string'
+                                ? bytes
+                                : new TextDecoder().decode(new Uint8Array(bytes));
+                        AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, text);
+                    });
+            });
+            hasSubscribed = true;
+        }
     });
 
     if (loading) {
@@ -86,37 +155,66 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
-     * onNewFileSubmitted - get the form data and create a new file on the layout
+     * createEditorTab - create the editor tabs in the editor tabset
+     * @param data - file data
      */
-    async function onNewFileSubmitted(data: NewFileData) {
-        console.log(data);
+    function createEditorTab(data: NewFileData) {
         switch (data.filetype) {
-            case FileType.BLOCKLY: {
+            case FileType.BLOCKLY:
+                {
                     const tabInfo: IJsonTabNode = {
                         component: 'blockly',
                         name: data.name,
                         id: data.name,
-                        helpText: data.path
+                        helpText: data.path,
                     };
                     layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
+                    AppMgr.getInstance().emit(EventType.EVENT_EDITOR, EditorType.BLOCKLY);
+                    EditorMgr.getInstance().AddEditor({
+                        id: data.name,
+                        type: EditorType.BLOCKLY,
+                        path: data.path,
+                        isSubscribed: false,
+                        fontsize: Constants.DEFAULT_FONTSIZE,
+                    });
+                    setActiveTab(data.name);
                 }
                 break;
-            case FileType.PYTHON: 
-            case FileType.OTHER: {
+            case FileType.PYTHON:
+            case FileType.OTHER:
+                {
                     const tabInfo: IJsonTabNode = {
                         component: 'editor',
                         name: data.name,
                         id: data.name,
-                        helpText: data.path
-                    }
+                        helpText: data.path,
+                    };
                     layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
+                    AppMgr.getInstance().emit(EventType.EVENT_EDITOR, EditorType.PYTHON);
+                    EditorMgr.getInstance().AddEditor({
+                        id: data.name,
+                        type: EditorType.PYTHON,
+                        path: data.path,
+                        isSubscribed: false,
+                        fontsize: Constants.DEFAULT_FONTSIZE,
+                    });
+                    setActiveTab(data.name);
                 }
                 break;
         }
+    }
+
+    /**
+     * onNewFileSubmitted - get the form data and create a new file on the layout
+     */
+    async function onNewFileSubmitted(data: NewFileData) {
+        createEditorTab(data);
         // create the file in XRP
-        await CommandToXRPMgr.getInstance().uploadFile(data.path, "").then(() => {
-            CommandToXRPMgr.getInstance().getOnBoardFSTree();
-        });
+        await CommandToXRPMgr.getInstance()
+            .uploadFile(data.path, '')
+            .then(() => {
+                CommandToXRPMgr.getInstance().getOnBoardFSTree();
+            });
         toggleDialog();
     }
 
@@ -125,7 +223,9 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function NewFile() {
         console.log(i18n.t('newFile'), layoutref);
-        setDialogContent(<NewFileDlg submitCallback={onNewFileSubmitted} toggleDialog={toggleDialog}/>);
+        setDialogContent(
+            <NewFileDlg submitCallback={onNewFileSubmitted} toggleDialog={toggleDialog} />,
+        );
         toggleDialog();
     }
 
@@ -142,8 +242,19 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function ExportToPC() {
         console.log(i18n.t('exportToPC'));
-        openFilePicker();
-        console.log(filesContent);
+        const session = EditorMgr.getInstance().getEditorSession(activeTab);
+        if (session) {
+            CommandToXRPMgr.getInstance()
+                .getFileContents(session.path)
+                .then((content) => {
+                    const data: string = new TextDecoder().decode(new Uint8Array(content));
+                    const blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
+                    FileSaver.saveAs(blob, session.id);
+                });
+        } else {
+            setDialogContent(<AlertDialog alertMessage={i18n.t('no-activetab')} toggleDialog={toggleDialog}/>);
+            toggleDialog();
+        }
     }
 
     /**
@@ -151,7 +262,27 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function SaveFile() {
         console.log(i18n.t('saveFile'));
-        setDialogContent(<SaveToXRPDlg />);
+        if (EditorMgr.getInstance().hasEditorSession(activeTab)) {
+            AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
+            setDialogContent(<SaveToXRPDlg />);
+        } else {
+            setDialogContent(<AlertDialog alertMessage={i18n.t('no-activetab')} toggleDialog={toggleDialog}/>);
+        }
+        toggleDialog();
+    }
+
+    /**
+     * hanleSaveFileAs
+     * @param fileData
+     */
+    function handleSaveFileAs(fileData: NewFileData) {
+        const editorMgr = EditorMgr.getInstance();
+        const session = editorMgr.getEditorSession(activeTab);
+        if (session) {
+            session.path = fileData.path + '/' + fileData.name;
+            AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
+            editorMgr.RenameEditor(activeTab, fileData.name);
+        }
         toggleDialog();
     }
 
@@ -160,15 +291,37 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function SaveFileAs() {
         console.log(i18n.t('saveFileAs'));
-        setDialogContent(<FileSaveAsDialg treeData={treeData} toggleDialog={toggleDialog} />);
-        toggleDialog();
+        if (EditorMgr.getInstance().hasEditorSession(activeTab)) {
+            const folderList = AppMgr.getInstance().getFolderList();
+            setDialogContent(
+                <FileSaveAsDialg
+                    treeData={JSON.stringify(folderList)}
+                    saveCallback={handleSaveFileAs}
+                    toggleDialog={toggleDialog}
+                />,
+            );
+            toggleDialog();
+        } else {
+            setDialogContent(
+                <AlertDialog alertMessage={i18n.t('no-activetab')} toggleDialog={toggleDialog} />,
+            );
+            toggleDialog();
+        }
     }
 
     /**
      * ViewPythonFile - view the Python file
      */
     function ViewPythonFile() {
-        console.log(i18n.t('viewPythonFile'));
+        const appMgr = AppMgr.getInstance();
+        // signal the editor to generate the python content in this editor session
+        appMgr.emit(EventType.EVENT_GENPYTHON, activeTab);
+        const viewPythonHandler = (code: string) => {
+            setDialogContent(<ViewPythonDlg code={code} toggleDlg={toggleDialog} />);
+            toggleDialog();
+            appMgr.eventOff(EventType.EVENT_GENPYTHON_DONE);
+        };
+        appMgr.on(EventType.EVENT_GENPYTHON_DONE, viewPythonHandler);
     }
 
     /**
@@ -183,6 +336,7 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function FontPlusPlus() {
         console.log(i18n.t('increaseFont'));
+        AppMgr.getInstance().emit(EventType.EVENT_FONTCHANGE, FontSize.INCREASE);
     }
 
     /**
@@ -190,13 +344,7 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function FontMinus() {
         console.log(i18n.t('decreaseFont'));
-    }
-
-    /**
-     * ToggleAutoComplete - toggle autocomplete
-     */
-    function ToggleAutoComplete() {
-        console.log(i18n.t('toggleAutoComplete'));
+        AppMgr.getInstance().emit(EventType.EVENT_FONTCHANGE, FontSize.DESCREASE);
     }
 
     /**
@@ -226,8 +374,62 @@ function NavBar({ layoutref }: NavBarProps) {
     /**
      * onRunBtnClicked
      */
-    function onRunBtnClicked() {
+    async function onRunBtnClicked() {
         console.log('onRunBtnClicked');
+        let continueExecution = true;
+        if (!isConnected) {
+            setDialogContent(
+                <AlertDialog
+                    alertMessage={i18n.t('XRP-not-connected')}
+                    toggleDialog={toggleDialog}
+                />,
+            );
+            toggleDialog();
+            return;
+        }
+
+        // Check battery voltage && version
+        await CommandToXRPMgr.getInstance()
+            .batteryVoltage()
+            .then((voltage) => {
+                const connectionType = AppMgr.getInstance().getConnectionType();
+                if (connectionType === ConnectionType.BLUETOOTH) {
+                    if (voltage < 0.4) {
+                        // display a confirmation message to ask the user to turn on the power switch
+                        setDialogContent(<PowerSwitchAlert cancelCallback={toggleDialog} />);
+                        toggleDialog();
+                        continueExecution = false;
+                    }
+                } else if (connectionType === ConnectionType.USB) {
+                    if (voltage < 0.4) {
+                        // display a confirmation message to ask the user to turn on the power switch
+                        setDialogContent(<PowerSwitchAlert cancelCallback={toggleDialog} />);
+                        toggleDialog();
+                    } else if (voltage < 5.0) {
+                        setDialogContent(<BatteryBadDlg cancelCallback={toggleDialog} />);
+                        toggleDialog();
+                        continueExecution = false;
+                    }
+                }
+            });
+
+        if (continueExecution) {
+            // Update the main.js
+            const session: EditorSession | undefined =
+                EditorMgr.getInstance().getEditorSession(activeTab);
+            if (session) {
+                // Save the current editor before running
+                //TODO - signal activeTab editor to save the file
+                await CommandToXRPMgr.getInstance()
+                    .updateMainFile(session.path)
+                    .then(async (lines) => {
+                        await CommandToXRPMgr.getInstance().executeLines(lines);
+                    });
+            }
+            setRunning(false);
+            // Disable menu temporilary
+            setConnected(false);
+        }
     }
 
     /**
@@ -244,7 +446,7 @@ function NavBar({ layoutref }: NavBarProps) {
     function ChangeLog() {}
 
     /**
-     * cancelDialog - toggle the dialog open and closed
+     * toggleDialog - toggle the dialog open and closed
      */
     function toggleDialog() {
         if (!dialogRef.current) {
@@ -262,31 +464,31 @@ function NavBar({ layoutref }: NavBarProps) {
                     label: i18n.t('newFile'),
                     iconImage: fileadd,
                     clicked: NewFile,
-                    isFile: true
+                    isFile: true,
                 },
                 {
-                    label: i18n.t('uploadFile'),
+                    label: i18n.t('uploadFiles'),
                     iconImage: fileupload,
                     clicked: UploadFile,
-                    isFile: true
+                    isFile: true,
                 },
                 {
                     label: i18n.t('exportToPC'),
                     iconImage: fileexport,
                     clicked: ExportToPC,
-                    isFile: true
+                    isFile: true,
                 },
                 {
                     label: i18n.t('saveFile'),
                     iconImage: filesave,
                     clicked: SaveFile,
-                    isFile: true
+                    isFile: true,
                 },
                 {
                     label: i18n.t('saveFileAs'),
                     iconImage: filesaveas,
                     clicked: SaveFileAs,
-                    isFile: true
+                    isFile: true,
                 },
             ],
         },
@@ -297,13 +499,13 @@ function NavBar({ layoutref }: NavBarProps) {
                     label: i18n.t('viewPythonFile'),
                     iconImage: python,
                     clicked: ViewPythonFile,
-                    isFile: false
+                    isView: true,
                 },
                 {
                     label: i18n.t('convertToPython'),
                     iconImage: convert,
                     clicked: ConvertToPython,
-                    isFile: false
+                    isView: true,
                 },
             ],
             childrenExt: [
@@ -311,19 +513,13 @@ function NavBar({ layoutref }: NavBarProps) {
                     label: i18n.t('increaseFont'),
                     iconImage: fontplus,
                     clicked: FontPlusPlus,
-                    isFile: false
+                    isView: true,
                 },
                 {
                     label: i18n.t('decreaseFont'),
                     iconImage: fontminus,
                     clicked: FontMinus,
-                    isFile: false
-                },
-                {
-                    label: 'i18n.t("toggleAutoComplete")',
-                    iconImage: autocomplete,
-                    clicked: ToggleAutoComplete,
-                    isFile: false
+                    isView: true,
                 },
             ],
         },
@@ -334,31 +530,26 @@ function NavBar({ layoutref }: NavBarProps) {
                     label: i18n.t('userGuide'),
                     iconImage: userguide,
                     link: 'https://xrpusersguide.readthedocs.io/en/latest/course/introduction.html',
-                    isFile: false
                 },
                 {
                     label: i18n.t('apiReference'),
                     iconImage: apilink,
                     link: 'https://open-stem.github.io/XRP_MicroPython/',
-                    isFile: false
                 },
                 {
                     label: i18n.t('cirriculum'),
                     iconImage: cirriculum,
                     link: 'https://introtoroboticsv2.readthedocs.io/en/latest/',
-                    isFile: false
                 },
                 {
                     label: i18n.t('userHelpForum'),
                     iconImage: forum,
                     link: 'https://xrp.discourse.group/',
-                    isFile: false
                 },
                 {
                     label: i18n.t('changeLog'),
                     iconImage: changelog,
                     clicked: ChangeLog,
-                    isFile: false
                 },
             ],
         },
@@ -383,7 +574,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                     {item.children.map((child, ci) => (
                                         <li
                                             key={ci}
-                                            className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500 ${(child.isFile && !isConnected) ? 'pointer-events-none' : 'pointer-events-auto'}`}
+                                            className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500 ${child.isFile && !isConnected ? 'pointer-events-none' : 'pointer-events-auto'} ${child.isView && !isBlockly ? 'hidden' : 'visible'}`}
                                             onClick={child.clicked}
                                         >
                                             <MenuItem isConnected={isConnected} item={child} />
@@ -391,7 +582,10 @@ function NavBar({ layoutref }: NavBarProps) {
                                     ))}
                                 </ul>
                                 {item.childrenExt && (
-                                    <ul id="blockId" className="hidden cursor-pointer flex-col">
+                                    <ul
+                                        id="blockId"
+                                        className={`${isBlockly ? 'hidden' : 'visible'} cursor-pointer flex-col`}
+                                    >
                                         {item.childrenExt?.map((child, ci) => (
                                             <li
                                                 key={ci}
@@ -410,8 +604,8 @@ function NavBar({ layoutref }: NavBarProps) {
             </div>
             {/** platform infor and connect button*/}
             <div className="flex flex-row items-center gap-4">
-                <div className='flex flex-col items-center text-sm text-shark-300'>
-                    <span>{`${xprID['platform']}-${xprID['XRPID']}`}</span>
+                <div className="flex flex-col items-center text-sm text-shark-300">
+                    {xprID && <span>{`${xprID['platform']}-${xprID['XRPID']}`}</span>}
                 </div>
                 <button
                     id="connectBtn"
@@ -443,17 +637,11 @@ function NavBar({ layoutref }: NavBarProps) {
                         </>
                     )}
                 </button>
-                <button 
-                    id="settingsId"
-                    onClick={onSettingsClicked}
-                >
+                <button id="settingsId" onClick={onSettingsClicked}>
                     <IoSettings size={'1.5em'} />
                 </button>
             </div>
-            <Dialog
-                toggleDialog={toggleDialog}
-                ref={dialogRef}
-            >
+            <Dialog isOpen={isDlgOpen} toggleDialog={toggleDialog} ref={dialogRef}>
                 {dialogContent}
             </Dialog>
         </div>

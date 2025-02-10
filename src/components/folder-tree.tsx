@@ -7,8 +7,8 @@ import useResizeObserver from 'use-resize-observer';
 import i18n from '@/utils/i18n';
 import { FaRegFolder } from 'react-icons/fa';
 import { FaFileAlt } from 'react-icons/fa';
-import BlocklyIcon from './icons/blockly-icon';
-import MicropythonIcon from './icons/micropython-icon';
+import BlocklyIcon from '@/components/icons/blockly-icon';
+import MicropythonIcon from '@/components/icons/micropython-icon';
 import { MdEdit } from 'react-icons/md';
 import { MdDeleteOutline } from 'react-icons/md';
 import FolderHeader from './folder-header';
@@ -19,9 +19,12 @@ import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
 
 type TreeProps = {
     treeData: string | null;
+    onSelected?: (selectedItem: FolderItem) => void;
     theme: string;
     isHeader?: boolean;
 };
+
+let hasSubscribed = false;
 
 /**
  * Folder component
@@ -46,34 +49,37 @@ function FolderTree(treeProps: TreeProps) {
     }, [treeProps.treeData]);
 
     useEffect(() => {
-        appMgrRef.current = AppMgr.getInstance();
-        appMgrRef.current.on(EventType.EVENT_FILESYS, (filesysJson: string) => {
-            try {
-                const filesysData = JSON.parse(filesysJson);
-                if (Object.keys(filesysData).length === 0) {
-                    setTreeData(undefined);
-                } else {
-                    if (viewType === ViewType.FOLDER) {
-                        const root = filesysData.at(0);
-                        for (const child of root.children) {
-                            if (child.name === 'lib') {
-                                const index = root.children.indexOf(child);
-                                root.children.splice(index, 1);
-                                break;
-                            }
-                        }
-                        setTreeData(filesysData);
+        if (!hasSubscribed) {
+            appMgrRef.current = AppMgr.getInstance();
+            appMgrRef.current.on(EventType.EVENT_FILESYS, (filesysJson: string) => {
+                try {
+                    const filesysData = JSON.parse(filesysJson);
+                    if (Object.keys(filesysData).length === 0) {
+                        setTreeData(undefined);
                     } else {
-                        setTreeData(filesysData);
+                        if (viewType === ViewType.FOLDER) {
+                            const root = filesysData.at(0);
+                            for (const child of root.children) {
+                                if (child.name === 'lib') {
+                                    const index = root.children.indexOf(child);
+                                    root.children.splice(index, 1);
+                                    break;
+                                }
+                            }
+                            setTreeData(filesysData);
+                        } else {
+                            setTreeData(filesysData);
+                        }
+                        appMgrRef.current?.setFoderData(filesysData);
                     }
-                    appMgrRef.current?.setFoderData(filesysData);
+                    setIsConnected(true);
+                } catch (err) {
+                    console.log(err);
+                    setTreeData(undefined);
                 }
-                setIsConnected(true);
-            } catch (err) {
-                console.log(err);
-                setTreeData(undefined);
-            }
-        });
+            });
+            hasSubscribed = true;
+        }
     }, [viewType]);
 
     function Input({ node }: { node: NodeApi<FolderItem> }) {
@@ -98,7 +104,7 @@ function FolderTree(treeProps: TreeProps) {
             Icon = MicropythonIcon;
         } else if (node.data.name.includes('.blocks')) {
             Icon = BlocklyIcon;
-        } else if (node.children && node.children.length > 0) {
+        } else if (node.children) {
             Icon = FaRegFolder;
         } else {
             Icon = FaFileAlt;
@@ -109,7 +115,15 @@ function FolderTree(treeProps: TreeProps) {
                 ref={dragHandle}
                 style={style}
                 className={`group flex flex-row items-center justify-between hover:bg-matisse-400 dark:hover:bg-shark-500 ${node.isSelected ? 'bg-curious-blue-300 dark:bg-shark-400' : ''}`}
-                onClick={() => node.isInternal && node.toggle()}
+                onClick={(e) => {
+                    if (node.isInternal) node.toggle();
+                    if (!(e.detail % 2)) {
+                        if (node.children === null) {
+                            const filePath = node.data.path === '/' ? node.data.path + node.data.name : node.data.path + '/' + node.data.name;
+                            AppMgr.getInstance().emit(EventType.EVENT_OPEN_FILE, filePath);
+                        }
+                    }
+                }}
             >
                 <div className="flex flex-row items-center">
                     {node.isLeaf === false &&
@@ -121,19 +135,21 @@ function FolderTree(treeProps: TreeProps) {
                         {node.isEditing ? <Input node={node} /> : node.data.name}
                     </span>
                 </div>
-                <div className="invisible flex flex-row items-center gap-1 px-2 group-hover:visible">
-                    <button onClick={() => node.edit()} title={i18n.t('rename')}>
-                        <MdEdit size={'1.5em'} />
-                    </button>
-                    <button
-                        onClick={() => {
-                            tree.delete(node.id);
-                        }}
-                        title={i18n.t('delete')}
-                    >
-                        <MdDeleteOutline size={'1.5em'} />
-                    </button>
-                </div>
+                {!treeProps.onSelected && (
+                    <div className="invisible flex flex-row items-center gap-1 px-2 group-hover:visible">
+                        <button onClick={() => node.edit()} title={i18n.t('rename')}>
+                            <MdEdit size={'1.5em'} />
+                        </button>
+                        <button
+                            onClick={() => {
+                                tree.delete(node.id);
+                            }}
+                            title={i18n.t('delete')}
+                        >
+                            <MdDeleteOutline size={'1.5em'} />
+                        </button>
+                    </div>
+                )}
             </div>
         );
     }
@@ -256,11 +272,15 @@ function FolderTree(treeProps: TreeProps) {
 
         if (newNode) {
             if (type === 'internal') {
-            // create the actual file in XRP
+                // create the actual file in XRP
                 await CommandToXRPMgr.getInstance().buildPath(newNode.path + '/' + newNode.name);
             } else if (type === 'leaf') {
                 // create the actual file in XRP
-                await CommandToXRPMgr.getInstance().uploadFile(newNode.path + '/' + newNode.name, '', true);
+                await CommandToXRPMgr.getInstance().uploadFile(
+                    newNode.path + '/' + newNode.name,
+                    '',
+                    true,
+                );
             }
         }
 
@@ -272,47 +292,14 @@ function FolderTree(treeProps: TreeProps) {
     // };{
 
     const onSelected = (nodes: NodeApi<FolderItem>[]) => {
-        console.log(`Selected nodes: ${nodes.map((node) => node.data.name).join(', ')}`);
+        // console.log(`Selected nodes: ${nodes.map((node) => node.data.name).join(', ')}`);
         const selectedItems: FolderItem[] = [];
         nodes.map((node) => selectedItems.push(node.data));
+        if (treeProps.onSelected && selectedItems.length > 0) {
+            treeProps.onSelected(selectedItems[0]);
+        }
         setSelectedItems(selectedItems);
     };
-
-    // const onMenuDelete = () => {
-    //     console.log('onMenuDelete', selectedItems?.length);
-    // };
-    // const onMenuRename = () => {
-    //     console.log('onMenuRename');
-    // };
-    // const onMenuNew = () => {
-    //     console.log('onMenuNew');
-    // };
-    // const onMenuExport = () => {
-    //     console.log('onMenuExport');
-    // };
-
-    // const menuItems: MenuDataItem[] = [
-    //     {
-    //         label: i18n.t('delete'),
-    //         iconImage: deleteIcon,
-    //         clicked: onMenuDelete,
-    //     },
-    //     {
-    //         label: i18n.t('rename'),
-    //         iconImage: renameIcon,
-    //         clicked: onMenuRename,
-    //     },
-    //     {
-    //         label: i18n.t('new'),
-    //         iconImage: fileNewIcon,
-    //         clicked: onMenuNew,
-    //     },
-    //     {
-    //         label: i18n.t('exportToPC'),
-    //         iconImage: exportIcon,
-    //         clicked: onMenuExport,
-    //     },
-    // ];
 
     /**
      * onOpenFolder - open the selected folder
@@ -326,7 +313,7 @@ function FolderTree(treeProps: TreeProps) {
             treeData
                 ?.at(0)
                 ?.children?.filter((folder) => folder.name === selectedItems?.[0]?.name) || [];
-        if (tree) {
+        if (tree && tree.length > 0) {
             setTreeData(tree);
         }
     }
@@ -355,42 +342,40 @@ function FolderTree(treeProps: TreeProps) {
     }
 
     return (
-        // <ContextMenu items={menuItems}>
-            <div className="flex flex-col gap-1">
-                {treeProps.isHeader && isConnected && (
-                    <FolderHeader
-                        openFolderCallback={onOpenFolder}
-                        closeFolderCallback={onCloseFolder}
-                        newFileCallback={onNewFile}
-                        newFolderCallback={onNewFolder}
-                        storageCapacity="14/135MB"
-                    />
-                )}
-                <div ref={ref} style={{ height: treeProps.treeData ? '50vh' : '100vh' }}>
-                    <Tree
-                        ref={treeRef}
-                        className="text-md border border-shark-200 bg-mountain-mist-100 text-shark-900 dark:border-shark-950 dark:bg-mountain-mist-950 dark:text-shark-200"
-                        data={treeData}
-                        width={width}
-                        height={height}
-                        rowHeight={24}
-                        renderCursor={() => 'default'}
-                        openByDefault={false}
-                        initialOpenState={{ root: true }}
-                        paddingBottom={32}
-                        disableEdit={(data) => data.isReadOnly}
-                        disableDrag={true}
-                        disableDrop={true}
-                        onDelete={onDelete}
-                        onRename={onRename}
-                        onSelect={onSelected}
-                        onCreate={onCreate}
-                    >
-                        {Node}
-                    </Tree>
-                </div>
+        <div className="flex flex-col gap-1">
+            {treeProps.isHeader && isConnected && (
+                <FolderHeader
+                    openFolderCallback={onOpenFolder}
+                    closeFolderCallback={onCloseFolder}
+                    newFileCallback={onNewFile}
+                    newFolderCallback={onNewFolder}
+                    storageCapacity="14/135MB"
+                />
+            )}
+            <div ref={ref} style={{ height: treeProps.treeData ? '40vh' : '100vh' }}>
+                <Tree
+                    ref={treeRef}
+                    className="text-md border border-shark-200 bg-mountain-mist-100 text-shark-900 dark:border-shark-950 dark:bg-mountain-mist-950 dark:text-shark-200"
+                    data={treeData}
+                    width={width}
+                    height={height}
+                    rowHeight={24}
+                    renderCursor={() => 'default'}
+                    openByDefault={false}
+                    initialOpenState={{ root: true }}
+                    paddingBottom={32}
+                    disableEdit={(data) => data.isReadOnly}
+                    disableDrag={true}
+                    disableDrop={true}
+                    onDelete={onDelete}
+                    onRename={onRename}
+                    onSelect={onSelected}
+                    onCreate={onCreate}
+                >
+                    {Node}
+                </Tree>
             </div>
-        // </ContextMenu>
+        </div>
     );
 }
 

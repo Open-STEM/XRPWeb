@@ -76,7 +76,7 @@ export default class ConnectionMgr {
                 ConnectionState.Disconnected.toString(),
             );
             // notify the folder tree to clear its data
-            this.appMgr.emit(EventType.EVENT_FILESYS, "{}");
+            this.appMgr.emit(EventType.EVENT_FILESYS, '{}');
         }
     }
 

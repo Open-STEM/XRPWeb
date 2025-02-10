@@ -10,6 +10,7 @@ describe('Dialog Component', () => {
             <Dialog
                 toggleDialog={cancelDialog}
                 children="This is a test dialog"
+                isOpen={false}
             />,
         );
 

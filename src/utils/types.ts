@@ -1,3 +1,4 @@
+
 export enum ConnectionType {
     USB,
     BLUETOOTH,
@@ -14,13 +15,22 @@ export enum ViewType {
     SYSTEM = 1
 }
 
-export enum ConnectionCMD{
+export enum EditorType {
+    BLOCKLY = 'blockly',
+    PYTHON = 'python'
+}
+
+export enum ConnectionCMD {
     CONNECT_USB = 'usb-connection',
     CONNECT_BLUETOOTH = 'bluetooth-connection',
     CONNECT_RUN = 'run',
     CONNECT_STOP = 'stop'
 }
 
+export enum FontSize {
+    INCREASE = 'increase',
+    DESCREASE = 'descrease'
+}
 export interface FolderItem {
     id: string;
     name: string;
@@ -33,7 +43,7 @@ export interface FolderItem {
 
 export type ListItem = {
     label: string;
-    image: string;
+    image?: string;
 };
 
 export type NewFileData = {
@@ -41,8 +51,14 @@ export type NewFileData = {
     path: string,
     filetype: FileType
     parentId: string;
+    content?: string;
 }
 
 export type SettingData = {
     view: number
+}
+
+export type FileData = {
+    name: string;
+    content: string;
 }

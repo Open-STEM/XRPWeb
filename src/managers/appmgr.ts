@@ -2,7 +2,8 @@ import FilesysMgr from '@/managers/filesysmgr';
 import connecionMgr from '@/managers/connectionmgr';
 import mitt from 'mitt';
 import Connection from '@/connections/connection';
-import { FolderItem } from '@/utils/types';
+import { ConnectionType, EditorType, FolderItem } from '@/utils/types';
+import { BluetoothConnection } from '@/connections/bluetoothconnection';
 
 export enum Themes {
     DARK = 'dark',
@@ -15,7 +16,14 @@ export enum EventType {
     EVENT_CONNECTION_STATUS = 'connection-status', // connection status updates
     EVENT_THEME = 'theme-change',    // System theme change event
     EVENT_CONNECTION = 'connection',
-    EVENT_ID = 'id'    // XRP platform ID,
+    EVENT_ID = 'id',    // XRP platform ID
+    EVENT_EDITOR = 'editor', // editor events
+    EVENT_OPEN_FILE = 'open-file', // open file event
+    EVENT_EDITOR_LOAD = 'editor-load',  // loading data into editor
+    EVENT_FONTCHANGE = 'font-change',   // change manoco editor fontsize
+    EVENT_GENPYTHON = 'gen-python',     // change python requestion
+    EVENT_GENPYTHON_DONE = 'gen-python-done',   // python code generation completed
+    EVENT_SAVE_EDITOR = 'save-editor',          // save editor event
 }
 
 type Events = {
@@ -25,6 +33,13 @@ type Events = {
     [EventType.EVENT_THEME]: string;
     [EventType.EVENT_CONNECTION]: string;
     [EventType.EVENT_ID]: string;
+    [EventType.EVENT_EDITOR]: EditorType;
+    [EventType.EVENT_OPEN_FILE]: string;
+    [EventType.EVENT_EDITOR_LOAD]: string;
+    [EventType.EVENT_FONTCHANGE]: string;
+    [EventType.EVENT_GENPYTHON]: string;
+    [EventType.EVENT_GENPYTHON_DONE]: string;
+    [EventType.EVENT_SAVE_EDITOR]: string;
 };
 
 /**
@@ -41,7 +56,8 @@ export default class AppMgr {
     private connectionMgr: connecionMgr | null = null;
     private folderData : FolderItem[] | null = null;
 
-    // @ts-expect-error Private constructor to prevent direct instantiation
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     private AppMgr() {}
 
     public static getInstance(): AppMgr {
@@ -105,6 +121,14 @@ export default class AppMgr {
     }
 
     /**
+     * eventOff - turn off an event subscription
+     * @param eventName 
+     */
+    public eventOff(eventName: EventType) {
+        this.emitter.off(eventName);
+    }
+
+    /**
      * Emit events
      * @param eventName
      * @param eventData
@@ -131,11 +155,38 @@ export default class AppMgr {
     }
 
     /**
+     * getConnectionType - return the type of active connection, i.e., bluetooth or USB
+     * @returns ConnectionType
+     */
+    public getConnectionType(): ConnectionType {
+        const connection = this.connectionMgr?.getConnection() 
+        return connection instanceof BluetoothConnection ? ConnectionType.BLUETOOTH : ConnectionType.USB;
+    }
+
+    /**
      * setFolderData - save a list of folder names for use with New File dialog
      * @param folderData 
      */
     public setFoderData(folderData: FolderItem[]) {
         this.folderData = folderData;
+    }
+
+
+    private filterFolders(folders: FolderItem[]): FolderItem[] | null {
+        for (let i=0; i < folders.length; i++) {
+            const children = folders[i].children;
+            if (children !== null) {
+                folders[i].children = children.filter(folder => (folder.children !== null)).map(folder => ({
+                    name: folder.name,
+                    id: folder.id,
+                    isReadOnly: folder.isReadOnly,
+                    path: folder.path,
+                    children: folder.children        
+                }))
+                this.filterFolders(children);
+            }
+        }
+        return folders;
     }
 
     /**
@@ -145,12 +196,16 @@ export default class AppMgr {
         if (!this.folderData) {
             return null;
         }
-        return this.folderData?.at(0)?.children?.filter(folder => (folder.name !== 'lib' && folder.children !== null)).map(folder => ({ 
+
+        // remove the lib directory first
+        const folders = this.folderData?.at(0)?.children?.filter(folder => (folder.name !== 'lib' && folder.children !== null)).map(folder => ({ 
             name: folder.name,
             id: folder.id,
             isReadOnly: folder.isReadOnly,
             path: folder.path,
             children: folder.children
         })) ?? null;
+
+        return folders ? this.filterFolders(folders) : null;
     }
 }
