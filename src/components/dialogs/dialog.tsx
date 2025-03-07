@@ -1,35 +1,25 @@
-import i18n from '@/utils/i18n';
-import Button from '@/widgets/button';
 import React, { forwardRef } from 'react';
 
 type DialogProps = {
     children: React.ReactNode;
-    okBtnLabel: string;
-    footter: boolean;
-    cancelDialog: () => void;
-    okDialog: () => void;
+    isOpen: boolean;
+    toggleDialog: () => void;
 };
 
 const Dialog = forwardRef<HTMLDialogElement, DialogProps>((dlgProps, ref) => {
     return (
         <dialog
-            className="rounded-md dark:border dark:border-shark-600 dark:bg-shark-950 shadow-md"
+            style={{zIndex: 1000, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0}}
+            open={dlgProps.isOpen}
+            className="rounded-md shadow-md border-shark-400 backdrop:bg-mountain-mist-500 backdrop:opacity-40 dark:border dark:border-shark-600 dark:bg-shark-950 transition-all"
             ref={ref}
             onClick={(e) => {
                 if (e.currentTarget === e.target) {
-                    dlgProps.cancelDialog();
+                    dlgProps.toggleDialog();
                 }
             }}
         >
-            <div className="flex flex-col gap-6 p-6">
-                {dlgProps.children}
-                {dlgProps.footter && (
-                    <div className="flex flex-row items-center justify-end gap-5">
-                        <Button label={i18n.t('cancelButton')} onClicked={dlgProps.cancelDialog} />
-                        <Button label={dlgProps.okBtnLabel} onClicked={dlgProps.okDialog} />
-                    </div>
-                )}
-            </div>
+            {dlgProps.children}
         </dialog>
     );
 });

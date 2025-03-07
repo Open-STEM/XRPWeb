@@ -14,7 +14,7 @@ To export the Markdown file, these are the tools need to be installed on your sy
 - [plantuml](https://plantuml.com/)
 
 ```
-pandoc docs/XRP\ Software\ Architecture.md -t pdf -F pandoc-plantuml -o "XRP Software Architecture".pdf
+pandoc docs/XRP\ Software\ Architecture.md --pdf-engine=xelatex -V "mainfont:DejaVu Sans" -V "monofont:DejaVu Sans Mono" -t pdf -F pandoc-plantuml -o "XRP Software Architecture".pdf
 ```
 
 ## References

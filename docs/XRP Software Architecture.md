@@ -282,13 +282,13 @@ The application components manages the core functionality of the following featu
 @startuml
     class AppMgr
     class ConnectionMgr
-    class FilesysMgr
+    class CommandToXRPMgr
     class EditorMgr
     class StreamWorker
 
     StreamWorker *-- ConnectionMgr
+    CommandToXRPMgr *-- ConnectionMgr
     ConnectionMgr *-- AppMgr
-    FilesysMgr *-- AppMgr
     EditorMgr *-- AppMgr
 
 @enduml
@@ -382,6 +382,128 @@ The XRP Web Development application is developed and meet the following quality 
 ## Security Requirements
 
 XRP Web Development application is hosted in a server farm at WPI. Https secured protocol is used. A valid server HTTP server certificate is configured for the XRPCode subdomain.
+
+## Coding Standards
+
+Every organization has its own software development standard. The following is some of the recommend best practices.
+
+### Naming Convention
+
+The goal of of having a standard naming convention in the code base is to provide the following attributes of software engineering principles.
+
+- Readability
+- Maintainability
+- Organization
+- Communication
+
+These attributes help create a cohesive and structure codebase that is easier to work with and to help reduce errors and to promote collaboration among developers. Readability and Maintainability attributes contribute the overal software development styles and consistency in the codebase. The last two attributes create a collaborative environment and froster transparency and improve healthy organization interactions.
+
+The following list some popular naming conventions.
+
+- PascalCase
+- camelCase
+- kebab-case
+- SCREAMING_SNAKE_CASE
+
+#### Pascal Case
+
+Pascal Case refers to the convention of writing compound words in which the first letter of each word is capitalized. There is no space or punctuation between words. The typical use case is class name or component name. See the below example.
+
+```
+// React Component
+const NewFile = () => {
+    // ...
+}
+
+// Enumeration
+export enum ConnectionType {
+    USB,
+    BLUETOOTH
+}
+
+// types
+export type ListItem {
+    label: string,
+    image: string
+}
+```
+
+#### camelCase
+
+Camel Case refers to the convention of writing compound words or phrases where each word begin with a capital letter except the first word. This convention always starts with a lower case letter of the first word.
+
+```
+// Variable Name
+const [filename, setFileName] = useState('')
+
+// Function Name
+const getFilename = () {
+    return this.filename;
+}
+
+// Object properties
+const userOptions: ListItem[] = [
+    {
+        label: 'Kevin',
+        image: blocklyIcon,
+    },
+    {
+        label: 'Frank',
+        image: pythonIcon,
+    },
+    {
+        label: 'Kathy',
+        image: pythonIcon,
+    },
+];
+
+// Custom Hooks
+const useFile = () => {
+    // ...
+}
+```
+
+#### Kebab Case
+
+Kebab case refers to the convention of writing compound words in lowercase name with a hyphens ("-") between the words. Kebab case is popular for using in CSS class names. Since this architecture specified Tailwind CSS as the CSS utility framework, all of the Tailwind CSS styling are specified inline with CSS utility classes. Kebab case is used sparingly.
+However, this convention can be used in naming source files.
+
+### Folder Structure
+
+A clear and organized folder structure provides easy navigation of the source tree and grouping of all related components in the subtree. A well-designed folder structure is essential for code maintainance and for codebase scalability. An example of the folder structure is shown below.
+
+```
+src/                     // Root folder for the source code
+├── features/            // Grouping features of the application
+│   └── ...              // Other feature folders (e.g., authentication, dashboard)
+├── components/          // Reusable components
+│   ├── ...              // Component folders (e.g., Button, Header)
+├── utils/               // Utility functions
+│   ├── ...              // Helper functions or services (e.g., dateUtils, apiUtils)
+├── assets/              // Storing static assets
+│   ├── images/          // Storing image files (e.g., logos, icons)
+│   ├── fonts/           // Storing font files (e.g., custom fonts)
+│   └── ...              // Other asset types (e.g., videos, audio)
+├── styles/              // Global styles
+│   └── ...              // Style files (e.g., global.css, themes)
+├── App.tsx              // Entry point of the application
+└── ...                  // Other necessary files and folders (e.g., index.tsx, routes.tsx)
+```
+
+## Development Environment
+
+This software architecture is based on all open-source software and tools. It leverages existing React components publish via npm. Visual Studio Code (VSCode) is the recommended developer integrated development environment (IDE). This IDE provides many helpful extensions to ease software development. Github repository is used to maintain the codebase.
+
+### Recommended VSCode plug-ins
+
+- ESLint
+- React Extension Pack
+- Tailwind CSS Intellisense
+- Vitest
+- Git Graph
+- PlantUML
+- Prettier
+- Github Copilot Chat
 
 ## Ricks
 
