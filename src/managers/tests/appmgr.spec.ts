@@ -34,6 +34,17 @@ describe('AppMgr', () => {
     });
 
     it('should initialize FilesysMgr on start', () => {
+        const mockResponse = {
+            version: '1.0.3'
+        };
+        global.fetch = vi.fn(() => 
+            Promise.resolve({
+                ok: true,
+                status: 200,
+                statusText: 'OK',
+                type: 'basic',
+                text: () => Promise.resolve(JSON.stringify(mockResponse))
+            } as unknown as Response));
         appMgr.start();
         expect(FilesysMgr).toHaveBeenCalled();
     });
