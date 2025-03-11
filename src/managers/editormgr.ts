@@ -95,6 +95,8 @@ export default class EditorMgr {
         const session = this.editorSessions.get(id);
         if (session) {
             session.id = newName;
+            this.editorSessions.delete(id);
+            this.editorSessions.set(newName, session);
             this.layoutModel?.doAction(Actions.renameTab(id, newName));
             this.layoutModel?.doAction(Actions.updateNodeAttributes(id, {helpText: session.path}))
         }
