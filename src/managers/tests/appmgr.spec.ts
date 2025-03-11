@@ -1,8 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import AppMgr, { EventType } from '@managers/appmgr';
-import FilesysMgr from '@managers/filesysmgr';
-
-vi.mock('../filesysmgr');
 
 // Mock implementation for window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
@@ -31,22 +28,6 @@ describe('AppMgr', () => {
         const instance1 = AppMgr.getInstance();
         const instance2 = AppMgr.getInstance();
         expect(instance1).toBe(instance2);
-    });
-
-    it('should initialize FilesysMgr on start', () => {
-        const mockResponse = {
-            version: '1.0.3'
-        };
-        global.fetch = vi.fn(() => 
-            Promise.resolve({
-                ok: true,
-                status: 200,
-                statusText: 'OK',
-                type: 'basic',
-                text: () => Promise.resolve(JSON.stringify(mockResponse))
-            } as unknown as Response));
-        appMgr.start();
-        expect(FilesysMgr).toHaveBeenCalled();
     });
 
     it('should subscribe to events', () => {

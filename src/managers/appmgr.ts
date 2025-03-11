@@ -1,4 +1,3 @@
-import FilesysMgr from '@/managers/filesysmgr';
 import connecionMgr from '@/managers/connectionmgr';
 import mitt from 'mitt';
 import Connection from '@/connections/connection';
@@ -56,7 +55,6 @@ export default class AppMgr {
     private theme: string | undefined;
     private static instance: AppMgr;
     private emitter = mitt<Events>();
-    private filesysMgr: FilesysMgr | null = null;
     private connectionMgr: connecionMgr | null = null;
     private folderData : FolderItem[] | null = null;
 
@@ -79,8 +77,6 @@ export default class AppMgr {
         this.onThemeChange(window.matchMedia('(prefers-color-scheme: dark)').matches ? Themes.DARK : Themes.LIGHT);
         // listen to system theme change event
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => this.onThemeChange(e.matches ? Themes.DARK : Themes.LIGHT));
-        this.filesysMgr = new FilesysMgr();
-        this.filesysMgr.start();
         this.connectionMgr = new connecionMgr(this); 
     }
 
