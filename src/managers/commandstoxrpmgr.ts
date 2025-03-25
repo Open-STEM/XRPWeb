@@ -228,6 +228,7 @@ export class CommandToXRPMgr {
             this.cmdLogger.debug("no MicroPython");
             //await this.showMicropythonUpdate?.();
             //TODO: Need to ask users if they want to update
+            AppMgr.getInstance().emit(EventType.EVENT_MICROPYTHON_UPDATE, this.MP_VERSION.toString());
             return this.XRPId;
         }
 
@@ -249,12 +250,15 @@ export class CommandToXRPMgr {
             
             //TODO: need to ask user 
             //TODO: only do this if we are on USB
-            await this.updateMicroPython();
+            AppMgr.getInstance().emit(EventType.EVENT_MICROPYTHON_UPDATE, this.MP_VERSION.toString());
+            //await this.updateMicroPython();
         }
 
         //if no library or the library is out of date
         if (Number.isNaN(parseFloat(info[1] as string)) || this.isVersionNewer(this.latestLibraryVersion, info[1] as string)) {
-            await this.updateLibrary(info[1] as string);
+            if (info[1]) 
+                AppMgr.getInstance().emit(EventType.EVENT_XRPLIB_UPDATE, info[1]?.toString());
+            //await this.updateLibrary(info[1] as string);
         }
         return this.XRPId;
     }
@@ -629,7 +633,12 @@ export class CommandToXRPMgr {
             this.BUSY = true;
             //window.setPercent?.(1, "Renaming file..."); TODO:
 
-            const newPath = oldPath.substring(0, oldPath.lastIndexOf("/") + 1) + newName;
+            let newPath;
+            if (newName.includes('/')) {
+                newPath = newName;
+            } else {
+                newPath = oldPath.substring(0, oldPath.lastIndexOf("/") + 1) + newName;
+            }
             const cmd = "import uos\n" +
                 "exists = 1\n" +
                 "try:\n" +

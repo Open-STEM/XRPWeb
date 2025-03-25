@@ -62,3 +62,8 @@ export type FileData = {
     name: string;
     content: string;
 }
+
+export type Versions = {
+    currentVersion: string;
+    newVersion: string;
+}

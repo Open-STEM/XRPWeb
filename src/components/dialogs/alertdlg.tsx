@@ -15,7 +15,7 @@ export default function AlertDialog({ alertMessage, toggleDialog }: AlertProps) 
                 </h1>
             </div>
             <hr className="w-full border-mountain-mist-600" />
-            <span>{alertMessage}</span>
+            <span className='text-md text-mountain-mist-900'>{alertMessage}</span>
             <hr className="w-full border-mountain-mist-600" />
             <DialogFooter
                 hideCancelBtn={true}

@@ -67,6 +67,17 @@
     "final-path": "Final Path: ",
     "no-activetab": "There is no active editing session. Please open an editing session first!",
     "choose-dest-file": "Choose a destination folder and provide a name to save to XRP!",
+    "update": "XRP Micropython or XRP Library Software Update Notification",
+    "update-desc": "The system has detected that an update is needed for the XRP",
+    "update-MP": "Micropython is neither present or new version is available. It is recommended that the install or update the Micropython is needed.",
+    "update-lib": "XRP library is neither present or new version is available. It is recommended that the install or update is needed.",
+    "update-inst": "For best update result, it is recommended that you connect the USB cable to the XRP for the software update process.",
+    "current-mp-version": "Current Micropython Version: ",
+    "available-mp-version": "New Micropython Version: ",
+    "current-lib-version": "Current XRP Library Version: ",
+    "available-lib-version": "New XRP Library Version: ",
+    "confirmTitle": "Confirmation",
+    "convert-to-python-desc": "This action will convert the current Blocks program to a Python program. Your Blocks program will be put in the trash folder and a new Python program will be created. Are you sure that you want to proceed?",
     "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
     "individualMotors": "Individual Motors"
 }
