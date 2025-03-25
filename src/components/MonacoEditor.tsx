@@ -150,18 +150,18 @@ const MonacoEditor = ({
         [fixedWidth, fixedHeight],
     );
 
-    /**
-     * SaveEditor save the current editor session to XRP
-     * @param code
-     */
-    function SaveEditor(code: string) {
-        const activeTab = localStorage.getItem(StorageKeys.ACTIVETAB)?.replace(/^"|"$/g, '');
-        if (activeTab === name) {
-            EditorMgr.getInstance().saveEditor(name, code);
-        }
-    }
-
     useEffect(() => {
+        /**
+         * SaveEditor save the current editor session to XRP
+         * @param code
+         */
+        function SaveEditor(code: string) {
+            const activeTab = localStorage.getItem(StorageKeys.ACTIVETAB)?.replace(/^"|"$/g, '');
+            if (activeTab === name) {
+                EditorMgr.getInstance().saveEditor(name, code);
+            }
+        }
+
         if (
             EditorMgr.getInstance().hasEditorSession(name) &&
             !EditorMgr.getInstance().hasSubscription(name)

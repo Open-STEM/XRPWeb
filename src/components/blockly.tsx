@@ -187,16 +187,15 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
 
             AppMgr.getInstance().on(EventType.EVENT_GENPYTHON, (activeTab) => {
                 if (name === activeTab) {
-                    const ws = Blockly.getMainWorkspace();
-                    const code = pythonGenerator.workspaceToCode(ws);
-
-                    if (ws && code) {
-                        const session: EditorSession | undefined =
-                            EditorMgr.getInstance().getEditorSession(activeTab);
-                        if (session) {
+                    const session: EditorSession | undefined =
+                    EditorMgr.getInstance().getEditorSession(activeTab);
+                    if (session) {
+                        const ws = Blockly.getMainWorkspace();
+                        const code = pythonGenerator.workspaceToCode(ws);
+                        if (ws && code) {
                             session.content = code;
+                            AppMgr.getInstance().emit(EventType.EVENT_GENPYTHON_DONE, code);
                         }
-                        AppMgr.getInstance().emit(EventType.EVENT_GENPYTHON_DONE, code);
                     }
                 }
             });

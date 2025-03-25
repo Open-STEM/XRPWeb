@@ -70,6 +70,17 @@ export default class EditorMgr {
     public RemoveEditor(id: string ): string | undefined{
         console.log('RemoveEditor: ', id);
         if (this.editorSessions.has(id)) {
+            const sesion = this.editorSessions.get(id);
+            // clean up the event subscriptions
+            const appMgr = AppMgr.getInstance();
+            appMgr.eventOff(EventType.EVENT_THEME);
+            appMgr.eventOff(EventType.EVENT_EDITOR_LOAD);
+            if (sesion?.type === EditorType.BLOCKLY) {
+                appMgr.eventOff(EventType.EVENT_GENPYTHON);
+            } else if (sesion?.type === EditorType.PYTHON) {
+                appMgr.eventOff(EventType.EVENT_FONTCHANGE);
+            }
+            appMgr.eventOff(EventType.EVENT_SAVE_EDITOR); 
             this.editorSessions.delete(id);
         }
         if (this.editorSessions.size > 0) {
@@ -84,6 +95,14 @@ export default class EditorMgr {
             return session?.id;
         }
         return undefined;
+    }
+
+    /**
+     * RemoveEditorTab - remove specified editor id from the Editor layout
+     * @param id 
+     */
+    public RemoveEditorTab(id: string) {
+        this.layoutModel?.doAction(Actions.deleteTab(id));
     }
 
     /**

@@ -50,6 +50,8 @@ import ViewPythonDlg from '@/components/dialogs/view-pythondlg';
 import AlertDialog from '@/components/dialogs/alertdlg';
 import BatteryBadDlg from '@/components/dialogs/battery-baddlg';
 import SaveProgressDlg from '@/components/dialogs/save-progressdlg';
+import ConfirmationDlg from './dialogs/confirmdlg';
+import UpdateDlg from './dialogs/updatedlg';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -141,6 +143,19 @@ function NavBar({ layoutref }: NavBarProps) {
                                 : new TextDecoder().decode(new Uint8Array(bytes));
                         AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, text);
                     });
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_MICROPYTHON_UPDATE, (version) => {
+                console.log(version);
+                setDialogContent(<UpdateDlg toggleDialog={toggleDialog} isUpdateMP={true} isUpdateLib={false} />);
+                toggleDialog();
+
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_XRPLIB_UPDATE, (version) => {
+                console.log(version);
+                setDialogContent(<UpdateDlg toggleDialog={toggleDialog} isUpdateMP={false} isUpdateLib={true} />);
+                toggleDialog();
             });
             hasSubscribed = true;
         }
@@ -332,22 +347,72 @@ function NavBar({ layoutref }: NavBarProps) {
      * ViewPythonFile - view the Python file
      */
     function ViewPythonFile() {
-        const appMgr = AppMgr.getInstance();
-        // signal the editor to generate the python content in this editor session
-        appMgr.emit(EventType.EVENT_GENPYTHON, activeTab);
         const viewPythonHandler = (code: string) => {
             setDialogContent(<ViewPythonDlg code={code} toggleDlg={toggleDialog} />);
             toggleDialog();
             appMgr.eventOff(EventType.EVENT_GENPYTHON_DONE);
         };
+        const appMgr = AppMgr.getInstance();
+        // signal the editor to generate the python content in this editor session
         appMgr.on(EventType.EVENT_GENPYTHON_DONE, viewPythonHandler);
+        appMgr.emit(EventType.EVENT_GENPYTHON, activeTab);
     }
+
+    /**
+     * BlocksToPythonCallback - setup the conversion of the current active Blocks program to Python program
+     */
+    const BlocksToPythonCallback = () => {
+        const convertToPythonHandler = async (code: string) => {
+            // remove the active tab and create a new python editor tab with the code
+            const editorSession = EditorMgr.getInstance().getEditorSession(activeTab);
+            if (editorSession) {
+                const fileData: NewFileData = {
+                    parentId: '',
+                    path: editorSession?.path,
+                    name: editorSession.id.split('.blocks')[0] + '.py',
+                    filetype: FileType.PYTHON,
+                    content: code,
+                };
+                // move the converted blockly file to /trash
+                await CommandToXRPMgr.getInstance().renameFile(
+                    editorSession.path,
+                    Constants.TRASH_FOLDER + '/' + editorSession.id,
+                ).then(async () => {
+                    // save the file to python
+                    const path = editorSession.path.split('.blocks')[0] + '.py';
+                    await CommandToXRPMgr.getInstance().uploadFile(path, code).then(() => {
+                        EditorMgr.getInstance().RemoveEditor(activeTab);
+                        createEditorTab(fileData);
+                    });
+                    await CommandToXRPMgr.getInstance().getFileContents(path).then((content) => {
+                        // if the file is a block files, extract the blockly JSON out of the comment ##XRPBLOCKS
+                        const text = new TextDecoder().decode(new Uint8Array(content));
+                        AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, text)
+                    })
+                });
+            }
+            EditorMgr.getInstance().RemoveEditorTab(activeTab);
+            appMgr.eventOff(EventType.EVENT_GENPYTHON_DONE);
+        };
+        const appMgr = AppMgr.getInstance();
+        // signal the editor to generate the python content in this editor session
+        appMgr.on(EventType.EVENT_GENPYTHON_DONE, convertToPythonHandler);
+        appMgr.emit(EventType.EVENT_GENPYTHON, activeTab);
+        toggleDialog();
+    };
 
     /**
      * ConvertToPython - convert the current blockly file to Python
      */
     function ConvertToPython() {
-        console.log(i18n.t('convertToPython'));
+        setDialogContent(
+            <ConfirmationDlg
+                acceptCallback={BlocksToPythonCallback}
+                toggleDialog={toggleDialog}
+                confirmationMessage={i18n.t('convert-to-python-desc')}
+            />,
+        );
+        toggleDialog();
     }
 
     /**

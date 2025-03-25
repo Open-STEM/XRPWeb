@@ -25,6 +25,10 @@ export enum EventType {
     EVENT_SAVE_EDITOR = 'save-editor',          // save editor event
     EVENT_PROGRESS = 'progress',        // progressbar event
     EVENT_UPLOAD_DONE = 'progress-done',      // progress done event
+    EVENT_MICROPYTHON_UPDATE = 'micropython-update',    // request micropythong update
+    EVENT_MICROPYTHON_UPDATE_DONE = 'micropython-update-done',  // micropython update done
+    EVENT_XRPLIB_UPDATE = 'xrplib-update',              // XRP update request
+    EVENT_XRPLIB_UPDATE_DONE = 'xrplib-update-done'    // XRP update done
 }
 
 type Events = {
@@ -43,6 +47,10 @@ type Events = {
     [EventType.EVENT_SAVE_EDITOR]: string;
     [EventType.EVENT_PROGRESS]: string;
     [EventType.EVENT_UPLOAD_DONE]: string;
+    [EventType.EVENT_MICROPYTHON_UPDATE]: string;
+    [EventType.EVENT_MICROPYTHON_UPDATE_DONE]: string;
+    [EventType.EVENT_XRPLIB_UPDATE]: string;
+    [EventType.EVENT_XRPLIB_UPDATE_DONE]: string;
 };
 
 /**
