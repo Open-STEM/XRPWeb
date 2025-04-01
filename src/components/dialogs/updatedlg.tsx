@@ -1,24 +1,34 @@
 import i18n from '@/utils/i18n';
 import DialogFooter from './dialog-footer';
-import { Versions } from '@/utils/types';
-import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
+import { ConnectionType, Versions } from '@/utils/types';
+import { useEffect, useState } from 'react';
+import AppMgr from '@/managers/appmgr';
 
 type UpdateDlgProps = {
     isUpdateMP: boolean;
     isUpdateLib: boolean;
     mpVersion?: Versions;
     xrpVersion?: Versions;
+    updateCallback: () => void;
     toggleDialog: () => void;
 };
 
-export default function UpdateDlg({ isUpdateMP, isUpdateLib, mpVersion, xrpVersion, toggleDialog }: UpdateDlgProps) {
+export default function UpdateDlg({ isUpdateMP, isUpdateLib, mpVersion, xrpVersion, updateCallback, toggleDialog }: UpdateDlgProps) {
+    const [connectionType, setConnectionType] = useState(ConnectionType.USB);
+
+    useEffect(() => {
+        if (AppMgr.getInstance().getConnectionType() === ConnectionType.BLUETOOTH) {
+            setConnectionType(ConnectionType.BLUETOOTH);
+        } else {
+            setConnectionType(ConnectionType.USB);
+        }
+    }, []);
 
     const handleUpdate = async () => {
-        if (isUpdateMP) {
-            await CommandToXRPMgr.getInstance().updateMicroPython();
-        } else if (isUpdateLib) {
-            if (xrpVersion)
-                await CommandToXRPMgr.getInstance().updateLibrary(xrpVersion?.currentVersion)
+        if (isUpdateMP && mpVersion && updateCallback) {
+            updateCallback();
+        } else if (isUpdateLib && xrpVersion && updateCallback) {
+            updateCallback();
         }
         toggleDialog();
     };
@@ -61,7 +71,7 @@ export default function UpdateDlg({ isUpdateMP, isUpdateLib, mpVersion, xrpVersi
             </div>
             <hr className="w-full border-mountain-mist-600" />
             <DialogFooter
-                disabledAccept={false}
+                disabledAccept={connectionType === ConnectionType.BLUETOOTH}
                 btnAcceptLabel={i18n.t('OK')}
                 btnAcceptCallback={handleUpdate}
                 btnCancelCallback={toggleDialog}

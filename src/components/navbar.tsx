@@ -100,7 +100,7 @@ function NavBar({ layoutref }: NavBarProps) {
                     setRunning(false);
                 } else if (state === ConnectionState.Disconnected.toString()) {
                     setConnected(false);
-                    setXrpId({});
+                    setXrpId(null);
                 }
             });
 
@@ -145,16 +145,14 @@ function NavBar({ layoutref }: NavBarProps) {
                     });
             });
 
-            AppMgr.getInstance().on(EventType.EVENT_MICROPYTHON_UPDATE, (version) => {
-                console.log(version);
-                setDialogContent(<UpdateDlg toggleDialog={toggleDialog} isUpdateMP={true} isUpdateLib={false} />);
+            AppMgr.getInstance().on(EventType.EVENT_MICROPYTHON_UPDATE, (versions) => {
+                setDialogContent(<UpdateDlg updateCallback={handleMPUpdateCallback} toggleDialog={toggleDialog} isUpdateMP={true} isUpdateLib={false} mpVersion={JSON.parse(versions)}/>);
                 toggleDialog();
 
             });
 
-            AppMgr.getInstance().on(EventType.EVENT_XRPLIB_UPDATE, (version) => {
-                console.log(version);
-                setDialogContent(<UpdateDlg toggleDialog={toggleDialog} isUpdateMP={false} isUpdateLib={true} />);
+            AppMgr.getInstance().on(EventType.EVENT_XRPLIB_UPDATE, (versions) => {
+                setDialogContent(<UpdateDlg updateCallback={handleXRPLibUpdateCallback} toggleDialog={toggleDialog} isUpdateMP={false} isUpdateLib={true} xrpVersion={JSON.parse(versions)}/>);
                 toggleDialog();
             });
             hasSubscribed = true;
@@ -167,6 +165,77 @@ function NavBar({ layoutref }: NavBarProps) {
 
     if (errors.length > 0) {
         return <div>Error: {errors.values.toString()}</div>;
+    }
+
+    /**
+     * handleMPUpdateCallback - handle the MicroPython update callback
+     */
+    function handleMPUpdateCallback() {
+        // ask the user to confirm the update and provide instructions to the user about the update
+        const xrpDrive = CommandToXRPMgr.getInstance().getXRPDrive();
+        setDialogContent(<ConfirmationDlg acceptCallback={handleMPUpdateConfirmed} toggleDialog={toggleDialog} confirmationMessage={i18n.t('update-mp-instructions', { drive: xrpDrive })} />);
+        toggleDialog();
+    }
+
+    /**
+     * handleMPUpdateConfirmed - handle the MicroPython update confirmed
+     * update is confirmed by the user, start the update process
+     */
+    async function handleMPUpdateConfirmed() {
+        toggleDialog();
+        // await CommandToXRPMgr.getInstance().updateMicroPython();
+        let writable: FileSystemWritableFileStream;
+        try {
+            setDialogContent(<SaveProgressDlg title='mpUpdateTitle'/>);
+            toggleDialog();
+            await CommandToXRPMgr.getInstance().enterBootSelect();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const dirHandle = await (window as any).showDirectoryPicker();
+            // await CommandToXRPMgr.getInstance().updateMicroPython(dirHandle);
+            const fileHandle = await dirHandle?.getFileHandle("firmware.uf2", { create: true });
+            writable = await fileHandle!.createWritable();
+            const firmwareFilename = CommandToXRPMgr.getInstance().getXRPDrive() === "RPI-RP2" ? "firmware2040.uf2" : "firmware2350.uf2";
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '10');
+            const data = await (await fetch("micropython/" + firmwareFilename)).arrayBuffer();
+            await writable.write(data);
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');
+            await writable.close();
+        } catch(err) {
+            console.log("Firmware update error: ", err);
+            setDialogContent(<AlertDialog alertMessage={i18n.t('update-mp-error', { error: err})} toggleDialog={toggleDialog} />);
+            toggleDialog();
+        }
+        setDialogContent(<AlertDialog alertMessage={i18n.t('update-mp-complete')} toggleDialog={toggleDialog} />);
+        toggleDialog();
+    }
+
+    /**
+     * handleXRPLibUpdateCallback - handle the XRPLib update callback
+     */
+    async function handleXRPLibUpdateCallback() {
+        // ask the user to confirm the update and provide instructions to the user about the update
+        const xrpDrive = CommandToXRPMgr.getInstance().getXRPDrive();
+        setDialogContent(<ConfirmationDlg acceptCallback={handleXRPLibUpdateConfirmed} toggleDialog={toggleDialog} confirmationMessage={i18n.t('update-lib-instructions', { drive: xrpDrive })} />);
+        toggleDialog();
+    }
+
+    /**
+     * handleXRPLibUpdateConfirmed - handle the XRPLib update confirmed
+     */
+    async function handleXRPLibUpdateConfirmed() {
+        toggleDialog();
+        try {
+            setDialogContent(<SaveProgressDlg title='xrpLibUpdateTitle'/>);
+            toggleDialog();
+            await CommandToXRPMgr.getInstance().updateLibrary();
+        } catch (err) {
+            console.log("Library update error: ", err);
+            setDialogContent(<AlertDialog alertMessage={i18n.t('update-lib-error', { error: err})} toggleDialog={toggleDialog} />);
+            toggleDialog();
+        }
+        toggleDialog();
+        setDialogContent(<AlertDialog alertMessage={i18n.t('update-lib-complete')} toggleDialog={toggleDialog} />);
+        toggleDialog();
     }
 
     /**
@@ -281,7 +350,7 @@ function NavBar({ layoutref }: NavBarProps) {
         console.log(i18n.t('saveFile'));
         if (EditorMgr.getInstance().hasEditorSession(activeTab)) {
             AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
-            setDialogContent(<SaveProgressDlg />);
+            setDialogContent(<SaveProgressDlg title='saveToXRPTitle'/>);
             AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, () => {
                 toggleDialog();
                 AppMgr.getInstance().eventOff(EventType.EVENT_UPLOAD_DONE);
@@ -307,7 +376,7 @@ function NavBar({ layoutref }: NavBarProps) {
             session.path = fileData.path + '/' + fileData.name;
             AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
             // start the progress dialog
-            setDialogContent(<SaveProgressDlg />);
+            setDialogContent(<SaveProgressDlg title='saveToXRPTitle'/>);
             toggleDialog();
             // subscribe to the UploadFile complete event
             AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, () => {
