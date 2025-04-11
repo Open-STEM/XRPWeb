@@ -1,5 +1,5 @@
 import Connection from '@/connections/connection';
-import { FolderItem } from '@/utils/types';
+import { FolderItem, Versions } from '@/utils/types';
 import AppMgr, { EventType } from '@/managers/appmgr';
 import logger from '@/utils/logger';
 
@@ -31,11 +31,13 @@ export class CommandToXRPMgr {
 
     // Set true so most terminal output gets passed to javascript terminal
     private DEBUG_CONSOLE_ON: boolean = true;
-    private HAS_MICROPYTHON: boolean = true;
+    private HAS_MICROPYTHON: boolean = false;
 
     private latestLibraryVersion: string = "";
 
-    private readonly MP_VERSION = [1, 24, 1]; //TODO: Where do we want to get this from?
+    private mpVersion: string | number[] = [];
+    private mpBuild: string | undefined = undefined;
+    private mpFilename: string | undefined = undefined;
     phewList = ["__init__.py","dns.py","logging.py","server.py","template.py"];
     bleList = ["__init__.py","blerepl.py", "ble_uart_peripheral.py", "isrunning"]  //bugbug: ble_uart_peripheral looks for ##XRPSTOP## so we can't update via bluetooth. Could be fixed with a hash operation
 
@@ -43,6 +45,7 @@ export class CommandToXRPMgr {
 
     constructor(){
         this.getLibVersion();
+        this.getMicropythonVersion();
     }
 
     /**
@@ -55,6 +58,19 @@ export class CommandToXRPMgr {
         const v = jresp.version
         // This should match what is in /lib/XRPLib/version.py as '__version__'
         this.latestLibraryVersion = v.split(".");
+    }
+
+    /**
+     * getMicropythonVersion - get the micropython version
+     */
+    async getMicropythonVersion(){
+        const response = await fetch("micropython/package.json"); 
+        const responseTxt = await response.text();
+        const jresp = JSON.parse(responseTxt);
+        const v = jresp.firmwareVersion
+        this.mpVersion = v.split(".");
+        this.mpBuild = jresp.firmwareBuild;
+        this.mpFilename = jresp.firmwareFilename;
     }
 
     public CommandsToXRPMgr() {
@@ -226,9 +242,11 @@ export class CommandToXRPMgr {
         //if no micropython on the XRP
         if (!this.HAS_MICROPYTHON) {
             this.cmdLogger.debug("no MicroPython");
-            //await this.showMicropythonUpdate?.();
-            //TODO: Need to ask users if they want to update
-            AppMgr.getInstance().emit(EventType.EVENT_MICROPYTHON_UPDATE, this.MP_VERSION.toString());
+            const mpVersions : Versions = {
+                currentVersion: 'None',
+                newVersion: this.mpVersion[0] + "." + this.mpVersion[1] + "." + this.mpVersion[2] + "." + this.mpBuild
+            }
+            AppMgr.getInstance().emit(EventType.EVENT_MICROPYTHON_UPDATE, JSON.stringify(mpVersions));
             return this.XRPId;
         }
 
@@ -244,21 +262,25 @@ export class CommandToXRPMgr {
 
         info[0] = info[0]!.replace(/[()]/g, "").replace(/,\s/g, "."); //convert to a semantic version
         //if the microPython is out of date
-        if (this.isVersionNewer(this.MP_VERSION, info[0]!)) {
+        if (this.isVersionNewer(this.mpVersion, info[0]!)) {
             // Need to update MicroPython
-            //alert("Need to update Micropython")
             
-            //TODO: need to ask user 
-            //TODO: only do this if we are on USB
-            AppMgr.getInstance().emit(EventType.EVENT_MICROPYTHON_UPDATE, this.MP_VERSION.toString());
-            //await this.updateMicroPython();
+            const mpVersions : Versions = {
+                currentVersion: info[0]!,
+                newVersion: this.mpVersion[0] + "." + this.mpVersion[1] + "." + this.mpVersion[2] + "." + this.mpBuild
+            }
+            AppMgr.getInstance().emit(EventType.EVENT_MICROPYTHON_UPDATE, JSON.stringify(mpVersions));
         }
 
         //if no library or the library is out of date
         if (Number.isNaN(parseFloat(info[1] as string)) || this.isVersionNewer(this.latestLibraryVersion, info[1] as string)) {
-            if (info[1]) 
-                AppMgr.getInstance().emit(EventType.EVENT_XRPLIB_UPDATE, info[1]?.toString());
-            //await this.updateLibrary(info[1] as string);
+            if (info[1]) {
+                const versions : Versions = {
+                    currentVersion: (info[1] as string) === "ERROR EX" ? "None" : info[1] as string,
+                    newVersion: this.latestLibraryVersion[0] + "." + this.latestLibraryVersion[1] + "." + this.latestLibraryVersion[2]
+                }
+                AppMgr.getInstance().emit(EventType.EVENT_XRPLIB_UPDATE, JSON.stringify(versions)); 
+            }
         }
         return this.XRPId;
     }
@@ -283,52 +305,26 @@ export class CommandToXRPMgr {
         return false;
     }
 
-    async updateLibrary(curVer: string) {
-        if (curVer == "ERROR EX") {
-            curVer = "None";
-        }
-
-        //TODO: ask user
-        /*
-        var message = "The library files on the XRP are out of date.<br>" +
-            "The current version is " + curVer +
-            " and the new version is version " + window.latestLibraryVersion[0] + "." + window.latestLibraryVersion[1] + "." + window.latestLibraryVersion[2] + "<br>";
-
-        if (REPL.BLE_DEVICE != undefined) {
-
-            message += "<br>You will need to connect your XRP with a USB cable in order to update XRPLib";
-            await alertMessage(message);
-            return;
-        }
-        message += "Click OK to update the XRP to the latest version.";
-        let answer = await window.confirmMessage(message);
-        if (!answer) {
-            return; //they pressed CANCEL
-        }
-
-        UIkit.modal(document.getElementById("IDProgressBarParent")).show();
-        document.getElementById("IdProgress_TitleText")!.innerText = 'Update in Progress...';
-        */
+    async updateLibrary() {
 
         const response = await fetch("lib/package.json");
         const responseTxt = await response.text();
         const jresp = JSON.parse(responseTxt);
         const urls = jresp.urls;
 
-        //TODO: show percent updated
-        //window.setPercent?.(1, "Updating XRPLib...");
+        AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '0');
         const percent_per = Math.round(99 / (urls.length + this.phewList.length + this.bleList.length + 1));
         let cur_percent = 1 + percent_per;
 
         await this.deleteFileOrDir("/lib/XRPLib");  //delete all the files first to avoid any confusion.
         //BUGBUG: should we delete the /XRPExamples?
         for (let i = 0; i < urls.length; i++) {
-            //window.setPercent?.(cur_percent, "Updating XRPLib..."); TODO: percentage
             //added a version number to ensure that the browser does not cache it.
             const next = urls[i];
             let parts = next[0];
             parts = parts.replace("XRPLib", "lib/XRPLib");
             await this.uploadFile(parts, await this.downloadFile(parts.replace("XRPExamples", "lib/Examples") + "?version=" + this.latestLibraryVersion[2]));
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, cur_percent.toString());
             cur_percent += percent_per;
         }
 
@@ -338,44 +334,30 @@ export class CommandToXRPMgr {
 
         await this.deleteFileOrDir("/lib/ble");  //delete all the files first to avoid any confusion.
         for (let i = 0; i < this.bleList.length; i++) {
-            //window.setPercent?.(cur_percent, "Updating XRPLib..."); TODO: show percentage
             //added a version number to ensure that the browser does not cache it.
             await this.uploadFile("lib/ble/" + this.bleList[i], await this.downloadFile("lib/ble/" + this.bleList[i] + "?version=" + this.latestLibraryVersion[2]));
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, cur_percent.toString());
             cur_percent += percent_per;
         }
 
         await this.deleteFileOrDir("/lib/phew");  //delete all the files first to avoid any confusion.
         for (let i = 0; i < this.phewList.length; i++) {
-            //window.setPercent?.(cur_percent, "Updating XRPLib..."); TODO: show percentage
             //added a version number to ensure that the browser does not cache it.
             await this.uploadFile("lib/phew/" + this.phewList[i], await this.downloadFile("lib/phew/" + this.phewList[i] + "?version=" + this.latestLibraryVersion[2]));
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, cur_percent.toString());
             cur_percent += percent_per;
         }
 
         //needed for this BLE release. Replace the main.py file so that the BLE support will be available.
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         cur_percent = 100;
-        //window.setPercent?.(cur_percent, "Updating XRPLib..."); TODO: show percentage
+        AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, cur_percent.toString());
         await this.uploadFile("/main.py", await this.downloadFile("lib/main.py" + "?version=" + this.latestLibraryVersion[2]));
 
 
-        //window.resetPercentDelay?.(); TODO:show percentage
         await this.getOnBoardFSTree();
-        //UIkit.modal(document.getElementById("IDProgressBarParent")).hide();
     }
 
-    async updateMicroPython() {
-
-        //UIkit.modal(document.getElementById("IDProgressBarParent")).show();
-        //document.getElementById("IdProgress_TitleText")!.innerText = 'Update in Progress...';
-
-        if (this.BUSY == true) {
-            return;
-        }
-        this.BUSY = true;
-
-        //window.setPercent?.(1, "Updating MicroPython..."); TODO: show percentage
-
+    async enterBootSelect() {
         if (this.HAS_MICROPYTHON) {
             const cmd = "import machine\n" +
                 "machine.bootloader()\n";
@@ -385,45 +367,6 @@ export class CommandToXRPMgr {
             this.connection?.startReaduntil("OK");
             await this.connection?.writeToDevice(cmd + this.connection!.CTRL_CMD_SOFTRESET);
         }
-
-        let writable: FileSystemWritableFileStream;
-        //window.setPercent?.(3); TODO: Show percentage
-        try {
-            //message select the RPI-RP2
-            //let dirHandler = await (window as any).showDirectoryPicker({ mode: "readwrite" });
-            const dirHandler = await this.showDialogAndPickDirectory();
-            const fileHandle = await dirHandler?.getFileHandle("firmware.uf2", { create: true });
-            writable = await fileHandle!.createWritable();
-        } catch (err) {
-            this.cmdLogger.debug(err);
-            //UIkit.modal(document.getElementById("IDProgressBarParent")).hide();
-            window.alert("Error updating MicroPython. Please try again.");
-            this.BUSY = false;
-            return;                                                                     // If the user doesn't allow tab to save to opened file, don't edit file
-        }
-
-        //window.setPercent?.(35); TODO: show percentage
-        let mpver = "firmware2350.uf2"
-        if(this.PROCESSOR === 2040){
-            mpver = "firmware2040.uf2"
-        }
-        const data = await (await fetch("micropython/" + mpver)).arrayBuffer();
-        //window.setPercent?.(85); TODO: show percentage
-        //message to click on Edit Files
-        await writable.write(data);
-        //at some point after this write the PICO will reboot
-        //window.resetPercentDelay?.();
-        this.HAS_MICROPYTHON = true;
-        try {
-            await writable.close();
-        }
-        catch {
-            this.cmdLogger.debug("PICO rebooted before close - this is ok");
-        }
-
-        this.BUSY = false;
-        // hide modal after installation is complete
-        //UIkit.modal(document.getElementById("IDProgressBarParent")).hide();
     }
 
     async  downloadFile(filePath:string) {
@@ -434,47 +377,6 @@ export class CommandToXRPMgr {
         }
         // read response stream as text
         return await response.text();
-    }
-
-    //TODO: figure out a way to do this.
-    async  showDialogAndPickDirectory(): Promise<FileSystemDirectoryHandle | null> {
-        return new Promise((resolve) => {
-            // Create a modal dialog
-            const modal = document.createElement("div");
-            modal.style.position = "fixed";
-            modal.style.top = "50%";
-            modal.style.left = "50%";
-            modal.style.transform = "translate(-50%, -50%)";
-            modal.style.padding = "20px";
-            modal.style.backgroundColor = "blue";
-            modal.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
-            modal.style.borderRadius = "8px";
-            modal.style.zIndex = "1000";
-            modal.innerHTML = "<p>Select directory RPI-RP2</p>";
-    
-            // Create OK button
-            const okButton = document.createElement("button");
-            okButton.textContent = "OK";
-            okButton.style.marginTop = "10px";
-    
-            // Append button to modal
-            modal.appendChild(okButton);
-            document.body.appendChild(modal);
-    
-            // When OK is clicked, close the modal and open directory picker
-            okButton.addEventListener("click", async () => {
-                document.body.removeChild(modal); // Remove the modal
-    
-                try {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const dirHandle = await (window as any).showDirectoryPicker();
-                    resolve(dirHandle); // Resolve the promise with the selected directory handle
-                } catch (error) {
-                    console.error("Error selecting directory:", error);
-                    resolve(null); // Resolve with null if an error occurs
-                }
-            });
-        });
     }
     
     /*** File Routines  ***/
@@ -1031,5 +933,13 @@ export class CommandToXRPMgr {
         if (this.connection) {
             this.connection.getToREPL();
         }
+    }
+
+    /**
+     * getXRP
+     * @returns the XRP drive name
+     */
+    getXRPDrive(): string {
+        return (this.PROCESSOR! === 2350) ? "RP2350" : "RPI-RP2";
     }
 }
