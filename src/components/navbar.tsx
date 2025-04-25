@@ -37,7 +37,6 @@ import AppMgr, { EventType } from '@/managers/appmgr';
 import { ConnectionState } from '@/connections/connection';
 import SettingsDlg from '@/components/dialogs/settings';
 import NewFileDlg from '@/components/dialogs/newfiledlg';
-import { IJsonTabNode } from 'flexlayout-react';
 import { Constants } from '@/utils/constants';
 import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
 import UploadFileDlg from '@/components/dialogs/uploadfiledlg';
@@ -52,6 +51,9 @@ import BatteryBadDlg from '@/components/dialogs/battery-baddlg';
 import SaveProgressDlg from '@/components/dialogs/save-progressdlg';
 import ConfirmationDlg from './dialogs/confirmdlg';
 import UpdateDlg from './dialogs/updatedlg';
+import React from 'react';
+import { CreateEditorTab } from '@/utils/editorUtils';
+import ChangeLogDlg from './dialogs/changelog';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,7 +128,8 @@ function NavBar({ layoutref }: NavBarProps) {
                     name: filename || '',
                     filetype: fileType,
                 };
-                createEditorTab(fileData);
+                CreateEditorTab(fileData, layoutref);
+                setActiveTab(fileData.name)
                 await CommandToXRPMgr.getInstance()
                     .getFileContents(filepath)
                     .then((content) => {
@@ -141,7 +144,9 @@ function NavBar({ layoutref }: NavBarProps) {
                             typeof bytes === 'string'
                                 ? bytes
                                 : new TextDecoder().decode(new Uint8Array(bytes));
-                        AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, text);
+                        // set the content in the editor
+                        const loadContent = { name: filename, content: text };
+                        AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
                     });
             });
 
@@ -155,6 +160,14 @@ function NavBar({ layoutref }: NavBarProps) {
                 setDialogContent(<UpdateDlg updateCallback={handleXRPLibUpdateCallback} toggleDialog={toggleDialog} isUpdateMP={false} isUpdateLib={true} xrpVersion={JSON.parse(versions)}/>);
                 toggleDialog();
             });
+
+            AppMgr.getInstance().on(EventType.EVENT_SHOWCHANGELOG, (changelog) => {
+                if (changelog === Constants.SHOW_CHANGELOG) {
+                    setDialogContent(<ChangeLogDlg closeDialog={toggleDialog}/>);
+                    toggleDialog();
+                }
+            });
+
             hasSubscribed = true;
         }
     });
@@ -239,60 +252,11 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
-     * createEditorTab - create the editor tabs in the editor tabset
-     * @param data - file data
-     */
-    function createEditorTab(data: NewFileData) {
-        switch (data.filetype) {
-            case FileType.BLOCKLY:
-                {
-                    const tabInfo: IJsonTabNode = {
-                        component: 'blockly',
-                        name: data.name,
-                        id: data.name,
-                        helpText: data.path,
-                    };
-                    layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
-                    AppMgr.getInstance().emit(EventType.EVENT_EDITOR, EditorType.BLOCKLY);
-                    EditorMgr.getInstance().AddEditor({
-                        id: data.name,
-                        type: EditorType.BLOCKLY,
-                        path: data.path,
-                        isSubscribed: false,
-                        fontsize: Constants.DEFAULT_FONTSIZE,
-                    });
-                    setActiveTab(data.name);
-                }
-                break;
-            case FileType.PYTHON:
-            case FileType.OTHER:
-                {
-                    const tabInfo: IJsonTabNode = {
-                        component: 'editor',
-                        name: data.name,
-                        id: data.name,
-                        helpText: data.path,
-                    };
-                    layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
-                    AppMgr.getInstance().emit(EventType.EVENT_EDITOR, EditorType.PYTHON);
-                    EditorMgr.getInstance().AddEditor({
-                        id: data.name,
-                        type: EditorType.PYTHON,
-                        path: data.path,
-                        isSubscribed: false,
-                        fontsize: Constants.DEFAULT_FONTSIZE,
-                    });
-                    setActiveTab(data.name);
-                }
-                break;
-        }
-    }
-
-    /**
      * onNewFileSubmitted - get the form data and create a new file on the layout
      */
     async function onNewFileSubmitted(data: NewFileData) {
-        createEditorTab(data);
+        CreateEditorTab(data, layoutref);
+        setActiveTab(data.name);
         // create the file in XRP
         await CommandToXRPMgr.getInstance()
             .uploadFile(data.path, '')
@@ -451,12 +415,14 @@ function NavBar({ layoutref }: NavBarProps) {
                     const path = editorSession.path.split('.blocks')[0] + '.py';
                     await CommandToXRPMgr.getInstance().uploadFile(path, code).then(() => {
                         EditorMgr.getInstance().RemoveEditor(activeTab);
-                        createEditorTab(fileData);
+                        CreateEditorTab(fileData, layoutref);
+                        setActiveTab(fileData.name);
                     });
                     await CommandToXRPMgr.getInstance().getFileContents(path).then((content) => {
                         // if the file is a block files, extract the blockly JSON out of the comment ##XRPBLOCKS
                         const text = new TextDecoder().decode(new Uint8Array(content));
-                        AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, text)
+                        const loadContent = { name: fileData.name, content: text };
+                        AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
                     })
                 });
             }
@@ -602,7 +568,10 @@ function NavBar({ layoutref }: NavBarProps) {
     /**
      * ChangeLog
      */
-    function ChangeLog() {}
+    function ChangeLog() {
+        setDialogContent(<ChangeLogDlg closeDialog={toggleDialog}/>);
+        toggleDialog();
+    }
 
     /**
      * toggleDialog - toggle the dialog open and closed
@@ -611,7 +580,10 @@ function NavBar({ layoutref }: NavBarProps) {
         if (!dialogRef.current) {
             return;
         }
-        if (dialogRef.current.hasAttribute('open')) dialogRef.current.close();
+        if (dialogRef.current.hasAttribute('open')) {
+            dialogRef.current.close();
+            setDialogContent(null);
+        }
         else dialogRef.current.showModal();
     }
 

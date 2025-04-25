@@ -143,6 +143,10 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                     pythonCode + '\n\n\n## ' + formatedDate + '\n##XRPBLOCKS ' + blocklyCode;
                 console.log('Saving blockly', activeTab, code);
                 EditorMgr.getInstance().saveEditor(name, code);
+                EditorMgr.getInstance().SaveToLocalStorage(
+                    EditorMgr.getInstance().getEditorSession(name) as EditorSession,
+                    blocklyCode
+                );
             }
         }
     }
@@ -174,14 +178,19 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
             });
 
             AppMgr.getInstance().on(EventType.EVENT_EDITOR_LOAD, (content) => {
-                const activeTab = localStorage
-                    .getItem(StorageKeys.ACTIVETAB)
-                    ?.replace(/^"|"$/g, '');
-                if (activeTab !== name) return;
+                const loadContent = JSON.parse(content);
+                if (loadContent.name !== name) return;
 
                 const ws = Blockly.getMainWorkspace();
                 if (ws) {
-                    Blockly.serialization.workspaces.load(JSON.parse(content), ws);
+                    Blockly.serialization.workspaces.load(JSON.parse(loadContent.content), ws);
+                    // @ts-expect-error - it is a valid function
+                    ws.scrollCenter();
+                }
+                const session: EditorSession | undefined =
+                    EditorMgr.getInstance().getEditorSession(loadContent.name);
+                if (session) {
+                    EditorMgr.getInstance().SaveToLocalStorage(session, loadContent.content);
                 }
             });
 
@@ -205,6 +214,19 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
             });
 
             EditorMgr.getInstance().setSubscription(name);
+        } else {
+            const editorSession = EditorMgr.getInstance().getEditorSession(name);
+            if (editorSession && editorSession.content) {
+                const ws = Blockly.getMainWorkspace();
+                if (ws) {
+                    Blockly.serialization.workspaces.load(
+                        JSON.parse(editorSession.content),
+                        ws
+                    );
+                    // @ts-expect-error - it is a valid function
+                    ws.scrollCenter();
+                }
+            }
         }
     });
 
