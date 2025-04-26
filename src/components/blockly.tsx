@@ -182,6 +182,9 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                 const ws = Blockly.getMainWorkspace();
                 if (ws) {
                     Blockly.serialization.workspaces.load(JSON.parse(content), ws);
+                    const workspace = Blockly.getMainWorkspace() as Blockly.WorkspaceSvg;
+                    workspace.scrollCenter();
+                    workspace.zoomToFit();
                 }
             });
 
@@ -213,6 +216,15 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
             className="h-full" // you can use whatever classes are appropriate for your app's CSS
             toolboxConfiguration={BlocklyConfigs.ToolboxJson} // this must be a JSON toolbox definition
             workspaceConfiguration={{
+                move:{
+                    scrollbars: {horizontal: true, vertical: true},
+                    drag: true,
+                    wheel: true},
+                zoom:{controls: true, wheel: false,
+                    startScale: 1, maxScale: 1, minScale: 0.1, scaleSpeed: 1.2,
+                pinch: false},
+
+                trashcan: true,
                 grid: {
                     spacing: 20,
                     length: 3,
