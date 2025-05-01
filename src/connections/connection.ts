@@ -1,5 +1,7 @@
 import ConnectionMgr from "@/managers/connectionmgr";
 import logger from "@/utils/logger";
+import Joystick from '@/managers/joystickmgr';
+
 
 /**
  * connection states:
@@ -48,7 +50,10 @@ abstract class Connection {
 
     readonly XRP_SEND_BLOCK_SIZE: number = 250; // wired can handle 255 bytes, but BLE 5.0 is only 250
 
+    joyStick: Joystick | undefined;
+
     constructor() {
+        this.joyStick  = new Joystick();
     }
 
     // abstract methods - implement by derived classes
@@ -127,11 +132,13 @@ abstract class Connection {
                     //ignore these escapes if not in run mode.
                     if (tempValue[index + 1] == 101) {
                         //start getting Joystick packets on the input stream
+                        this.joyStick?.startJoyPackets();
                         //this.startJoyPackets?.();
                         values = tempValue = new Uint8Array(0);
                     }
                     if (tempValue[index + 1] == 102) {
                         //Stop Joystick packets on the input stream
+                        this.joyStick?.stopJoyPackets();
                         //this.stopJoyPackets?.();
                         values = tempValue = new Uint8Array(0);
                     }
