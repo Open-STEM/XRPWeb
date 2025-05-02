@@ -17,7 +17,7 @@ import { initializedAndStartLanguageClient } from '@components/lsp-client';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
 import i18n from '@/utils/i18n';
 import { StorageKeys } from '@/utils/localstorage';
-import EditorMgr from '@/managers/editormgr';
+import EditorMgr, { EditorSession } from '@/managers/editormgr';
 import { FontSize } from '@/utils/types';
 import { Constants } from '@/utils/constants';
 
@@ -159,6 +159,10 @@ const MonacoEditor = ({
             const activeTab = localStorage.getItem(StorageKeys.ACTIVETAB)?.replace(/^"|"$/g, '');
             if (activeTab === name) {
                 EditorMgr.getInstance().saveEditor(name, code);
+                EditorMgr.getInstance().SaveToLocalStorage(
+                    EditorMgr.getInstance().getEditorSession(name) as EditorSession,
+                    code,
+                );
             }
         }
 
@@ -174,13 +178,16 @@ const MonacoEditor = ({
 
             AppMgr.getInstance().on(EventType.EVENT_EDITOR_LOAD, (content) => {
                 console.log('Editor Content', content);
-                const activeTab = localStorage
-                    .getItem(StorageKeys.ACTIVETAB)
-                    ?.replace(/^"|"$/g, '');
-                if (activeTab !== name) return;
+                const loadContent = JSON.parse(content);
+                if (loadContent.name !== name) return;
                 if (containerRef.current && editor.current) {
-                    const model = monaco.editor.createModel(content, languageId);
+                    const model = monaco.editor.createModel(loadContent.content, languageId);
                     editor.current.setModel(model);
+                }
+                const session: EditorSession | undefined =
+                    EditorMgr.getInstance().getEditorSession(loadContent.name);
+                if (session) {
+                    EditorMgr.getInstance().SaveToLocalStorage(session, loadContent.content);
                 }
             });
 
@@ -227,6 +234,12 @@ const MonacoEditor = ({
                     console.log('Editor created', codeEditor.getId());
                 });
 
+                const editorSession = EditorMgr.getInstance().getEditorSession(name);
+                if (editorSession && editorSession.content) {
+                    const model = monaco.editor.createModel(editorSession.content, languageId);
+                    editor.current?.setModel(model);
+                }
+    
                 editor.current.addAction({
                     id: 'save',
                     label: i18n.t('save'),

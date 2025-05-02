@@ -13,6 +13,7 @@ type NewFileProps = {
 
 function NewFileDlg(newFileProps: NewFileProps) {
     const [isFileExists, setIsFileExists] = useState(false);
+    const [isOkayToSubmit, setIsOkayToSubmit] = useState(false);
     const [selectedFolder, setSelectedFolder] = useState('');
     const [filename, setFilename] = useState('');
     const [filetype, setFileType] = useState<number | null>(null);
@@ -44,26 +45,52 @@ function NewFileDlg(newFileProps: NewFileProps) {
      * @returns 
      */
     const handleFilenameInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (EditorMgr.getInstance().hasEditorSession(e.target.value)) {
+        setFilename(e.target.value);
+        const filename = e.target.value + (filetype === 1 ? '.blocks' : '.py');
+        if (EditorMgr.getInstance().hasEditorSession(filename)) {
             setIsFileExists(true);
+            setIsOkayToSubmit(false);
             return;
         } else {
             setIsFileExists(false);
+            setIsOkayToSubmit(true);
         }
-        setFilename(e.target.value);
     };
 
+    /**
+     * findItemInFolderList - recursive function to find the folder item in the folder list
+     * @param folderList 
+     * @param folder 
+     * @returns folder item or null
+     */
+    const findItemInFolderList = (folderList: FolderItem[], folder: string): FolderItem | null => {
+        for (const item of folderList) {
+            if (item.name === folder) {
+                return item;
+            }
+            if (item.children) {
+                const foundItem = findItemInFolderList(item.children, folder);
+                if (foundItem) {
+                    return foundItem;
+                }
+            }
+        }
+        return null;
+    }
     /**
      * handleSubmit handler. Gather all data from the form and send back to parent component
      */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleSubmit = () => {
-        const path = folderList?.filter((node) => node.name === selectedFolder);
+        const folders = selectedFolder.split('/');
+        const folder = folders[folders.length - 1];
+        const parentId = findItemInFolderList(folderList || [], folder)?.id || '';
+        const fileExt = filetype === 1 ? '.blocks' : '.py';
         const formData: NewFileData = {
             name: filename,
-            path: `${path?.[0]?.path}${path?.[0].name}/${filename}`,
+            path: `${selectedFolder}/${filename}${fileExt}`,
             filetype: filetype === 1 ? FileType.BLOCKLY : FileType.PYTHON,
-            parentId: path?.[0].id || '',
+            parentId: parentId || '',
         };
         newFileProps.submitCallback(formData);
     };
@@ -132,13 +159,13 @@ function NewFileDlg(newFileProps: NewFileProps) {
                 </div>
                 <label className="text-mountain-mist-700 text-sm">
                 {i18n.t('final-path')}
-                {selectedFolder}/{filename}
+                {selectedFolder}/{filename}{filetype === 1 ? '.blocks' : '.py'} 
             </label>
 
             </form>
             <hr className="w-full border-mountain-mist-600" />
             <DialogFooter
-                disabledAccept={isFileExists}
+                disabledAccept={!isOkayToSubmit}
                 btnAcceptLabel={i18n.t('submitBtn')}
                 btnAcceptCallback={handleSubmit}
                 btnCancelCallback={newFileProps.toggleDialog}

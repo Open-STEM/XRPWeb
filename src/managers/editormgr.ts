@@ -2,6 +2,7 @@ import { EditorType } from "@/utils/types";
 import { CommandToXRPMgr } from "@/managers/commandstoxrpmgr";
 import { Actions, Model } from "flexlayout-react";
 import AppMgr, { EventType } from "@/managers/appmgr";
+import { StorageKeys } from "@/utils/localstorage";
 
 /**
  * EditorSession - Editor session object
@@ -14,6 +15,23 @@ export type EditorSession = {
     isSubscribed: boolean;
     fontsize: number;
     content?: string;
+};
+
+/**
+ * EditorStore - editor session localstorage object
+ * @typedef {Object} EditorStore
+ * @property {string} id - editor session id
+ * @property {string} path - editor session path
+ * @property {string} content - editor content
+ * @property {boolean} isBlockly - editor is blockly
+ * @property {boolean} isSavedToXRP - editor content is saved to XRP
+ */
+export type EditorStore = {
+    id: string;
+    path: string;
+    isBlockly: boolean;
+    isSavedToXRP: boolean;
+    content: string;
 };
 
 /**
@@ -82,6 +100,7 @@ export default class EditorMgr {
             }
             appMgr.eventOff(EventType.EVENT_SAVE_EDITOR); 
             this.editorSessions.delete(id);
+            this.RemoveFromLocalStorage(id);
         }
         if (this.editorSessions.size > 0) {
             const session = Array.from(this.editorSessions.values()).pop();
@@ -191,9 +210,60 @@ export default class EditorMgr {
     public async saveEditor(id: string, code: string) {
         const session = this.editorSessions.get(id);
         if (session) {
+            // save the session to XRP
             await CommandToXRPMgr.getInstance().uploadFile(session.path, code, true).then(() =>{
                 AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
             });
+        }
+    }
+
+    /**
+     * SaveToLocalStorage - save the editor session to local storage
+     * @param session - editor session
+     * @param code - editor content
+     * @returns 
+     */
+    public SaveToLocalStorage(session: EditorSession, code: string) {
+        // save the session to local storage
+        const editorStore: EditorStore = {
+            id: session.id,
+            path: session.path,
+            isBlockly: session.type === EditorType.BLOCKLY,
+            isSavedToXRP: true,
+            content: code,
+        };
+        let editorStoreJson = localStorage.getItem(StorageKeys.EDITORSTORE);
+        let editorStores: EditorStore[];
+        if (editorStoreJson) {
+            editorStores = JSON.parse(editorStoreJson);
+            const index = editorStores.findIndex((store: EditorStore) => store.id === session.id);
+            if (index !== -1) {
+                editorStores[index] = editorStore;
+            } else {
+                editorStores.push(editorStore);
+            }
+        } else {
+            editorStores = [];
+            editorStores.push(editorStore);
+        }
+        editorStoreJson = JSON.stringify(editorStores);
+        localStorage.setItem(StorageKeys.EDITORSTORE, editorStoreJson);
+    }
+
+    /**
+     * RemoveFromLocalStorage - remove the editor session from local storage
+     * @param id - editor session id
+     */
+    public RemoveFromLocalStorage(id: string) {
+        let editorStoreJson = localStorage.getItem(StorageKeys.EDITORSTORE);
+        if (editorStoreJson) {
+            const editorStores: EditorStore[] = JSON.parse(editorStoreJson);
+            const index = editorStores.findIndex((store: EditorStore) => store.id === id);
+            if (index !== -1) {
+                editorStores.splice(index, 1);
+                editorStoreJson = JSON.stringify(editorStores);
+                localStorage.setItem(StorageKeys.EDITORSTORE, editorStoreJson);
+            }
         }
     }
 }
