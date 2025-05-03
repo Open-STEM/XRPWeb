@@ -5,6 +5,7 @@ import { visualizer } from "rollup-plugin-visualizer";
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 import { fileURLToPath, URL } from 'url';
 import { resolve } from 'path';
+import flowbiteReact from "flowbite-react/plugin/vite";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -18,18 +19,14 @@ export default defineConfig({
     define: {
         rootDirectory: JSON.stringify(__dirname)
     },
-    plugins: [
-        react(),        
-        visualizer() as PluginOption,
-        viteStaticCopy({
-            targets: [
-                {
-                    src: 'node_modules/flexlayout-react/style',
-                    dest: './node_modules/flexlayout-react/'
-                }
-            ]
-        }),
-    ],
+    plugins: [react(), visualizer() as PluginOption, viteStaticCopy({
+        targets: [
+            {
+                src: 'node_modules/flexlayout-react/style',
+                dest: './node_modules/flexlayout-react/'
+            }
+        ]
+    }), flowbiteReact()],
     resolve: {
         alias: [
             { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
