@@ -86,6 +86,7 @@
     "update-lib-instructions": "The update process will take a few minutes. Please do not disconnect the USB cable during this time.",
     "update-lib-error": "The XRP library update process has failed. Please try again. The error message is: {{ error }}",
     "update-lib-complete": "The XRP library update process has completed successfully.",
+    "dashboard": "Dashboard",
     "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
     "individualMotors": "Individual Motors"
 }

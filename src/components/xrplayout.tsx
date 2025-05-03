@@ -14,6 +14,7 @@ import { useLocalStorage } from 'usehooks-ts';
 import { StorageKeys } from '@/utils/localstorage';
 import EditorMgr, { EditorStore } from '@/managers/editormgr';
 import { CreateEditorTab } from '@/utils/editorUtils';
+import XRPDashboard from '@/components/dashboard/xrp-dashboard';
 
 /**
  *  Layout-React's layout JSON to specify the XRPWeb's single page application's layout
@@ -100,6 +101,8 @@ const factory = (node: TabNode) => {
         return <FolderTree treeData={null} theme="rct-dark" isHeader={true} />;
     } else if (component == 'blockly') {
         return <BlocklyEditor name={node.getName()} />;
+    } else if (component == 'dashboard') {
+        return <XRPDashboard />;
     }
 };
 

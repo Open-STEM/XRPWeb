@@ -10,6 +10,7 @@ import userguide from '@assets/images/developer_guide.svg';
 import apilink from '@assets/images/api.svg';
 import python from '@assets/images/python.svg';
 import convert from '@assets/images/convert.svg';
+import dashboard from '@assets/images/dashboard.svg';
 import forum from '@assets/images/forum.svg';
 import cirriculum from '@assets/images/cirriculum.svg';
 import changelog from '@assets/images/changelog.svg';
@@ -54,6 +55,7 @@ import UpdateDlg from './dialogs/updatedlg';
 import React from 'react';
 import { CreateEditorTab } from '@/utils/editorUtils';
 import ChangeLogDlg from './dialogs/changelog';
+import { IJsonTabNode } from 'flexlayout-react';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -467,6 +469,21 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
+     * viewDashboard - view the dashboard
+     */
+    function viewDashboard() {
+        console.log(i18n.t('dashboard'));
+        const tabInfo: IJsonTabNode = {
+            component: 'dashboard',
+            name: 'Dashboard',
+            id: 'DashboardId',
+            helpText: 'Dashboard',
+        };
+        layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
+        setActiveTab('Dashboard');
+    }
+
+    /**
      * onConnectionSelected - process seected connection
      * @param connType
      */
@@ -638,6 +655,12 @@ function NavBar({ layoutref }: NavBarProps) {
                     clicked: ConvertToPython,
                     isView: true,
                 },
+                {
+                    label: i18n.t('dashboard'),
+                    iconImage: dashboard,
+                    clicked: viewDashboard,
+                    isView: true,
+                }
             ],
             childrenExt: [
                 {
