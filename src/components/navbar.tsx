@@ -655,12 +655,6 @@ function NavBar({ layoutref }: NavBarProps) {
                     clicked: ConvertToPython,
                     isView: true,
                 },
-                {
-                    label: i18n.t('dashboard'),
-                    iconImage: dashboard,
-                    clicked: viewDashboard,
-                    isView: true,
-                }
             ],
             childrenExt: [
                 {
@@ -675,6 +669,12 @@ function NavBar({ layoutref }: NavBarProps) {
                     clicked: FontMinus,
                     isView: true,
                 },
+                {
+                    label: i18n.t('dashboard'),
+                    iconImage: dashboard,
+                    clicked: viewDashboard,
+                    isView: true,
+                }
             ],
         },
         {
