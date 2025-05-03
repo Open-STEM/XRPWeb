@@ -88,71 +88,71 @@ const gridOptions: GridStackOptions = {
         },
       }),
     },
-    {
-      id: "led",
-      h: 4,
-      w: 4,
-      x: 0,
-      y: 4, // Below Accelerometer
-      content: JSON.stringify({
-        name: "LED",
-        props: {
-          isActive: false,
-        },
-      }),
-    },
-    {
-      id: "motor",
-      h: 4,
-      w: 4,
-      x: 4,
-      y: 4, // Below Gyroscope
-      content: JSON.stringify({
-        name: "Motor",
-        props: {
-          isActive: false,
-        },
-      }),
-    },
-    {
-      id: "temperature",
-      h: 4,
-      w: 4,
-      x: 8,
-      y: 4, // Below ColorSensor
-      content: JSON.stringify({
-        name: "Temperature",
-        props: {
-          isActive: false,
-        },
-      }),
-    },
-    {
-      id: "rangefinder",
-      h: 4,
-      w: 4,
-      x: 0,
-      y: 8, // Below LED
-      content: JSON.stringify({
-        name: "Rangefinder",
-        props: {
-          isActive: false,
-        },
-      }),
-    },
-    {
-      id: "servo",
-      h: 4,
-      w: 4,
-      x: 4,
-      y: 8, // Below Motor
-      content: JSON.stringify({
-        name: "Servo",
-        props: {
-          isActive: false,
-        },
-      }),
-    },
+    // {
+    //   id: "led",
+    //   h: 4,
+    //   w: 4,
+    //   x: 0,
+    //   y: 4, // Below Accelerometer
+    //   content: JSON.stringify({
+    //     name: "LED",
+    //     props: {
+    //       isActive: false,
+    //     },
+    //   }),
+    // },
+    // {
+    //   id: "motor",
+    //   h: 4,
+    //   w: 4,
+    //   x: 4,
+    //   y: 4, // Below Gyroscope
+    //   content: JSON.stringify({
+    //     name: "Motor",
+    //     props: {
+    //       isActive: false,
+    //     },
+    //   }),
+    // },
+    // {
+    //   id: "temperature",
+    //   h: 4,
+    //   w: 4,
+    //   x: 8,
+    //   y: 4, // Below ColorSensor
+    //   content: JSON.stringify({
+    //     name: "Temperature",
+    //     props: {
+    //       isActive: false,
+    //     },
+    //   }),
+    // },
+    // {
+    //   id: "rangefinder",
+    //   h: 4,
+    //   w: 4,
+    //   x: 0,
+    //   y: 8, // Below LED
+    //   content: JSON.stringify({
+    //     name: "Rangefinder",
+    //     props: {
+    //       isActive: false,
+    //     },
+    //   }),
+    // },
+    // {
+    //   id: "servo",
+    //   h: 4,
+    //   w: 4,
+    //   x: 4,
+    //   y: 8, // Below Motor
+    //   content: JSON.stringify({
+    //     name: "Servo",
+    //     props: {
+    //       isActive: false,
+    //     },
+    //   }),
+    // },
   ],
 };
 
@@ -209,7 +209,7 @@ export default function XRPDashboard() {
   }, []);
 
   return (
-    <div className="mx-auto px-4 pb-10 bg-slate-100 min-h-screen">
+    <div className="mx-auto px-4 pb-10 bg-slate-100 min-h-screen flex flex-col">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pt-4">
         <div>
           <h1 className="text-4xl font-bold text-gray-900">Sensor Dashboard</h1>
@@ -240,7 +240,7 @@ export default function XRPDashboard() {
       </div >
       <div id="trash">
         <button
-          className="bg-red-500 hover:bg-red-700 border-4 border-red-700 text-white font-bold py-2 px-2 right-4 rounded h-32 w-71 flex items-center justify-center absolute"
+          className="bg-red-500 hover:bg-red-700 border-4 border-red-700 text-white font-bold py-2 px-2 right-4 rounded h-32 w-32 flex items-center justify-center absolute"
           aria-label="Delete"
         >
           <FaTrash size={72} />
@@ -250,7 +250,7 @@ export default function XRPDashboard() {
         <GridStackProvider initialOptions={getIntitialOptions()}>
           <AddWidgets />
           <GridPersistence />
-          <div className="relative top-35 border-t-4 border-gray-300">
+          <div className="relative top-40 border-t-4 border-gray-300">
             <GridStackRenderProvider>
               <GridStackRender componentMap={COMPONENT_MAP} />
             </GridStackRenderProvider>
