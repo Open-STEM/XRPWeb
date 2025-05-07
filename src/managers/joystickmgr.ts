@@ -117,7 +117,7 @@ class Joystick {
         const changes: number[] = [];
         for (let i = 0; i < current.length; i++) {
             // Only consider sending a change if the difference exceeds the tolerance
-            if (Math.abs(current[i] - last[i]) > tolerance) {
+            if (Math.abs(current[i] - last[i]) > tolerance || i < 4) { //always update for the joystick numbers
                 changes.push(i); // byte representing the array index
                 changes.push(this.quantizeFloat(current[i])); // byte representing the new value
               }
@@ -182,15 +182,13 @@ class Joystick {
                 this.joysticksArray[this.x2] = gamepad.axes.length > 2 ? gamepad.axes[2] : 0.0;
                 this.joysticksArray[this.y2] = gamepad.axes.length > 3 ? gamepad.axes[3] : 0.0;
 
-                // Read buttons (ensure enough buttons exist)
-                // TODO: Verify button mapping! This looks like a copy-paste error.
                 // It should likely be buttons[0], buttons[1], buttons[2], etc.
                 this.joysticksArray[this.bA] = gamepad.buttons.length > 0 ? gamepad.buttons[0].value : 0;
-                this.joysticksArray[this.bB] = gamepad.buttons.length > 1 ? gamepad.buttons[1].value : 0; // Example: Corrected index
-                this.joysticksArray[this.bX] = gamepad.buttons.length > 2 ? gamepad.buttons[2].value : 0; // Example: Corrected index
-                this.joysticksArray[this.bY] = gamepad.buttons.length > 3 ? gamepad.buttons[3].value : 0; // Example: Corrected index
-                this.joysticksArray[this.bL] = gamepad.buttons.length > 4 ? gamepad.buttons[4].value : 0; // Example: Corrected index (LB)
-                this.joysticksArray[this.bR] = gamepad.buttons.length > 5 ? gamepad.buttons[5].value : 0; // Example: Corrected index (RB)
+                this.joysticksArray[this.bB] = gamepad.buttons.length > 1 ? gamepad.buttons[1].value : 0; 
+                this.joysticksArray[this.bX] = gamepad.buttons.length > 2 ? gamepad.buttons[2].value : 0; 
+                this.joysticksArray[this.bY] = gamepad.buttons.length > 3 ? gamepad.buttons[3].value : 0; 
+                this.joysticksArray[this.bL] = gamepad.buttons.length > 4 ? gamepad.buttons[4].value : 0; 
+                this.joysticksArray[this.bR] = gamepad.buttons.length > 5 ? gamepad.buttons[5].value : 0; 
 
                 // If gamepad is active, we generally ignore keyboard state for this cycle
                 // Or, we could potentially merge them if needed (e.g., keyboard buttons + joystick axes)
