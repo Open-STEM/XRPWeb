@@ -1,6 +1,7 @@
 import ConnectionMgr from '@/managers/connectionmgr';
 import { ConnectionType } from '@/utils/types';
 import Connection, { ConnectionState } from '@connections/connection';
+import TableMgr from '@/managers/tablemgr';
 
 /**
  * BluetoothConnection class
@@ -13,23 +14,34 @@ export class BluetoothConnection extends Connection {
     private btService: BluetoothRemoteGATTService | undefined;
     private bleReader: BluetoothRemoteGATTCharacteristic | undefined;
     private bleWriter: BluetoothRemoteGATTCharacteristic | undefined;
+    private bleDataReader: BluetoothRemoteGATTCharacteristic | undefined;
+    private bleDataWriter: BluetoothRemoteGATTCharacteristic | undefined;
 
     // UUIDs for standard NORDIC UART service and characteristics
     private readonly UART_SERVICE_UUID: string = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
     private readonly TX_CHARACTERISTIC_UUID: string = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
     private readonly RX_CHARACTERISTIC_UUID: string = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+    private readonly DATA_TX_CHARACTERISTIC_UUID: string = '92ae6088-f24d-4360-b1b1-a432a8ed36ff';
+    private readonly DATA_RX_CHARACTERISTIC_UUID: string = '92ae6088-f24d-4360-b1b1-a432a8ed36fe';
+
     private bleDisconnectTime: number = 0;
 
     // bluetooth data
     private bleData: Uint8Array | null = null;
     private bleDataResolveFunc: ((value: Uint8Array) => void) | null = null;
+    private ble2Data: Uint8Array | null = null;
+    private ble2DataResolveFunc: ((value: Uint8Array) => void) | null = null;
 
     private readonly BLE_STOP_MSG  = "##XRPSTOP##"
 
+    private  Table: TableMgr | undefined = undefined;
 
     constructor(connMgr: ConnectionMgr) {
         super();
         this.connMgr = connMgr;
+        if(this.joyStick)
+            this.joyStick.writeToDevice = this.writeToDataDevice.bind(this);
+        this.Table = new TableMgr();
     }
 
     /**
@@ -69,7 +81,7 @@ export class BluetoothConnection extends Connection {
             const charEvent = event as Event & { target: BluetoothRemoteGATTCharacteristic };
             const value = charEvent.target.value;
             //if(this.DEBUG_CONSOLE_ON) this.connLogger.debug(this.TEXT_DECODER.decode(value));
-            if (this.bleData == undefined) {
+            if (this.bleData == null) {
                 this.bleData = new Uint8Array(value!.buffer); //just in case the resolve is not ready
             } else {
                 this.bleData = this.concatUint8Arrays(
@@ -86,6 +98,30 @@ export class BluetoothConnection extends Connection {
             //resolve(new Uint8Array(value.buffer)); // Resolve the promise with the received string
         });
         // Optional: Reject the promise on some condition, e.g., timeout or error
+
+        if(this.bleDataReader != undefined){
+            this.bleDataReader!.addEventListener('characteristicvaluechanged', (event) => {
+                const charEvent = event as Event & { target: BluetoothRemoteGATTCharacteristic };
+                const value = charEvent.target.value;
+                //if(this.DEBUG_CONSOLE_ON) this.connLogger.debug(this.TEXT_DECODER.decode(value));
+                if (this.ble2Data == null) {
+                    this.ble2Data = new Uint8Array(value!.buffer); //just in case the resolve is not ready
+                } else {
+                    this.ble2Data = this.concatUint8Arrays(
+                        this.ble2Data,
+                        new Uint8Array(value!.buffer),
+                    );
+                }
+                if (this.ble2DataResolveFunc) {
+                    this.ble2DataResolveFunc(this.ble2Data);
+                    this.ble2DataResolveFunc = null;
+                    this.ble2Data = new Uint8Array(0);
+                }
+                //let str = arrayBufferToString(value.buffer); // Convert ArrayBuffer to string
+                //resolve(new Uint8Array(value.buffer)); // Resolve the promise with the received string
+            });
+        }
+
     }
 
     /**
@@ -93,14 +129,43 @@ export class BluetoothConnection extends Connection {
      * @param timeout 
      * @returns 
      */
-    async getBLEData(timeout = 1000): Promise<Uint8Array | undefined> {
+    async getBLEData(timeout = 10): Promise<Uint8Array | undefined> {
         return new Promise((resolve) => {
+            if(this.bleData != null && this.bleData?.length > 0){
+                let data = this.bleData;
+                this.bleData = null;
+                resolve(data);
+            }
             const timeoutId = setTimeout(() => {
                 this.bleDataResolveFunc = null; // Clear reference
                 resolve(undefined);
             }, timeout);
 
             this.bleDataResolveFunc = (data) => {
+                clearTimeout(timeoutId); // Prevent timeout from resolving
+                resolve(data);
+            };
+        });
+    }
+
+    /**
+     * get2BLEData - received BLE data from the bleDataReader from XRP Robot
+     * @param timeout 
+     * @returns 
+     */
+    async get2BLEData(timeout = 10): Promise<Uint8Array | undefined> {
+        return new Promise((resolve) => {
+            if(this.ble2Data != null && this.ble2Data?.length > 0){
+                let data = this.ble2Data;
+                this.ble2Data = null;
+                resolve(data);
+            }
+            const timeoutId = setTimeout(() => {
+                this.ble2DataResolveFunc = null; // Clear reference
+                resolve(undefined);
+            }, timeout);
+
+            this.ble2DataResolveFunc = (data) => {
                 clearTimeout(timeoutId); // Prevent timeout from resolving
                 resolve(data);
             };
@@ -119,6 +184,14 @@ export class BluetoothConnection extends Connection {
                     let values: Uint8Array | undefined = undefined;
                     values = await this.getBLEData();
                     this.readData(values);
+                
+                    let valuesD: Uint8Array | undefined = undefined;
+                    if(this.bleDataReader != undefined){
+                        valuesD = await this.get2BLEData();
+                        if(valuesD != undefined)
+                            this.Table?.readFromDevice(valuesD);
+                    }
+                
                 }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch(err: any) {
@@ -215,9 +288,27 @@ export class BluetoothConnection extends Connection {
                 // Now you can use the characteristic to send data
             })
             .then((characteristic) => {
+                this.connLogger.info('Connected to RX Characteristic');
                 this.bleReader = characteristic;
+                //this.connLogger.debug('Getting DATA_TX Characteristic...');
+                return this.btService!.getCharacteristic(this.DATA_TX_CHARACTERISTIC_UUID);
+                // Now you can use the characteristic to send data
+            })
+            .then((characteristic) => {
+                this.connLogger.info('Connected to DATA TX Characteristic');
+                this.bleDataWriter = characteristic;
+                //this.connLogger.debug('Getting DATA_TX Characteristic...');
+                return this.btService!.getCharacteristic(this.DATA_RX_CHARACTERISTIC_UUID);
+                // Now you can use the characteristic to send data
+            })
+            .then((characteristic) => {
+                this.connLogger.info('Connected to DATA RX Characteristic');
+                this.bleDataReader = characteristic;
+                //this.bleDataReader = undefined;
                 //this.READBLE.addEventListener('characteristicvaluechanged', this.readloopBLE);
+
                 this.bleReader!.startNotifications();
+                this.bleDataReader!.startNotifications();
                 this.bleDevice!.addEventListener('gattserverdisconnected', () => {
                     this.disconnect();
                 });
@@ -226,11 +317,20 @@ export class BluetoothConnection extends Connection {
             .catch((error) => {
                 if (error.code === 8) {
                     this.connLogger.info(error.message);
-                    this.onDisconnected();
+                    if(error.message.includes(this.DATA_RX_CHARACTERISTIC_UUID) || error.message.includes(this.DATA_TX_CHARACTERISTIC_UUID)){
+                        //OK if data functions are not supported
+                        this.bleReader!.startNotifications();
+                        this.bleDevice!.addEventListener('gattserverdisconnected', () => {
+                            this.disconnect();
+                        });
+                        this.onConnected();
+                    }
+                    else {this.onDisconnected();}
                 } else {
                     throw new Error('BLE connection failed' + error.message);
                 }
             });
+            
 
         //this.MANNUALLY_CONNECTING = false;
         this.connLogger.debug('Existing BLE connect');
@@ -268,9 +368,17 @@ export class BluetoothConnection extends Connection {
                 this.bleReader = await this.btService.getCharacteristic(
                     this.RX_CHARACTERISTIC_UUID,
                 );
+            /*
+                this.bleDataWriter = await this.btService.getCharacteristic(
+                    this.DATA_TX_CHARACTERISTIC_UUID,
+                );
+                this.bleDataReader = await this.btService.getCharacteristic(
+                    this.DATA_RX_CHARACTERISTIC_UUID,
+                );
+            */
                 this.bleReader.startNotifications();
                 this.onConnected();
-                return true;
+                //return true;
                 // Perform operations after successful connection
             } catch (error) {
                 this.connLogger.debug('timed out: ', error);
@@ -307,6 +415,24 @@ export class BluetoothConnection extends Connection {
         } catch (error) {
             this.connLogger.debug(error);
         }
+    }
+
+     /**
+     * writeToDataDevice
+     * @param Uint8Array 
+     */
+     public async writeToDataDevice(data: Uint8Array) {
+        this.connLogger.debug('writeToDataDevice BLE: ' + data);
+
+        try {
+            //this.connLogger.debug("writing: " + this.TEXT_DECODER.decode(str));
+            await this.bleDataWriter?.writeValue(data);
+            
+        } catch (error) {
+            this.connLogger.debug(error);
+        }
+
+        return Promise.resolve(); // Indicate success
     }
 
     /**
