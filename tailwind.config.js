@@ -98,5 +98,8 @@ export default {
         fontFamily: {},
         extend: {},
     },
-    plugins: [require('tailwindcss-debug-screens')],
+    plugins: [
+        require('tailwindcss-debug-screens'),
+        require('@tailwindcss/typography')
+    ],
 };

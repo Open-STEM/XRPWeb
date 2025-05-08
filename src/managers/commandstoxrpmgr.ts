@@ -942,4 +942,15 @@ export class CommandToXRPMgr {
     getXRPDrive(): string {
         return (this.PROCESSOR! === 2350) ? "RP2350" : "RPI-RP2";
     }
+
+    /**
+     * getMPFilename
+     * @returns the MicroPython filename
+     */
+    getMPFilename(): string | undefined{
+        if (this.mpFilename != undefined) {
+            return this.mpFilename;
+        }
+        return undefined;
+    }
 }

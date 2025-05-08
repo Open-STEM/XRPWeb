@@ -1,0 +1,31 @@
+# Version 1.1.0
+
+#### Bluetooth support
+<img height="10%" width="10%" src="src/assets/images/Bluetooth_FM_Black.png"/></img>
+
+# Please read the steps below!!
+
+* Connect your XRP with a cable
+* Let XRPCode upgrade the Micropython and XRPLib
+* Under the RUN button will be the unique name of the XRP. You will want to write this on the XRP.
+* Disconnect the XRP from the cable and turn on the XRP.
+* When you click CONNECT select Bluetooth and it will bring up a list of XRPs that are not currently connected. (If your XRP does not show up press reset)
+* Select your XRP and click Pair.
+* Once connected XRPCode should be the same as if connected via a cable. YOU ARE NOW CABLE FREE!
+* If the XRP is reset / turned off / too far away XRPCode will show RE-CONNECT XRP for 10 seconds and then switch to CONNECT.
+    * If the XRP is turned back on / brought closer XRPCode will auto re-connect to the XRP within that 10 seconds
+* If you start the XRP and a program runs keeping the bluetooth from connecting then press reset and it will restart without running the program
+
+#### VSCode editor
+* The Python editor now supports intellisense and Python syntax
+* The Python editor also knows about XRPLib and the XRPLib API
+
+#### Fixed
+* Input is now accepted in XRP applications
+* The REPL stays live from run to run and has information from the last running program like globals and classes
+    * When STOP is used the REPL is reset.
+
+
+
+
+

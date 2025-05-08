@@ -28,7 +28,8 @@ export enum EventType {
     EVENT_MICROPYTHON_UPDATE = 'micropython-update',    // request micropythong update
     EVENT_MICROPYTHON_UPDATE_DONE = 'micropython-update-done',  // micropython update done
     EVENT_XRPLIB_UPDATE = 'xrplib-update',              // XRP update request
-    EVENT_XRPLIB_UPDATE_DONE = 'xrplib-update-done'    // XRP update done
+    EVENT_XRPLIB_UPDATE_DONE = 'xrplib-update-done',    // XRP update done
+    EVENT_SHOWCHANGELOG = 'show-changelog', // show changelog
 }
 
 type Events = {
@@ -51,6 +52,7 @@ type Events = {
     [EventType.EVENT_MICROPYTHON_UPDATE_DONE]: string;
     [EventType.EVENT_XRPLIB_UPDATE]: string;
     [EventType.EVENT_XRPLIB_UPDATE_DONE]: string;
+    [EventType.EVENT_SHOWCHANGELOG]: string;
 };
 
 /**

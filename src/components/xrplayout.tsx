@@ -9,10 +9,12 @@ import i18n from '@/utils/i18n';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
 import FolderTree from './folder-tree';
 import { Constants } from '@/utils/constants';
-import { EditorType } from '@/utils/types';
+import { EditorType, FileType, NewFileData } from '@/utils/types';
 import { useLocalStorage } from 'usehooks-ts';
 import { StorageKeys } from '@/utils/localstorage';
-import EditorMgr from '@/managers/editormgr';
+import EditorMgr, { EditorStore } from '@/managers/editormgr';
+import { CreateEditorTab } from '@/utils/editorUtils';
+import XRPDashboard from '@/components/dashboard/xrp-dashboard';
 
 /**
  *  Layout-React's layout JSON to specify the XRPWeb's single page application's layout
@@ -99,6 +101,8 @@ const factory = (node: TabNode) => {
         return <FolderTree treeData={null} theme="rct-dark" isHeader={true} />;
     } else if (component == 'blockly') {
         return <BlocklyEditor name={node.getName()} />;
+    } else if (component == 'dashboard') {
+        return <XRPDashboard />;
     }
 };
 
@@ -108,6 +112,22 @@ type XRPLayoutProps = {
 };
 
 let hasSubscribed = false;
+
+/**
+ * useOnceCall - call the function once
+ * @param cb 
+ * @param condition 
+ */
+function useOnceCall(cb: () => void, condition = true) {
+    const isCalledRef = React.useRef(false);
+  
+    React.useEffect(() => {
+      if (condition && !isCalledRef.current) {
+        isCalledRef.current = true;
+        cb();
+      }
+    }, [cb, condition]);
+}
 
 /**
  *
@@ -169,28 +189,77 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
     }, [forwardedref]);
 
     /**
+     * React Hook to handle the initial mount of the component and initialize the editor sessions
+     */
+    useOnceCall(() => {
+        console.log('Initialize editors after the layout has been mounted');
+        const handleWindowLoad = () => {
+            // Check if there are any existing editor sessions in local storage
+            // and create editor tabs for them
+            const editors = localStorage.getItem(StorageKeys.EDITORSTORE);
+            if (editors) {
+                const editorStores: EditorStore[] = JSON.parse(editors);
+                editorStores.forEach((store: EditorStore) => {
+                    const fileData: NewFileData = {
+                        parentId: '',
+                        name: store.id,
+                        path: store.path,
+                        filetype: store.isBlockly ? FileType.BLOCKLY : FileType.PYTHON,
+                        content: store.content,
+                    }
+                    CreateEditorTab(fileData, layoutRef);
+                    setActiveTab(store.id);
+                });
+            }
+
+            // check if the version is different and show the change log
+            const version = localStorage.getItem(StorageKeys.VERSION);
+            const currentVersion = Constants.APP_VERSION;
+            if (version === null || version !== currentVersion) {
+                AppMgr.getInstance().emit(EventType.EVENT_SHOWCHANGELOG, Constants.SHOW_CHANGELOG);
+            } 
+            localStorage.setItem(StorageKeys.VERSION, currentVersion || '');
+        };
+
+        window.addEventListener('load', handleWindowLoad);
+        return () => {
+            window.removeEventListener('load', handleWindowLoad);
+        }
+    });
+
+    /**
      * handleActions - handle the actions from the layout
      * @param action
      * @returns
      */
     function handleActions(action: Action): Action | undefined {
         console.log('Action:', activeTab);
-        if (action.type === Actions.SELECT_TAB) {
-            console.log('Selected Tab:', action.data.tabNode);
-            const blockly = action.data.tabNode.includes('.blocks');
-            if (EditorMgr.getInstance().hasEditorSession(action.data.tabNode)) {
-                AppMgr.getInstance().emit(
-                    EventType.EVENT_EDITOR,
-                    blockly ? EditorType.BLOCKLY : EditorType.PYTHON,
-                );
-                setActiveTab(action.data.tabNode);
+        switch (action.type) {
+            case Actions.SELECT_TAB: {
+                console.log('Selected Tab:', action.data.tabNode);
+                const blockly = action.data.tabNode.includes('.blocks');
+                if (EditorMgr.getInstance().hasEditorSession(action.data.tabNode)) {
+                    AppMgr.getInstance().emit(
+                        EventType.EVENT_EDITOR,
+                        blockly ? EditorType.BLOCKLY : EditorType.PYTHON,
+                    );
+                    setActiveTab(action.data.tabNode);
+                }
             }
-        }
-        if (action.type === Actions.DELETE_TAB) {
-            console.log('Moved Node:', action.data);
-            const id = EditorMgr.getInstance().RemoveEditor(action.data.node);
-            if (id) 
-                setActiveTab(id);
+            break;
+            case Actions.DELETE_TAB: {        
+                if (action.type === Actions.DELETE_TAB) {
+                    console.log('Moved Node:', action.data);
+                    const id = EditorMgr.getInstance().RemoveEditor(action.data.node);
+                    if (id) 
+                        setActiveTab(id);
+                }
+            }
+            break;
+            default: {
+                console.log('Default Action:', action);
+            }
+            break;
         }
         return action;
     }
