@@ -49,17 +49,18 @@ function XRPShell() {
                         instance?.writeln(i18n.t('disconnectXterm'));
                     }
                 });
-            }
 
-            instance?.onData((data) => {
-                const activeConn: Connection | null = AppMgr.getInstance().getConnection();
-                if (activeConn) {
-                    if (activeConn.isBusy()) {
-                        return;
+                // can only be subscribed to once
+                instance?.onData((data) => {
+                    const activeConn: Connection | null = AppMgr.getInstance().getConnection();
+                    if (activeConn) {
+                        if (activeConn.isBusy()) {
+                            return;
+                        }
+                        activeConn.writeToDevice(data);
                     }
-                    activeConn.writeToDevice(data);
-                }
-            });
+                });
+            }
         }
 
         const handleResize = () => fitAddon.fit();
