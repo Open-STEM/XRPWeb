@@ -132,7 +132,7 @@ export class BluetoothConnection extends Connection {
     async getBLEData(timeout = 10): Promise<Uint8Array | undefined> {
         return new Promise((resolve) => {
             if(this.bleData != null && this.bleData?.length > 0){
-                let data = this.bleData;
+                const data = this.bleData;
                 this.bleData = null;
                 resolve(data);
             }
@@ -156,7 +156,7 @@ export class BluetoothConnection extends Connection {
     async get2BLEData(timeout = 10): Promise<Uint8Array | undefined> {
         return new Promise((resolve) => {
             if(this.ble2Data != null && this.ble2Data?.length > 0){
-                let data = this.ble2Data;
+                const data = this.ble2Data;
                 this.ble2Data = null;
                 resolve(data);
             }
@@ -205,7 +205,6 @@ export class BluetoothConnection extends Connection {
      */
     private async onConnected() {
         this.connectionStates = ConnectionState.Connected;
-        //TODO:  start the read looad
         this.lastProgramRan = undefined;
         if (this.connLogger) {
             this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);

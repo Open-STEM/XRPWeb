@@ -211,7 +211,7 @@ export class CommandToXRPMgr {
         this.BUSY = false;
         if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug('fcg: out of getVerionINfo');
 
-        if (hiddenLines != undefined) {
+        if (hiddenLines != undefined && hiddenLines.length > 0) {
             if (hiddenLines[0].substring(2) != 'ERROR') {
                 if (this.PROCESSOR == undefined) {
                     if (hiddenLines[1].includes('RP2350')) {
@@ -238,18 +238,7 @@ export class CommandToXRPMgr {
         //This is only called when a new XRP is attached. Reset a few variables.
         this.XRPId = undefined;
         this.lastRun = undefined;
-
-        //if no micropython on the XRP
-        if (!this.HAS_MICROPYTHON) {
-            this.cmdLogger.debug("no MicroPython");
-            const mpVersions : Versions = {
-                currentVersion: 'None',
-                newVersion: this.mpVersion[0] + "." + this.mpVersion[1] + "." + this.mpVersion[2] + "." + this.mpBuild
-            }
-            AppMgr.getInstance().emit(EventType.EVENT_MICROPYTHON_UPDATE, JSON.stringify(mpVersions));
-            return this.XRPId;
-        }
-
+        this.HAS_MICROPYTHON = true;    // this is set after connection is successful
         
         //get version information from the XRP
         const info = await this.getVersionInfo();
@@ -270,6 +259,7 @@ export class CommandToXRPMgr {
                 newVersion: this.mpVersion[0] + "." + this.mpVersion[1] + "." + this.mpVersion[2] + "." + this.mpBuild
             }
             AppMgr.getInstance().emit(EventType.EVENT_MICROPYTHON_UPDATE, JSON.stringify(mpVersions));
+            return this.XRPId;
         }
 
         //if no library or the library is out of date
@@ -433,7 +423,7 @@ export class CommandToXRPMgr {
         //window.setPercent(25, "Fetching filesystem...");
         const hiddenLines: string[] | undefined = await this.connection?.writeUtilityCmdRaw(getFilesystemCmd + sizeCmd, true, 1);
 
-        if (hiddenLines != undefined) {
+        if (hiddenLines != undefined && hiddenLines.length > 0) {
             this.changeToJSON(hiddenLines);
             const fsData = JSON.stringify(this.treeData);
             const szData = hiddenLines[1].split(' ');
@@ -923,8 +913,10 @@ export class CommandToXRPMgr {
         if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: out of executeLines");
 
         // Make sure to update the filesystem as there is a small chance that the program saved something like a log file.
-        await this.getOnBoardFSTree();
-        }
+        setTimeout(() => {
+            this.getOnBoardFSTree();
+        });
+    }
 
     /**
      * stopProgram - stop program execution on the XRP
