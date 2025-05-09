@@ -2,6 +2,7 @@ from XRPLib.defaults import *
 from ble.blerepl import uart
 from time import sleep
 from micropython import const
+import time
 import struct
 
 YAW = const(0)
@@ -34,8 +35,19 @@ def sendFloatValue(index, value):
 #--------------------------------------
 # start of main program. Other parts will be in a libraries at some point
 startDashboard()
-#sendIntValue(0, 3)
-sendFloatValue(PTICH, 4.256)
+
+print(time.time())
+
+timeout = time.time() + 30
+while True:
+    sendFloatValue(YAW, imu.get_yaw())
+    sendFloatValue(ROLL, imu.get_roll())
+    sendFloatValue(PTICH, imu.get_pitch())
+    sleep(0.3)
+    if time.time() > timeout:
+        break
+
+print("done")
 
 print("done")
 

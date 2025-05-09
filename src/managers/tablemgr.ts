@@ -3,7 +3,7 @@
 import logger from "@/utils/logger";
 
 class TableMgr {
-        protected tableLogger = logger.child({module: 'table'});
+    protected tableLogger = logger.child({module: 'table'});
     
     // State Arrays
     private tableArray: number[] = [
@@ -19,6 +19,7 @@ class TableMgr {
         0.0,   // enc4
     ];
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 private tableNames: any = {
     "yaw": 0,
     "roll": 1,
@@ -45,7 +46,7 @@ private buffer: Uint8Array = new Uint8Array();
     // --- Public Methods ---
 
     public getValue(name: string): number | null{
-        let index = this.tableNames[name];
+        const index = this.tableNames[name];
         if(index)
             return this.tableArray[index];
         else
@@ -89,11 +90,11 @@ private buffer: Uint8Array = new Uint8Array();
                             this.tableArray[data[i + 1]] = data[i+2];
                             i += 3;
                         }
-                        else if (data[i] == this.TypeFloat){
-                        const view =  new DataView(data.buffer, i+2, 4);
-                        const val = Math.round(view.getFloat32(0, true) * 1e4) / 1e4;
-                        this.tableArray[data[i+1]] = val;
-                        i += 6
+                        else if (data[i] == this.TypeFloat) {
+                            const view =  new DataView(data.buffer, i+2, 4);
+                            const val = Math.round(view.getFloat32(0, true) * 1e4) / 1e4;
+                            this.tableArray[data[i+1]] = val;
+                            i += 6
                         } 
                     }
                 }
@@ -101,13 +102,14 @@ private buffer: Uint8Array = new Uint8Array();
             case 0x46: //start dashboard session
                 this.tableLogger.info("starting dashboard");
                 break;
-            case 0x47: //declare new table entry
-                this.tableLogger.info("new table entry");
-                let newIndex = this.tableArray.push(0.0);
-                //convert the string to the name
-                let newName = "error";
-                this.tableNames[newName] = newIndex + 1;
-                break;
+            case 0x47: { //declare new table entry
+                    this.tableLogger.info("new table entry");
+                    const newIndex = this.tableArray.push(0.0);
+                    //convert the string to the name
+                    const newName = "error";
+                    this.tableNames[newName] = newIndex + 1;
+                    break; 
+                }
         }
     }
 

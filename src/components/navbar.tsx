@@ -155,7 +155,6 @@ function NavBar({ layoutref }: NavBarProps) {
             AppMgr.getInstance().on(EventType.EVENT_MICROPYTHON_UPDATE, (versions) => {
                 setDialogContent(<UpdateDlg updateCallback={handleMPUpdateCallback} toggleDialog={toggleDialog} isUpdateMP={true} isUpdateLib={false} mpVersion={JSON.parse(versions)}/>);
                 toggleDialog();
-
             });
 
             AppMgr.getInstance().on(EventType.EVENT_XRPLIB_UPDATE, (versions) => {
@@ -566,7 +565,7 @@ function NavBar({ layoutref }: NavBarProps) {
                             await CommandToXRPMgr.getInstance().executeLines(lines);
                         });
                 }
-                setRunning(true);
+                setRunning(false);
             }
         } else {
             setRunning(false);
@@ -599,7 +598,6 @@ function NavBar({ layoutref }: NavBarProps) {
         }
         if (dialogRef.current.hasAttribute('open')) {
             dialogRef.current.close();
-            setDialogContent(null);
         }
         else dialogRef.current.showModal();
     }
