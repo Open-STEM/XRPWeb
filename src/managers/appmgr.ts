@@ -30,6 +30,7 @@ export enum EventType {
     EVENT_XRPLIB_UPDATE = 'xrplib-update',              // XRP update request
     EVENT_XRPLIB_UPDATE_DONE = 'xrplib-update-done',    // XRP update done
     EVENT_SHOWCHANGELOG = 'show-changelog', // show changelog
+    EVENT_DASHBOARD_DATA = 'dashboard-data', // dashboard event
 }
 
 type Events = {
@@ -53,6 +54,7 @@ type Events = {
     [EventType.EVENT_XRPLIB_UPDATE]: string;
     [EventType.EVENT_XRPLIB_UPDATE_DONE]: string;
     [EventType.EVENT_SHOWCHANGELOG]: string;
+    [EventType.EVENT_DASHBOARD_DATA]: string;
 };
 
 /**

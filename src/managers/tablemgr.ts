@@ -1,6 +1,26 @@
 // ##### tablemgr.ts #####
 // Wraps the table procedures into a class
 import logger from "@/utils/logger";
+import AppMgr, { EventType } from "./appmgr";
+
+export interface NetworkTable {
+    gyro: {
+        yaw: number;
+        roll: number;
+        pitch: number;
+    },
+    accelerometer: {
+        accX: number;
+        accY: number;
+        accZ: number;
+    },
+    encoders: {
+        encL: number;
+        encR: number;
+        enc3: number;
+        enc4: number;
+    }
+}
 
 class TableMgr {
     protected tableLogger = logger.child({module: 'table'});
@@ -45,6 +65,31 @@ private buffer: Uint8Array = new Uint8Array();
 
     // --- Public Methods ---
 
+    /**
+     * getValue - get the value of a table entry
+     * @returns the network table
+     */
+    private getTable(): NetworkTable {
+        return {
+            gyro: {
+                yaw: this.tableArray[this.tableNames["yaw"]],
+                roll: this.tableArray[this.tableNames["roll"]],
+                pitch: this.tableArray[this.tableNames["pitch"]],
+            },
+            accelerometer: {
+                accX: this.tableArray[this.tableNames["accX"]],
+                accY: this.tableArray[this.tableNames["accY"]],
+                accZ: this.tableArray[this.tableNames["accZ"]],
+            },
+            encoders: {
+                encL: this.tableArray[this.tableNames["encL"]],
+                encR: this.tableArray[this.tableNames["encR"]],
+                enc3: this.tableArray[this.tableNames["enc3"]],
+                enc4: this.tableArray[this.tableNames["enc4"]],
+            },
+        };
+    }
+
     public getValue(name: string): number | null{
         const index = this.tableNames[name];
         if(index)
@@ -78,6 +123,9 @@ private buffer: Uint8Array = new Uint8Array();
             }
             
         }
+
+        // this.tableLogger.debug("table data: " + JSON.stringify(this.getTable()));
+        AppMgr.getInstance().emit(EventType.EVENT_DASHBOARD_DATA, JSON.stringify(this.getTable()));
     }
 
      private processBuffer(data: Uint8Array){

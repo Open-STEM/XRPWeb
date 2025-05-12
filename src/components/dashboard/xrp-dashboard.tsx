@@ -1,5 +1,9 @@
+import Gyroscope from "./sensors/Gyroscope";
+
 export default function XRPDashboard() {
   return (
-    <h1 className='text-xl'>XRP Dashboard</h1>
+    <div className="flex flex-col w-[400px] h-[400px] bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+      <Gyroscope />
+    </div>
   )
 }
