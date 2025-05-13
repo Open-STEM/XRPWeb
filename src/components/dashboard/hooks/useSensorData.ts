@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { GyroscopeData, SensorData } from '../utils/sensorParsers';
+import { AccelerometerData, GyroscopeData, SensorData } from '../utils/sensorParsers';
 import AppMgr, { EventType } from '@/managers/appmgr';
 import { NetworkTable } from '@/managers/tablemgr';
 
@@ -20,10 +20,10 @@ const useSensorData = () => {
               break;
             case 'accelerometer':
               {
-                const accelValues = {
-                  accX: parsedData.accelerometer.accX,
-                  accY: parsedData.accelerometer.accY,
-                  accZ: parsedData.accelerometer.accZ
+                const accelValues : AccelerometerData = {
+                  x: parsedData.accelerometer.accX,
+                  y: parsedData.accelerometer.accY,
+                  z: parsedData.accelerometer.accZ
                 };
                 const accelData: SensorData = {
                   sensorType: sensor,

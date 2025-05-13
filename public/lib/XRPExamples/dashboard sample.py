@@ -43,6 +43,9 @@ while True:
     sendFloatValue(YAW, imu.get_yaw())
     sendFloatValue(ROLL, imu.get_roll())
     sendFloatValue(PTICH, imu.get_pitch())
+    sendFloatValue(ACCX, imu.get_acc_x())
+    sendFloatValue(ACCY, imu.get_acc_y())
+    sendFloatValue(ACCZ, imu.get_acc_z())
     sleep(0.3)
     if time.time() > timeout:
         break
