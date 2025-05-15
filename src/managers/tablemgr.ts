@@ -17,6 +17,14 @@ class TableMgr {
         0.0,   // encR
         0.0,   // enc3
         0.0,   // enc4
+        0.0,   // currentL
+        0.0,   // currentR
+        0.0,   // current3
+        0.0,   // current4
+        0.0,   // distance
+        0.0,   // reflectanceL
+        0.0,   // reflectanceR
+        0.0,   // voltage
     ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,7 +38,15 @@ private tableNames: any = {
     "encL": 6,
     "encR": 7,
     "enc3": 8,
-    "enc4": 9
+    "enc4": 9,
+    "currR": 10,
+    "currL": 11,
+    "curr3": 12,
+    "curr4": 13,
+    "dist": 14,
+    "reflectanceL": 15,
+    "reflectanceR": 16,
+    "voltage": 17
 };
 
 private readonly TypeInt: number = 0;
