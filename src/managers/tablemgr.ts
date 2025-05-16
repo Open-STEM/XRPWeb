@@ -19,7 +19,19 @@ export interface NetworkTable {
         encR: number;
         enc3: number;
         enc4: number;
-    }
+    },
+    current: {
+        currL: number;
+        currR: number;
+        curr3: number;
+        curr4: number;
+    },
+    distance: number;
+    reflectance: {
+        reflectanceL: number;
+        reflectanceR: number;
+    },
+    voltage: number;
 }
 
 class TableMgr {
@@ -103,6 +115,18 @@ private buffer: Uint8Array = new Uint8Array();
                 enc3: this.tableArray[this.tableNames["enc3"]],
                 enc4: this.tableArray[this.tableNames["enc4"]],
             },
+            current: {
+                currL: this.tableArray[this.tableNames["currL"]],
+                currR: this.tableArray[this.tableNames["currR"]],
+                curr3: this.tableArray[this.tableNames["curr3"]],
+                curr4: this.tableArray[this.tableNames["curr4"]],
+            },
+            distance: this.tableArray[this.tableNames["dist"]],
+            reflectance: {
+                reflectanceL: this.tableArray[this.tableNames["reflectanceL"]],
+                reflectanceR: this.tableArray[this.tableNames["reflectanceR"]],
+            },
+            voltage: this.tableArray[this.tableNames["voltage"]],
         };
     }
 
