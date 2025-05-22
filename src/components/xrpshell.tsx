@@ -13,14 +13,15 @@ function XRPShell() {
 
     useEffect(() => {
         if (instance) {
-            const darkTheme = { foreground: '#ddd', background: '#333333' };
-            const lightTheme = { foreground: '#41393b', background: '#f0eff0' };
+            const darkTheme = { foreground: '#ddd', background: '#333333', cursor: '#ddd' };
+            const lightTheme = { foreground: '#41393b', background: '#f0eff0', cursor: '#41393b' };
 
             instance?.loadAddon(fitAddon);
             const theme = AppMgr.getInstance().getTheme() === Themes.DARK ? darkTheme : lightTheme;
             instance.options = {
                 cursorStyle: 'underline',
                 cursorInactiveStyle: 'bar',
+                scrollback: 2048,
                 disableStdin: false,
                 logLevel: 'info',
                 theme: theme,
@@ -60,6 +61,7 @@ function XRPShell() {
                         activeConn.writeToDevice(data);
                     }
                 });
+                fitAddon.fit();
             }
         }
 
