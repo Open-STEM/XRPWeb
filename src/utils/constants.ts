@@ -6,4 +6,5 @@ export class Constants {
     static readonly DEFAULT_FONTSIZE = 14;
     static readonly TRASH_FOLDER = '/trash';
     static readonly SHOW_CHANGELOG = 'show-changelog';
+    static SHOW_PROGRESS = 'show-progress';
 }
