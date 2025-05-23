@@ -16,8 +16,7 @@ function FolderHeader({ storageCapacity, openFolderCallback, closeFolderCallback
     return (
         <div className="flex flex-row items-center justify-between bg-mountain-mist-100 p-1 text-sm dark:bg-mountain-mist-800">
             <div className="flex flex-row">
-                <label>{i18n.t('Filesystem Storage:')}</label>
-                <span>{storageCapacity}</span>
+                <span>{i18n.t('FilesystemStorage', { capacity: storageCapacity})}</span>
             </div>
             <div className="flex flex-row gap-1">
                 <button title={i18n.t('openFolder')} onClick={openFolderCallback}>
