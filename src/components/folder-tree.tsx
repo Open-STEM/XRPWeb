@@ -131,7 +131,7 @@ function FolderTree(treeProps: TreeProps) {
                     <span>
                         <Icon />
                     </span>
-                    <span className="mx-1">
+                    <span className="mx-1 overflow-wrap whitespace-nowrap">
                         {node.isEditing ? <Input node={node} /> : node.data.name}
                     </span>
                 </div>
