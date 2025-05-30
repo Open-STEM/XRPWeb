@@ -313,7 +313,7 @@ export class CommandToXRPMgr {
             const next = urls[i];
             let parts = next[0];
             parts = parts.replace("XRPLib", "lib/XRPLib");
-            await this.uploadFile(parts, await this.downloadFile(parts.replace("XRPExamples", "lib/Examples") + "?version=" + this.latestLibraryVersion[2]));
+            await this.uploadFile(parts, await this.downloadFile(parts.replace("XRPExamples", "lib/XRPExamples") + "?version=" + this.latestLibraryVersion[2]));
             AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, cur_percent.toString());
             cur_percent += percent_per;
         }
@@ -733,7 +733,7 @@ export class CommandToXRPMgr {
             */
 
             currentPercent = currentPercent + percentStep;
-            console.log('UploadFile current percent: ', currentPercent);
+            this.cmdLogger.debug('UploadFile current percent: ' + currentPercent);
             //if (usePercent) window.setPercent?.(currentPercent); TODO: show percentage
             if (usePercent) 
                 AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, currentPercent.toString());    
