@@ -10,6 +10,17 @@ export interface ColorSensorData {
   b: number;
 }
 
+export interface VoltageData {
+  voltage: number;
+}
+
+export interface ReflectanceData {
+  reflectanceL: number;
+  reflectanceR: number;
+}
+
+
+
 export interface AccelerometerData {
   x: number;
   y: number;
@@ -32,6 +43,20 @@ export interface LEDData {
 
 export interface ServoData {
   angle: number;
+}
+
+export interface EncoderData {
+  encL: number;
+  encR: number;
+  enc3: number;
+  enc4: number;
+}
+
+export interface CurrentData {
+  currL: number;
+  currR: number;
+  curr3: number;
+  curr4: number;
 }
 
 export interface MotorData {
@@ -125,6 +150,43 @@ export const parseSensorData = (data: { value: string }): SensorData | null => {
         };
         break;
 
+      case "Battery Data":
+        parsedValue = {
+          voltage: values[0]
+        };
+        break;
+
+      case "Reflectance Data":
+        parsedValue = {
+          reflectance: {
+            reflectanceL: values[0],
+            reflectanceR: values[1]
+          }
+        };
+        break;
+
+      case "Current Data":
+        parsedValue = {
+          current: {
+            currL: values[0],
+            currR: values[1],
+            curr3: values[2],
+            curr4: values[3]
+          }
+        };
+        break;
+
+      case "Encoder Data":
+        parsedValue = {
+          encoders: {
+            encL: values[0],
+            encR: values[1],
+            enc3: values[2],
+            enc4: values[3]
+          }
+        };
+        break;
+
       default:
         console.warn("Unknown sensor type:", sensorType);
         return null;
@@ -139,7 +201,11 @@ export const parseSensorData = (data: { value: string }): SensorData | null => {
       "LED Data": "LED",
       "Servo Data": "servo",
       "Motor Data": "motor",
-      "Rangefinder Data": "rangefinder"
+      "Rangefinder Data": "rangefinder",
+      "Battery Data": "battery",
+      "Reflectance Data": "reflectance",
+      "Current Data": "current",
+      "Encoder Data": "encoders"
     };
 
     return {
