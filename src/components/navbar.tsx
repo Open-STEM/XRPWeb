@@ -11,6 +11,7 @@ import apilink from '@assets/images/api.svg';
 import python from '@assets/images/python.svg';
 import convert from '@assets/images/convert.svg';
 import dashboard from '@assets/images/dashboard.svg';
+import chat from '@assets/images/chat.svg';
 import forum from '@assets/images/forum.svg';
 import cirriculum from '@assets/images/cirriculum.svg';
 import changelog from '@assets/images/changelog.svg';
@@ -495,6 +496,21 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
+     * openAIChat - open the AI chat
+     */
+    function openAIChat() {
+        console.log('Opening AI Chat');
+        const tabInfo: IJsonTabNode = {
+            component: 'aichat',
+            name: 'AI Chat',
+            id: Constants.AI_CHAT_TAB_ID,
+            helpText: 'Chat with AI models from Hugging Face',
+        };
+        layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
+        setActiveTab('AI Chat');
+    }
+
+    /**
      * onConnectionSelected - process seected connection
      * @param connType
      */
@@ -709,6 +725,11 @@ function NavBar({ layoutref }: NavBarProps) {
                     label: i18n.t('userHelpForum'),
                     iconImage: forum,
                     link: 'https://xrp.discourse.group/',
+                },
+                {
+                    label: 'AI Chat',
+                    iconImage: chat,
+                    clicked: openAIChat,
                 },
                 {
                     label: i18n.t('changeLog'),
