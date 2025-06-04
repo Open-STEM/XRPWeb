@@ -43,19 +43,19 @@ export default function ModelSelector({ selectedModel, onModelChange, disabled =
             </button>
 
             {isOpen && (
-                <div className="absolute top-full left-0 mt-1 w-80 bg-white dark:bg-mountain-mist-900 border border-mountain-mist-300 dark:border-mountain-mist-600 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+                <div className="absolute top-full left-0 mt-1 w-80 bg-white dark:bg-mountain-mist-900 border border-mountain-mist-300 dark:border-mountain-mist-600 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto backdrop-blur-sm">
                     {CHAT_PROVIDERS.map((provider: ChatProvider) => (
-                        <div key={provider.id} className="p-2">
-                            <div className="text-xs font-semibold text-mountain-mist-600 dark:text-mountain-mist-400 px-2 py-1 uppercase tracking-wide">
+                        <div key={provider.id} className="p-2 bg-white dark:bg-mountain-mist-900">
+                            <div className="text-xs font-semibold text-mountain-mist-600 dark:text-mountain-mist-400 px-2 py-1 uppercase tracking-wide bg-mountain-mist-50 dark:bg-mountain-mist-800 rounded">
                                 {provider.name}
                             </div>
                             {provider.models.map((model: ChatModel) => (
                                 <button
                                     key={model.id}
                                     onClick={() => handleModelSelect(model)}
-                                    className={`w-full text-left px-2 py-2 rounded-md transition-colors ${
+                                    className={`w-full text-left px-2 py-2 rounded-md transition-colors bg-white dark:bg-mountain-mist-900 ${
                                         selectedModel.id === model.id
-                                            ? 'bg-curious-blue-100 dark:bg-curious-blue-900/20 text-curious-blue-700 dark:text-curious-blue-300'
+                                            ? 'bg-curious-blue-100 dark:bg-curious-blue-900/30 text-curious-blue-700 dark:text-curious-blue-300 border border-curious-blue-200 dark:border-curious-blue-700'
                                             : 'hover:bg-mountain-mist-50 dark:hover:bg-mountain-mist-800 text-mountain-mist-700 dark:text-mountain-mist-300'
                                     }`}
                                 >

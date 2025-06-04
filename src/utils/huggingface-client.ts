@@ -1,65 +1,24 @@
 import { InferenceClient } from '@huggingface/inference';
 import { ChatMessage, ChatModel, ChatProvider } from './types';
 
-// Available models and providers based on Hugging Face's current offerings
+// Available models through HF Inference API only
+// ONLY FREE TIER models that actually work
 export const CHAT_PROVIDERS: ChatProvider[] = [
     {
-        id: 'cerebras',
-        name: 'Cerebras',
+        id: 'hf-inference',
+        name: 'HF Inference (FREE)',
         models: [
             {
-                id: 'llama3.3-70b',
-                name: 'Llama 3.3 70B',
-                provider: 'cerebras',
-                description: 'Fast and capable model for everyday use'
+                id: 'meta-llama/Meta-Llama-3.1-8B-Instruct',
+                name: 'Llama 3.1 8B Instruct',
+                provider: 'hf-inference',
+                description: '🆓 Free instruction-following model'
             },
             {
-                id: 'llama3.1-8b',
-                name: 'Llama 3.1 8B',
-                provider: 'cerebras',
-                description: 'Smaller, faster model for quick responses'
-            }
-        ]
-    },
-    {
-        id: 'together',
-        name: 'Together AI',
-        models: [
-            {
-                id: 'meta-llama/Llama-3.3-70B-Instruct',
-                name: 'Llama 3.3 70B Instruct',
-                provider: 'together',
-                description: 'Latest Llama model with excellent instruction following'
-            },
-            {
-                id: 'Qwen/Qwen2.5-72B-Instruct',
-                name: 'Qwen 2.5 72B',
-                provider: 'together',
-                description: 'Advanced model with strong reasoning capabilities'
-            }
-        ]
-    },
-    {
-        id: 'cohere',
-        name: 'Cohere',
-        models: [
-            {
-                id: 'command-r-plus',
-                name: 'Command R+',
-                provider: 'cohere',
-                description: 'Optimized for conversational interaction and tool use'
-            }
-        ]
-    },
-    {
-        id: 'novita',
-        name: 'Novita AI',
-        models: [
-            {
-                id: 'deepseek-ai/DeepSeek-V3-0324',
-                name: 'DeepSeek V3',
-                provider: 'novita',
-                description: 'Advanced reasoning model'
+                id: 'microsoft/phi-4',
+                name: 'Phi-4',
+                provider: 'hf-inference',
+                description: '🆓 Microsoft\'s efficient model'
             }
         ]
     }
@@ -94,7 +53,6 @@ export class HuggingFaceClient {
                 let fullContent = '';
                 const stream = this.client.chatCompletionStream({
                     model: model.id,
-                    provider: model.provider as any,
                     messages: formattedMessages,
                     max_tokens: 1000,
                     temperature: 0.7,
@@ -115,7 +73,6 @@ export class HuggingFaceClient {
                 // Non-streaming response
                 const response = await this.client.chatCompletion({
                     model: model.id,
-                    provider: model.provider as any,
                     messages: formattedMessages,
                     max_tokens: 1000,
                     temperature: 0.7,
