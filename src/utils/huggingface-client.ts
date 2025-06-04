@@ -9,8 +9,14 @@ export const CHAT_PROVIDERS: ChatProvider[] = [
         name: 'HF Inference (FREE)',
         models: [
             {
-                id: 'meta-llama/Meta-Llama-3.1-8B-Instruct',
-                name: 'Llama 3.1 8B Instruct',
+                id: 'meta-llama/Llama-3.3-70B-Instruct',
+                name: 'Llama 3.3 70B Instruct',
+                provider: 'hf-inference',
+                description: '🆓 Free instruction-following model'
+            },
+            {
+                id: 'deepseek-ai/DeepSeek-R1-0528',
+                name: 'DeepSeek R1',
                 provider: 'hf-inference',
                 description: '🆓 Free instruction-following model'
             },
@@ -19,6 +25,12 @@ export const CHAT_PROVIDERS: ChatProvider[] = [
                 name: 'Phi-4',
                 provider: 'hf-inference',
                 description: '🆓 Microsoft\'s efficient model'
+            }, 
+            {
+                id: 'google/gemma-3-27b-it',
+                name: 'Gemma3 27B',
+                provider: 'hf-inference',
+                description: '🆓 Free instruction-following model'
             }
         ]
     }
