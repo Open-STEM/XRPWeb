@@ -16,16 +16,12 @@ The XRP Web application now includes an integrated AI chat feature that allows y
 
 1. Get a free Hugging Face API token at [https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
 2. In the XRP Web application, go to Help → AI Chat
-3. Enter your API token when prompted
+3. Enter your READ API token when prompted
 4. Choose from available models
 5. Start chatting!
 
 ### Supported Models
 
-The AI chat provides **completely FREE** AI models with no cost:
+The AI chat provides **completely FREE** AI models with no cost
 
-#### 🆓 **100% FREE Models (HF Inference):**
-- **Llama 3.1 8B Instruct**: Meta's instruction-following model, great for general questions
-- **Phi-4**: Microsoft's efficient model, excellent for coding and technical questions
-
-**💡 All models are completely free to use!** Just get your free Hugging Face token and start chatting.
+**💡 All models are completely free to use!** Just get your free Hugging Face token and start chatting! 

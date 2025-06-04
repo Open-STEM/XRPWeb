@@ -6,31 +6,31 @@ import { ChatMessage, ChatModel, ChatProvider } from './types';
 export const CHAT_PROVIDERS: ChatProvider[] = [
     {
         id: 'hf-inference',
-        name: 'HF Inference (FREE)',
+        name: 'HF Inference',
         models: [
             {
                 id: 'meta-llama/Llama-3.3-70B-Instruct',
                 name: 'Llama 3.3 70B Instruct',
                 provider: 'hf-inference',
-                description: '🆓 Free instruction-following model'
+                description: ''
             },
             {
                 id: 'deepseek-ai/DeepSeek-R1-0528',
                 name: 'DeepSeek R1',
                 provider: 'hf-inference',
-                description: '🆓 Free instruction-following model'
+                description: ''
             },
             {
                 id: 'microsoft/phi-4',
                 name: 'Phi-4',
                 provider: 'hf-inference',
-                description: '🆓 Microsoft\'s efficient model'
+                description: ''
             }, 
             {
                 id: 'google/gemma-3-27b-it',
                 name: 'Gemma3 27B',
                 provider: 'hf-inference',
-                description: '🆓 Free instruction-following model'
+                description: ''
             }
         ]
     }

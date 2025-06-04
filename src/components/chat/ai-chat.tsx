@@ -165,7 +165,7 @@ export default function AIChat() {
                             </button>
 
                             <div className="text-xs text-mountain-mist-500 dark:text-mountain-mist-400 text-center">
-                                Get your free API key at{' '}
+                                Get your free READ API key at{' '}
                                 <a 
                                     href="https://huggingface.co/settings/tokens" 
                                     target="_blank" 
