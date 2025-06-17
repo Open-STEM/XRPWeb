@@ -237,7 +237,6 @@ export default function AIChat() {
                 {streamingMessage && (
                     <ChatMessageComponent 
                         message={streamingMessage} 
-                        isStreaming={true}
                     />
                 )}
 
