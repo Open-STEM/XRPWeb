@@ -67,7 +67,6 @@ export class HuggingFaceClient {
                     provider: "hf-inference",  // Explicitly set provider
                     model: model.id,
                     messages: formattedMessages,
-                    max_tokens: 1000,
                     temperature: 0.7,
                     top_p: 0.7,
                     response_format: undefined
