@@ -42,7 +42,7 @@ export class HuggingFaceClient {
     constructor(apiKey?: string) {
         // Use provided API key or fall back to environment variable
         this.client = new InferenceClient(
-            apiKey || import.meta.env.VITE_HF_API_KEY || 'hf_placeholder'
+            apiKey || import.meta.env.VITE_HF_API_KEY 
         );
     }
 

@@ -4,7 +4,6 @@ import MarkdownIt from 'markdown-it';
 import markdownItFootnote from 'markdown-it-footnote';
 import markdownItDeflist from 'markdown-it-deflist';
 import markdownItAbbr from 'markdown-it-abbr';
-import { IoCopy, IoCheckmark } from 'react-icons/io5';
 
 interface ChatMessageProps {
   message: ChatMessage;
@@ -21,14 +20,10 @@ const md = new MarkdownIt({
   .use(markdownItAbbr);
 
 // Custom renderer for code blocks to add copy functionality
-const defaultCodeBlockRenderer = md.renderer.rules.code_block || md.renderer.rules.fence;
-md.renderer.rules.code_block = md.renderer.rules.fence = function (tokens, idx, options, env, slf) {
+md.renderer.rules.code_block = md.renderer.rules.fence = function (tokens, idx) {
   const token = tokens[idx];
   const code = token.content.trim();
   const langName = token.info ? token.info.split(' ')[0] : '';
-  
-  // Generate unique ID for this code block
-  const codeId = `code-block-${Math.random().toString(36).substr(2, 9)}`;
   
   return `<div class="code-block-wrapper relative group border border-mountain-mist-200 rounded-lg shadow-sm overflow-hidden my-4">
     <div class="code-block-header flex justify-between items-center px-4 py-2 bg-mountain-mist-100 border-b border-mountain-mist-200">
