@@ -4,17 +4,17 @@ export default {
     theme: {
         colors: {
             'curious-blue': {
-                50: '#f0faff',
-                100: '#e0f4fe',
-                200: '#b9ebfe',
-                300: '#7cdbfd',
-                400: '#36cbfa',
-                500: '#0cb5eb',
-                600: '#009cd7',
-                700: '#0174a3',
-                800: '#066186',
-                900: '#0b516f',
-                950: '#07334a',
+                50: '#f0f7ff',
+                100: '#e0effe',
+                200: '#bae0fd',
+                300: '#7cc8fb',
+                400: '#36aaf5',
+                500: '#0c8ee3',
+                600: '#0070c1',
+                700: '#005a9e',
+                800: '#004c83',
+                900: '#00416d',
+                950: '#002a47',
             },
             matisse: {
                 50: '#f0f8ff',
@@ -56,17 +56,17 @@ export default {
                 950: '#231f20',
             },
             'mountain-mist': {
-                50: '#f7f6f7',
-                100: '#f0eff0',
-                200: '#e3e2e3',
-                300: '#d1d0d1',
-                400: '#bdbcbd',
-                500: '#aba9ab',
-                600: '#9a989a',
-                700: '#828082',
-                800: '#6a696a',
-                900: '#585758',
-                950: '#333333',
+                50: '#f6f6f7',
+                100: '#e3e3e5',
+                200: '#c6c6ca',
+                300: '#a2a2a8',
+                400: '#7e7e86',
+                500: '#63636a',
+                600: '#4f4f55',
+                700: '#414145',
+                800: '#38383b',
+                900: '#313133',
+                950: '#1a1a1b',
             },
             ecstasy: {
                 50: '#fff7ed',
@@ -96,7 +96,232 @@ export default {
             },
         },
         fontFamily: {},
-        extend: {},
+        extend: {
+            typography: {
+                DEFAULT: {
+                    css: {
+                        color: '#313133',
+                        maxWidth: 'none',
+                        a: {
+                            color: '#0c8ee3',
+                            textDecoration: 'none',
+                            fontWeight: '500',
+                            '&:hover': {
+                                color: '#0070c1',
+                                textDecoration: 'underline',
+                            },
+                        },
+                        h1: {
+                            color: '#0c8ee3',
+                            fontWeight: '700',
+                            fontSize: '2.25rem',
+                            marginTop: '0',
+                            marginBottom: '1rem',
+                        },
+                        h2: {
+                            color: '#0070c1',
+                            fontWeight: '600',
+                            fontSize: '1.875rem',
+                            marginTop: '2rem',
+                            marginBottom: '1rem',
+                        },
+                        h3: {
+                            color: '#005a9e',
+                            fontWeight: '600',
+                            fontSize: '1.5rem',
+                            marginTop: '1.5rem',
+                            marginBottom: '0.75rem',
+                        },
+                        h4: {
+                            color: '#004c83',
+                            fontWeight: '600',
+                            fontSize: '1.25rem',
+                            marginTop: '1.25rem',
+                            marginBottom: '0.5rem',
+                        },
+                        p: {
+                            color: '#313133',
+                            lineHeight: '1.75',
+                            marginTop: '1rem',
+                            marginBottom: '1rem',
+                        },
+                        code: {
+                            backgroundColor: '#f6f6f7',
+                            color: '#0c8ee3',
+                            borderRadius: '0.375rem',
+                            padding: '0.125rem 0.375rem',
+                            fontSize: '0.875em',
+                            fontWeight: '600',
+                            border: '1px solid #e3e3e5',
+                        },
+                        'code::before': {
+                            content: '""',
+                        },
+                        'code::after': {
+                            content: '""',
+                        },
+                        pre: {
+                            backgroundColor: '#1a1a1b',
+                            color: '#f6f6f7',
+                            borderRadius: '0.75rem',
+                            padding: '1.25rem',
+                            marginTop: '1.5rem',
+                            marginBottom: '1.5rem',
+                            border: '1px solid #313133',
+                        },
+                        'pre code': {
+                            backgroundColor: 'transparent',
+                            color: '#f6f6f7',
+                            padding: '0',
+                            border: 'none',
+                            fontSize: '0.875rem',
+                        },
+                        blockquote: {
+                            borderLeftColor: '#bae0fd',
+                            borderLeftWidth: '4px',
+                            backgroundColor: '#f0f7ff',
+                            padding: '1rem 1.5rem',
+                            marginTop: '1.5rem',
+                            marginBottom: '1.5rem',
+                            borderRadius: '0.5rem',
+                            fontStyle: 'italic',
+                            color: '#004c83',
+                        },
+                        'blockquote p:first-of-type::before': {
+                            content: '""',
+                        },
+                        'blockquote p:last-of-type::after': {
+                            content: '""',
+                        },
+                        table: {
+                            width: '100%',
+                            borderCollapse: 'collapse',
+                            marginTop: '1.5rem',
+                            marginBottom: '1.5rem',
+                            borderRadius: '0.5rem',
+                            overflow: 'hidden',
+                            border: '1px solid #c6c6ca',
+                        },
+                        th: {
+                            backgroundColor: '#e0effe',
+                            color: '#0070c1',
+                            fontWeight: '600',
+                            padding: '0.75rem',
+                            textAlign: 'left',
+                            borderBottom: '2px solid #bae0fd',
+                        },
+                        td: {
+                            backgroundColor: '#f6f6f7',
+                            color: '#313133',
+                            padding: '0.75rem',
+                            borderBottom: '1px solid #c6c6ca',
+                        },
+                        'tbody tr:hover td': {
+                            backgroundColor: '#f0f7ff',
+                        },
+                        ul: {
+                            listStyleType: 'none',
+                            paddingLeft: '1.5rem',
+                        },
+                        'ul > li': {
+                            position: 'relative',
+                            paddingLeft: '0.5rem',
+                        },
+                        'ul > li::before': {
+                            content: '"•"',
+                            color: '#0c8ee3',
+                            fontWeight: 'bold',
+                            position: 'absolute',
+                            left: '-1rem',
+                        },
+                        ol: {
+                            paddingLeft: '1.5rem',
+                        },
+                        'ol > li': {
+                            paddingLeft: '0.5rem',
+                        },
+                        'ol > li::marker': {
+                            color: '#0c8ee3',
+                            fontWeight: '600',
+                        },
+                        hr: {
+                            borderColor: '#c6c6ca',
+                            marginTop: '2rem',
+                            marginBottom: '2rem',
+                        },
+                        strong: {
+                            color: '#004c83',
+                            fontWeight: '600',
+                        },
+                        em: {
+                            color: '#005a9e',
+                            fontStyle: 'italic',
+                        },
+                    },
+                },
+                invert: {
+                    css: {
+                        color: '#e3e3e5',
+                        a: {
+                            color: '#36aaf5',
+                            '&:hover': {
+                                color: '#7cc8fb',
+                            },
+                        },
+                        h1: { color: '#36aaf5' },
+                        h2: { color: '#7cc8fb' },
+                        h3: { color: '#bae0fd' },
+                        h4: { color: '#e0effe' },
+                        p: { color: '#e3e3e5' },
+                        code: {
+                            backgroundColor: '#313133',
+                            color: '#bae0fd',
+                            border: '1px solid #4f4f55',
+                        },
+                        pre: {
+                            backgroundColor: '#1a1a1b',
+                            border: '1px solid #4f4f55',
+                        },
+                        'pre code': {
+                            color: '#e3e3e5',
+                        },
+                        blockquote: {
+                            borderLeftColor: '#36aaf5',
+                            backgroundColor: '#1a1a1b',
+                            color: '#bae0fd',
+                        },
+                        th: {
+                            backgroundColor: '#313133',
+                            color: '#36aaf5',
+                            borderBottom: '2px solid #4f4f55',
+                        },
+                        td: {
+                            backgroundColor: '#1a1a1b',
+                            color: '#e3e3e5',
+                            borderBottom: '1px solid #4f4f55',
+                        },
+                        'tbody tr:hover td': {
+                            backgroundColor: '#313133',
+                        },
+                        'ul > li::before': {
+                            color: '#36aaf5',
+                        },
+                        'ol > li::marker': {
+                            color: '#36aaf5',
+                        },
+                        hr: {
+                            borderColor: '#4f4f55',
+                        },
+                        strong: {
+                            color: '#bae0fd',
+                        },
+                        em: {
+                            color: '#7cc8fb',
+                        },
+                    },
+                },
+            },
+        },
     },
     plugins: [
         require('tailwindcss-debug-screens'),

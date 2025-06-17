@@ -104,3 +104,7 @@ export interface ChatSession {
     createdAt: Date;
     updatedAt: Date;
 }
+
+declare module 'markdown-it-footnote';
+declare module 'markdown-it-deflist';
+declare module 'markdown-it-abbr';
