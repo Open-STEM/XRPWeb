@@ -43,7 +43,7 @@ md.renderer.rules.code_block = md.renderer.rules.fence = function (tokens, idx) 
         </svg>
       </button>
     </div>
-    <pre class="code-block-content m-0 bg-mountain-mist-50 text-mountain-mist-900 p-4 font-mono text-sm leading-relaxed overflow-auto"><code class="${langName ? `language-${langName}` : ''}">${md.utils.escapeHtml(code)}</code></pre>
+    <pre class="code-block-content m-0 bg-mountain-mist-50 text-mountain-mist-900 p-4 font-mono text-sm leading-relaxed overflow-auto"><code>${md.utils.escapeHtml(code)}</code></pre>
   </div>`;
 };
 
@@ -139,7 +139,7 @@ const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message }) => {
                 prose-a:text-curious-blue-600 prose-a:no-underline hover:prose-a:text-curious-blue-700 hover:prose-a:underline
                 prose-strong:text-mountain-mist-900 prose-strong:font-semibold
                 prose-em:text-mountain-mist-700
-                prose-code:text-curious-blue-700 prose-code:bg-curious-blue-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:font-medium prose-code:border prose-code:border-curious-blue-200
+                prose-code:text-curious-blue-700 prose-code:bg-mountain-mist-50 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:font-medium prose-code:border prose-code:border-mountain-mist-200
                 prose-blockquote:border-l-curious-blue-300 prose-blockquote:bg-curious-blue-50 prose-blockquote:text-curious-blue-900 prose-blockquote:rounded-r prose-blockquote:shadow-sm prose-blockquote:my-3 prose-blockquote:py-2 prose-blockquote:px-3
                 prose-ul:my-3 prose-ol:my-3 prose-ul:pl-4 prose-ol:pl-4
                 prose-li:text-mountain-mist-800 prose-li:my-0.5 prose-li:text-sm
