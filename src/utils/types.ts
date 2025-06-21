@@ -74,20 +74,6 @@ export interface ChatMessage {
     content: string;
     timestamp: Date;
     model?: string;
-    provider?: string;
-}
-
-export interface ChatModel {
-    id: string;
-    name: string;
-    provider: string;
-    description?: string;
-}
-
-export interface ChatProvider {
-    id: string;
-    name: string;
-    models: ChatModel[];
 }
 
 export enum ChatStatus {

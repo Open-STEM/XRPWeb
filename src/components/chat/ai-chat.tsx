@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChatMessage, ChatModel, ChatStatus } from '@/utils/types';
-import { HuggingFaceClient, CHAT_PROVIDERS } from '@/utils/huggingface-client';
+import { ChatMessage, ChatStatus } from '@/utils/types';
+import { GeminiClient, GEMINI_MODELS, GeminiModel } from '@/utils/gemini-client';
 import ChatMessageComponent from './chat-message';
 import ModelSelector from './model-selector';
 import { IoSend, IoRefresh, IoTrash, IoSparkles } from 'react-icons/io5';
@@ -10,19 +10,19 @@ export default function AIChat() {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [status, setStatus] = useState<ChatStatus>(ChatStatus.IDLE);
-    const [selectedModel, setSelectedModel] = useState<ChatModel>(CHAT_PROVIDERS[0].models[0]);
+    const [selectedModel, setSelectedModel] = useState<GeminiModel>(GEMINI_MODELS[0]);
     const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(null);
     const [apiKey, setApiKey] = useState<string>('');
     const [showApiKeyInput, setShowApiKeyInput] = useState(true);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const hfClient = useRef<HuggingFaceClient | null>(null);
+    const geminiClient = useRef<GeminiClient | null>(null);
 
     // Initialize client when API key is provided
     useEffect(() => {
         if (apiKey.trim()) {
-            hfClient.current = new HuggingFaceClient(apiKey);
+            geminiClient.current = new GeminiClient(apiKey);
             setShowApiKeyInput(false);
         }
     }, [apiKey]);
@@ -41,7 +41,7 @@ export default function AIChat() {
     }, [inputValue]);
 
     const sendMessage = async () => {
-        if (!inputValue.trim() || status === ChatStatus.LOADING || status === ChatStatus.STREAMING || !hfClient.current) {
+        if (!inputValue.trim() || status === ChatStatus.LOADING || status === ChatStatus.STREAMING || !geminiClient.current) {
             return;
         }
 
@@ -62,20 +62,19 @@ export default function AIChat() {
             role: 'assistant',
             content: '',
             timestamp: new Date(),
-            model: selectedModel.name,
-            provider: selectedModel.provider,
+                            model: selectedModel.name,
         };
 
         setStreamingMessage(assistantMessage);
 
-        try {
-            const response = await hfClient.current.chatCompletion(
-                [...messages, userMessage],
-                selectedModel,
-                (content: string) => {
-                    setStreamingMessage(prev => prev ? { ...prev, content } : null);
-                }
-            );
+                    try {
+                const response = await geminiClient.current.chatCompletion(
+                    [...messages, userMessage],
+                    selectedModel.id,
+                    (content: string) => {
+                        setStreamingMessage(prev => prev ? { ...prev, content } : null);
+                    }
+                );
 
             // Add final message
             const finalMessage: ChatMessage = {
@@ -95,7 +94,6 @@ export default function AIChat() {
                 content: `Error: ${error instanceof Error ? error.message : 'Failed to get response'}`,
                 timestamp: new Date(),
                 model: selectedModel.name,
-                provider: selectedModel.provider,
             };
 
             setMessages(prev => [...prev, errorMessage]);
@@ -123,7 +121,7 @@ export default function AIChat() {
     const resetConnection = () => {
         setApiKey('');
         setShowApiKeyInput(true);
-        hfClient.current = null;
+        geminiClient.current = null;
         clearMessages();
     };
 
@@ -138,20 +136,20 @@ export default function AIChat() {
                                 AI Chat
                             </h2>
                             <p className="text-mountain-mist-600 dark:text-mountain-mist-400">
-                                Enter your Hugging Face API key to start chatting with AI models.
+                                Enter your Google Gemini API key to start chatting with AI models.
                             </p>
                         </div>
 
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-mountain-mist-700 dark:text-mountain-mist-300 mb-2">
-                                    Hugging Face API Key
+                                    Google Gemini API Key
                                 </label>
                                 <input
                                     type="password"
                                     value={apiKey}
                                     onChange={(e) => setApiKey(e.target.value)}
-                                    placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                    placeholder="AIza..."
                                     className="w-full px-3 py-2 border border-mountain-mist-300 dark:border-mountain-mist-600 rounded-lg bg-white dark:bg-mountain-mist-900 text-mountain-mist-900 dark:text-mountain-mist-100 focus:ring-2 focus:ring-curious-blue-500 focus:border-curious-blue-500"
                                 />
                             </div>
@@ -165,14 +163,14 @@ export default function AIChat() {
                             </button>
 
                             <div className="text-xs text-mountain-mist-500 dark:text-mountain-mist-400 text-center">
-                                Get your free READ API key at{' '}
+                                Get your free API key at{' '}
                                 <a 
-                                    href="https://huggingface.co/settings/tokens" 
+                                    href="https://aistudio.google.com/app/apikey" 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="text-curious-blue-600 hover:underline"
                                 >
-                                    huggingface.co/settings/tokens
+                                    Google AI Studio
                                 </a>
                             </div>
                         </div>

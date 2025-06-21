@@ -23,7 +23,7 @@
     "@codingame/monaco-vscode-textmate-service-override": "^11.1.2",
     "@codingame/monaco-vscode-theme-defaults-default-extension": "^11.1.2",
     "@codingame/monaco-vscode-theme-service-override": "^11.1.2",
-    "@huggingface/inference": "^4.0.0",
+    "@google/genai": "^1.6.0",
     "@typefox/pyright-browser": "^1.1.299",
     "@types/uuid": "^10.0.0",
     "@xterm/addon-attach": "^0.11.0",
