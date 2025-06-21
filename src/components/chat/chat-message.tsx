@@ -1,8 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { ChatMessage } from '../../utils/types';
 import MarkdownIt from 'markdown-it';
+
+// You need to ts ignore these plugins because they don't have built-in type definitions
+// @ts-ignore 
 import markdownItFootnote from 'markdown-it-footnote';
+// @ts-ignore 
 import markdownItDeflist from 'markdown-it-deflist';
+// @ts-ignore 
 import markdownItAbbr from 'markdown-it-abbr';
 
 interface ChatMessageProps {
