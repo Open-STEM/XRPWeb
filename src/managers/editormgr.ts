@@ -36,12 +36,24 @@ export type EditorStore = {
 };
 
 /**
+ * Live content for an editor
+ */
+export type LiveEditorContent = {
+    id: string;
+    type: EditorType;
+    path: string;
+    content: string;
+    lastUpdated: Date;
+};
+
+/**
  * EditorMgr class - manages editor session for Blockly and Python
  */
 export default class EditorMgr {
     private static instance: EditorMgr;
     private editorSessions = new Map<string, EditorSession>();
     private layoutModel?: Model;
+    private static liveContent = new Map<string, LiveEditorContent>();
 
     /**
      * Constructor
@@ -102,6 +114,9 @@ export default class EditorMgr {
             appMgr.eventOff(EventType.EVENT_SAVE_EDITOR); 
             this.editorSessions.delete(id);
             this.RemoveFromLocalStorage(id);
+            
+            // Remove live content
+            EditorMgr.removeLiveContent(id);
         }
         if (this.editorSessions.size > 0) {
             const session = Array.from(this.editorSessions.values()).pop();
@@ -284,5 +299,35 @@ export default class EditorMgr {
     public getActiveEditorId(): string | null {
         const activeTab = localStorage.getItem(StorageKeys.ACTIVETAB);
         return activeTab ? activeTab.replace(/^"|"$/g, '') : null;
+    }
+
+    /**
+     * Update live content for an editor
+     */
+    public static updateLiveContent(id: string, content: string): void {
+        const session = EditorMgr.getInstance().getEditorSession(id);
+        if (session) {
+            EditorMgr.liveContent.set(id, {
+                id,
+                type: session.type,
+                path: session.path,
+                content,
+                lastUpdated: new Date()
+            });
+        }
+    }
+
+    /**
+     * Get live content for all open editors
+     */
+    public static getLiveEditorContents(): LiveEditorContent[] {
+        return Array.from(EditorMgr.liveContent.values());
+    }
+
+    /**
+     * Remove live content when editor is closed
+     */
+    public static removeLiveContent(id: string): void {
+        EditorMgr.liveContent.delete(id);
     }
 }
