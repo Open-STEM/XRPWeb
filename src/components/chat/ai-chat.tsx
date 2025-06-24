@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, ChatStatus } from '@/utils/types';
 import { GeminiClient, GEMINI_MODELS, GeminiModel } from '@/utils/gemini-client';
+import { GeminiContextLoader, createContextLoader } from '@/utils/gemini-context-loader';
 import ChatMessageComponent from './chat-message';
 import ModelSelector from './model-selector';
-import { IoSend, IoRefresh, IoTrash, IoSparkles } from 'react-icons/io5';
+import { IoSend, IoRefresh, IoTrash, IoSparkles, IoDocument } from 'react-icons/io5';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function AIChat() {
@@ -14,18 +15,36 @@ export default function AIChat() {
     const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(null);
     const [apiKey, setApiKey] = useState<string>('');
     const [showApiKeyInput, setShowApiKeyInput] = useState(true);
+    const [contextStatus, setContextStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const geminiClient = useRef<GeminiClient | null>(null);
+    const contextLoader = useRef<GeminiContextLoader | null>(null);
 
-    // Initialize client when API key is provided
+    // Initialize client and context loader when API key is provided
     useEffect(() => {
         if (apiKey.trim()) {
             geminiClient.current = new GeminiClient(apiKey);
+            contextLoader.current = createContextLoader(geminiClient.current);
             setShowApiKeyInput(false);
+            loadContext();
         }
     }, [apiKey]);
+
+    // Load documentation context
+    const loadContext = async () => {
+        if (!contextLoader.current) return;
+        
+        setContextStatus('loading');
+        try {
+            const uploadedFile = await contextLoader.current.setupContext();
+            setContextStatus(uploadedFile ? 'loaded' : 'error');
+        } catch (error) {
+            console.error('Failed to load context:', error);
+            setContextStatus('error');
+        }
+    };
 
     // Scroll to bottom when messages change
     useEffect(() => {
@@ -68,12 +87,16 @@ export default function AIChat() {
         setStreamingMessage(assistantMessage);
 
                     try {
+                // Get uploaded context file if available
+                const contextFile = contextLoader.current?.getUploadedFile() || undefined;
+                
                 const response = await geminiClient.current.chatCompletion(
                     [...messages, userMessage],
                     selectedModel.id,
                     (content: string) => {
                         setStreamingMessage(prev => prev ? { ...prev, content } : null);
-                    }
+                    },
+                    contextFile
                 );
 
             // Add final message
@@ -122,6 +145,8 @@ export default function AIChat() {
         setApiKey('');
         setShowApiKeyInput(true);
         geminiClient.current = null;
+        contextLoader.current = null;
+        setContextStatus('idle');
         clearMessages();
     };
 
@@ -190,6 +215,22 @@ export default function AIChat() {
                         onModelChange={setSelectedModel}
                         disabled={status === ChatStatus.STREAMING}
                     />
+                    
+                    {/* Context Status Indicator */}
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-mountain-mist-100 dark:bg-mountain-mist-800 text-sm">
+                        <IoDocument size={14} className={
+                            contextStatus === 'loaded' ? 'text-green-600' :
+                            contextStatus === 'loading' ? 'text-yellow-600' :
+                            contextStatus === 'error' ? 'text-red-600' :
+                            'text-mountain-mist-400'
+                        } />
+                        <span className="text-mountain-mist-600 dark:text-mountain-mist-300">
+                            {contextStatus === 'loaded' ? 'Documentation loaded' :
+                            contextStatus === 'loading' ? 'Loading docs...' :
+                            contextStatus === 'error' ? 'Failed to load docs' :
+                            'No context'}
+                        </span>
+                    </div>
                 </div>
                 
                 <div className="flex items-center gap-2">
@@ -223,6 +264,11 @@ export default function AIChat() {
                             </h3>
                             <p className="text-mountain-mist-500 dark:text-mountain-mist-400">
                                 Ask questions, get help with code, or chat about anything with {selectedModel.name}.
+                                {contextStatus === 'loaded' && (
+                                    <span className="block mt-2 text-sm text-green-600">
+                                        📚 XRP documentation is loaded as context.
+                                    </span>
+                                )}
                             </p>
                         </div>
                     </div>
