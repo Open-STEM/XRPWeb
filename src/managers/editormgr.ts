@@ -268,4 +268,21 @@ export default class EditorMgr {
             }
         }
     }
+
+    /**
+     * getAllEditorSessions - Get all editor sessions
+     * @returns Map of all editor sessions
+     */
+    public getAllEditorSessions(): Map<string, EditorSession> {
+        return new Map(this.editorSessions);
+    }
+
+    /**
+     * getActiveEditorId - Get the currently active editor ID from localStorage
+     * @returns active editor ID or null
+     */
+    public getActiveEditorId(): string | null {
+        const activeTab = localStorage.getItem(StorageKeys.ACTIVETAB);
+        return activeTab ? activeTab.replace(/^"|"$/g, '') : null;
+    }
 }

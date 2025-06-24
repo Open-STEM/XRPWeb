@@ -1,4 +1,7 @@
 import { GeminiClient, UploadedFile } from './gemini-client';
+import EditorMgr from '@/managers/editormgr';
+import { StorageKeys } from './localstorage';
+import { EditorType } from './types';
 
 // Single concatenated documentation file
 const COMBINED_DOCS_FILE = 'combined_documentation.md';
@@ -94,6 +97,78 @@ export class GeminiContextLoader {
             loaded: this.isContextLoaded,
             fileName: this.uploadedFile?.displayName || null
         };
+    }
+
+    /**
+     * Get current editor content for context
+     */
+    getCurrentEditorContext(): string {
+        const editorMgr = EditorMgr.getInstance();
+        const allSessions = editorMgr.getAllEditorSessions();
+        const activeEditorId = editorMgr.getActiveEditorId();
+        
+        if (allSessions.size === 0) {
+            return '';
+        }
+
+        // Get content from localStorage for all open editors
+        const editorStoreJson = localStorage.getItem(StorageKeys.EDITORSTORE);
+        if (!editorStoreJson) {
+            return '';
+        }
+
+        const editorStores = JSON.parse(editorStoreJson);
+        const contextSections: string[] = [];
+
+        // Add header with clear explanation
+        contextSections.push('The following are the code files currently open in the user\'s development environment:');
+        
+        for (const session of allSessions.values()) {
+            const store = editorStores.find((s: any) => s.id === session.id);
+            if (store && store.content) {
+                const isActive = session.id === activeEditorId;
+                const isBlockly = session.type === EditorType.BLOCKLY;
+                
+                contextSections.push(
+                    `\n### File: ${session.id}${isActive ? ' (CURRENTLY ACTIVE)' : ''}`
+                );
+                contextSections.push(`**Path:** ${session.path}`);
+                contextSections.push(`**Type:** ${isBlockly ? 'Blockly Visual Programming' : 'Python Code'}`);
+                
+                if (isBlockly) {
+                    // For Blockly files, store.content contains the JSON workspace definition
+                    contextSections.push('**Description:** This is a visual programming file created with Blockly blocks. The user has dragged and connected visual blocks to create their program logic.');
+                    contextSections.push('**Blockly Workspace Structure:**');
+                    contextSections.push('```json');
+                    try {
+                        // Pretty print the JSON for better readability
+                        const blocklyJson = JSON.parse(store.content);
+                        contextSections.push(JSON.stringify(blocklyJson, null, 2));
+                    } catch (e) {
+                        // If parsing fails, use raw content
+                        contextSections.push(store.content);
+                    }
+                    contextSections.push('```');
+                    
+                    // Also try to get the generated Python code if available
+                    if (session.content) {
+                        contextSections.push('\n**Python Code Generated from Blocks:**');
+                        contextSections.push('```python');
+                        contextSections.push(session.content);
+                        contextSections.push('```');
+                    }
+                } else {
+                    // For Python files, store.content contains the actual Python code
+                    contextSections.push('**Description:** This is a Python code file that the user has written or is editing.');
+                    contextSections.push('**User\'s Python Code:**');
+                    contextSections.push('```python');
+                    contextSections.push(store.content);
+                    contextSections.push('```');
+                }
+            }
+        }
+
+        return contextSections.join('\n');
     }
 }
 

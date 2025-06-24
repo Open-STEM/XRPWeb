@@ -90,8 +90,45 @@ export default function AIChat() {
                 // Get uploaded context file if available
                 const contextFile = contextLoader.current?.getUploadedFile() || undefined;
                 
+                // Get current editor context
+                const editorContext = contextLoader.current?.getCurrentEditorContext() || '';
+                
+                // Build comprehensive context with clear instructions
+                let contextualPrompt = userMessage.content;
+                
+                if (editorContext || contextFile) {
+                    contextualPrompt += '\n\n---\n\n**CONTEXT INFORMATION:**\n\n';
+                    
+                    if (contextFile) {
+                        contextualPrompt += '**📚 XRP ROBOTICS DOCUMENTATION:**\n';
+                        contextualPrompt += 'The uploaded file contains comprehensive XRP robotics documentation including API references, tutorials, and programming guides. Use this documentation as your primary source of technical information about XRP robots, sensors, motors, and programming concepts.\n\n';
+                    }
+                    
+                    if (editorContext) {
+                        contextualPrompt += '**💻 USER\'S CURRENT CODE:**\n';
+                        contextualPrompt += 'Below are the code files the user currently has open in their development environment:\n\n';
+                        contextualPrompt += editorContext;
+                        contextualPrompt += '\n\n';
+                    }
+                    
+                    contextualPrompt += '**📋 INSTRUCTIONS:**\n';
+                    contextualPrompt += '- Answer the user\'s question using information from the XRP documentation as your primary reference\n';
+                    contextualPrompt += '- Apply the documentation knowledge to help with their specific code\n';
+                    contextualPrompt += '- When suggesting code improvements or solutions, base them on XRP API and best practices from the documentation\n';
+                    contextualPrompt += '- If the user\'s code has issues, explain them using concepts from the documentation\n';
+                    contextualPrompt += '- Provide specific, actionable advice that relates their code to the documented XRP functionality\n';
+                    contextualPrompt += '- Always provide a concise, clear, and actionable response. Do not provide a long response, but rather a short, concise response that is easy to understand and implement.\n';
+                    contextualPrompt += '- If you provide a code example, make sure to also provide a short, intuitive explanation of the code and how it works.\n';
+                }
+                
+                // Enhanced user message with structured context
+                const enhancedUserMessage: ChatMessage = {
+                    ...userMessage,
+                    content: contextualPrompt
+                };
+                
                 const response = await geminiClient.current.chatCompletion(
-                    [...messages, userMessage],
+                    [...messages, enhancedUserMessage],
                     selectedModel.id,
                     (content: string) => {
                         setStreamingMessage(prev => prev ? { ...prev, content } : null);
@@ -266,7 +303,7 @@ export default function AIChat() {
                                 Ask questions, get help with code, or chat about anything with {selectedModel.name}.
                                 {contextStatus === 'loaded' && (
                                     <span className="block mt-2 text-sm text-green-600">
-                                        📚 XRP documentation is loaded as context.
+                                        📚 XRP documentation and your currently open code files are automatically included as context.
                                     </span>
                                 )}
                             </p>
