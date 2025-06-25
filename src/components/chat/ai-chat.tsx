@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChatMessage, ChatStatus } from '@/utils/types';
-import { GeminiClient, GEMINI_MODELS, GeminiModel } from '@/utils/gemini-client';
+import { GeminiClient } from '@/utils/gemini-client';
 import { GeminiContextLoader, createContextLoader } from '@/utils/gemini-context-loader';
 import ChatMessageComponent from './chat-message';
-import ModelSelector from './model-selector';
 import { IoSend, IoRefresh, IoTrash, IoSparkles, IoDocument } from 'react-icons/io5';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -11,7 +10,6 @@ export default function AIChat() {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [status, setStatus] = useState<ChatStatus>(ChatStatus.IDLE);
-    const [selectedModel, setSelectedModel] = useState<GeminiModel>(GEMINI_MODELS[0]);
     const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(null);
     const [apiKey, setApiKey] = useState<string>('');
     const [showApiKeyInput, setShowApiKeyInput] = useState(true);
@@ -81,60 +79,59 @@ export default function AIChat() {
             role: 'assistant',
             content: '',
             timestamp: new Date(),
-                            model: selectedModel.name,
+            model: geminiClient.current.getModelName(),
         };
 
         setStreamingMessage(assistantMessage);
 
-                    try {
-                // Get uploaded context file if available
-                const contextFile = contextLoader.current?.getUploadedFile() || undefined;
+        try {
+            // Get uploaded context file if available
+            const contextFile = contextLoader.current?.getUploadedFile() || undefined;
+            
+            // Get current editor context
+            const editorContext = contextLoader.current?.getCurrentEditorContext() || '';
+            
+            // Build comprehensive context with clear instructions
+            let contextualPrompt = userMessage.content;
+            
+            if (editorContext || contextFile) {
+                contextualPrompt += '\n\n---\n\n**CONTEXT INFORMATION:**\n\n';
                 
-                // Get current editor context
-                const editorContext = contextLoader.current?.getCurrentEditorContext() || '';
-                
-                // Build comprehensive context with clear instructions
-                let contextualPrompt = userMessage.content;
-                
-                if (editorContext || contextFile) {
-                    contextualPrompt += '\n\n---\n\n**CONTEXT INFORMATION:**\n\n';
-                    
-                    if (contextFile) {
-                        contextualPrompt += '**📚 XRP ROBOTICS DOCUMENTATION:**\n';
-                        contextualPrompt += 'The uploaded file contains comprehensive XRP robotics documentation including API references, tutorials, and programming guides. Use this documentation as your primary source of technical information about XRP robots, sensors, motors, and programming concepts.\n\n';
-                    }
-                    
-                    if (editorContext) {
-                        contextualPrompt += '**💻 USER\'S CURRENT CODE:**\n';
-                        contextualPrompt += 'Below are the code files the user currently has open in their development environment:\n\n';
-                        contextualPrompt += editorContext;
-                        contextualPrompt += '\n\n';
-                    }
-                    
-                    contextualPrompt += '**📋 INSTRUCTIONS:**\n';
-                    contextualPrompt += '- Answer the user\'s question using information from the XRP documentation as your primary reference\n';
-                    contextualPrompt += '- Apply the documentation knowledge to help with their specific code\n';
-                    contextualPrompt += '- When suggesting code improvements or solutions, base them on XRP API and best practices from the documentation\n';
-                    contextualPrompt += '- If the user\'s code has issues, explain them using concepts from the documentation\n';
-                    contextualPrompt += '- Provide specific, actionable advice that relates their code to the documented XRP functionality\n';
-                    contextualPrompt += '- Always provide a concise, clear, and actionable response. Do not provide a long response, but rather a short, concise response that is easy to understand and implement.\n';
-                    contextualPrompt += '- If you provide a code example, make sure to also provide a short, intuitive explanation of the code and how it works.\n';
+                if (contextFile) {
+                    contextualPrompt += '**📚 XRP ROBOTICS DOCUMENTATION:**\n';
+                    contextualPrompt += 'The uploaded file contains comprehensive XRP robotics documentation including API references, tutorials, and programming guides. Use this documentation as your primary source of technical information about XRP robots, sensors, motors, and programming concepts.\n\n';
                 }
                 
-                // Enhanced user message with structured context
-                const enhancedUserMessage: ChatMessage = {
-                    ...userMessage,
-                    content: contextualPrompt
-                };
+                if (editorContext) {
+                    contextualPrompt += '**💻 USER\'S CURRENT CODE:**\n';
+                    contextualPrompt += 'Below are the code files the user currently has open in their development environment:\n\n';
+                    contextualPrompt += editorContext;
+                    contextualPrompt += '\n\n';
+                }
                 
-                const response = await geminiClient.current.chatCompletion(
-                    [...messages, enhancedUserMessage],
-                    selectedModel.id,
-                    (content: string) => {
-                        setStreamingMessage(prev => prev ? { ...prev, content } : null);
-                    },
-                    contextFile
-                );
+                contextualPrompt += '**📋 INSTRUCTIONS:**\n';
+                contextualPrompt += '- Answer the user\'s question using information from the XRP documentation as your primary reference\n';
+                contextualPrompt += '- Apply the documentation knowledge to help with their specific code\n';
+                contextualPrompt += '- When suggesting code improvements or solutions, base them on XRP API and best practices from the documentation\n';
+                contextualPrompt += '- If the user\'s code has issues, explain them using concepts from the documentation\n';
+                contextualPrompt += '- Provide specific, actionable advice that relates their code to the documented XRP functionality\n';
+                contextualPrompt += '- Always provide a concise, clear, and actionable response. Do not provide a long response, but rather a short, concise response that is easy to understand and implement.\n';
+                contextualPrompt += '- If you provide a code example, make sure to also provide a short, intuitive explanation of the code and how it works.\n';
+            }
+            
+            // Enhanced user message with structured context
+            const enhancedUserMessage: ChatMessage = {
+                ...userMessage,
+                content: contextualPrompt
+            };
+            
+            const response = await geminiClient.current.chatCompletion(
+                [...messages, enhancedUserMessage],
+                (content: string) => {
+                    setStreamingMessage(prev => prev ? { ...prev, content } : null);
+                },
+                contextFile
+            );
 
             // Add final message
             const finalMessage: ChatMessage = {
@@ -153,7 +150,7 @@ export default function AIChat() {
                 role: 'assistant',
                 content: `Error: ${error instanceof Error ? error.message : 'Failed to get response'}`,
                 timestamp: new Date(),
-                model: selectedModel.name,
+                model: geminiClient.current?.getModelName() || 'Gemini 2.5 Flash',
             };
 
             setMessages(prev => [...prev, errorMessage]);
@@ -247,11 +244,16 @@ export default function AIChat() {
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-mountain-mist-200 dark:border-mountain-mist-700">
                 <div className="flex items-center gap-3">
-                    <ModelSelector
-                        selectedModel={selectedModel}
-                        onModelChange={setSelectedModel}
-                        disabled={status === ChatStatus.STREAMING}
-                    />
+                    {/* Model Display */}
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-mountain-mist-900 border border-mountain-mist-300 dark:border-mountain-mist-600">
+                        <IoSparkles size={16} className="text-curious-blue-600" />
+                        <div className="flex flex-col items-start min-w-0">
+                            <span className="text-sm font-medium text-mountain-mist-700 dark:text-mountain-mist-300">Gemini 2.5 Flash</span>
+                            <span className="text-xs text-mountain-mist-500 dark:text-mountain-mist-400">
+                                Google Gemini
+                            </span>
+                        </div>
+                    </div>
                     
                     {/* Context Status Indicator */}
                     <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-mountain-mist-100 dark:bg-mountain-mist-800 text-sm">
@@ -300,7 +302,7 @@ export default function AIChat() {
                                 Start a conversation
                             </h3>
                             <p className="text-mountain-mist-500 dark:text-mountain-mist-400">
-                                Ask questions, get help with code, or chat about anything with {selectedModel.name}.
+                                Ask questions, get help with code, or chat about anything with Gemini 2.5 Flash.
                                 {contextStatus === 'loaded' && (
                                     <span className="block mt-2 text-sm text-green-600">
                                         📚 XRP documentation and your currently open code files are automatically included as context.
@@ -333,7 +335,7 @@ export default function AIChat() {
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
                             onKeyPress={handleKeyPress}
-                            placeholder={`Message ${selectedModel.name}...`}
+                            placeholder="Message Gemini 2.5 Flash..."
                             disabled={status === ChatStatus.STREAMING}
                             className="w-full px-4 py-3 pr-12 border border-mountain-mist-300 dark:border-mountain-mist-600 rounded-xl bg-white dark:bg-mountain-mist-900 text-mountain-mist-900 dark:text-mountain-mist-100 placeholder-mountain-mist-500 dark:placeholder-mountain-mist-400 focus:ring-2 focus:ring-curious-blue-500 focus:border-curious-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-[52px] max-h-32"
                             rows={1}
@@ -351,7 +353,7 @@ export default function AIChat() {
 
                 {status === ChatStatus.STREAMING && (
                     <div className="mt-2 text-xs text-mountain-mist-500 dark:text-mountain-mist-400">
-                        {selectedModel.name} is typing...
+                        Gemini 2.5 Flash is typing...
                     </div>
                 )}
             </div>

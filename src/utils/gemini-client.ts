@@ -1,26 +1,9 @@
 import { GoogleGenAI, createPartFromUri } from '@google/genai';
 import { ChatMessage } from './types';
 
-// Available Gemini models
-export const GEMINI_MODELS = [
-    {
-        id: 'gemini-2.5-flash',
-        name: 'Gemini 2.5 Flash',
-        description: 'Latest fast and efficient model'
-    },
-    {
-        id: 'gemini-1.5-flash',
-        name: 'Gemini 1.5 Flash',
-        description: 'Fast and efficient model for everyday tasks'
-    },
-    {
-        id: 'gemini-1.5-pro',
-        name: 'Gemini 1.5 Pro',
-        description: 'Most capable model for complex reasoning tasks'
-    }
-];
-
-export type GeminiModel = typeof GEMINI_MODELS[number];
+// Hardcoded model - only using Gemini 2.5 Flash
+const GEMINI_MODEL_ID = 'gemini-2.5-flash';
+const GEMINI_MODEL_NAME = 'Gemini 2.5 Flash';
 
 export interface UploadedFile {
     uri: string;
@@ -39,6 +22,13 @@ export class GeminiClient {
             throw new Error('Gemini API key is required');
         }
         this.ai = new GoogleGenAI({ apiKey: key });
+    }
+
+    /**
+     * Get the model name for display purposes
+     */
+    getModelName(): string {
+        return GEMINI_MODEL_NAME;
     }
 
     /**
@@ -136,11 +126,10 @@ export class GeminiClient {
     }
 
     /**
-     * Send a chat completion request to Gemini with optional context file
+     * Send a chat completion request to Gemini
      */
     async chatCompletion(
         messages: ChatMessage[],
-        modelId: string,
         onStream?: (content: string) => void,
         contextFile?: UploadedFile
     ): Promise<string> {
@@ -166,7 +155,7 @@ export class GeminiClient {
                 // For streaming, we'll simulate it by getting the full response
                 // and then streaming it character by character
                 const response = await this.ai.models.generateContent({
-                    model: modelId,
+                    model: GEMINI_MODEL_ID,
                     contents: content,
                 });
                 
@@ -185,7 +174,7 @@ export class GeminiClient {
             } else {
                 // Non-streaming response
                 const response = await this.ai.models.generateContent({
-                    model: modelId,
+                    model: GEMINI_MODEL_ID,
                     contents: content,
                 });
                 

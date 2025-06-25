@@ -26,8 +26,6 @@ XRP Web includes an intelligent AI assistant powered by Google Gemini that provi
 3. Enter your API key when prompted
 4. Start coding - the AI will automatically see your work and XRP documentation!
 
-### Supported Models
+### AI Model
 
-- **Gemini 2.5 Flash** - Latest fast model (recommended)
-- **Gemini 1.5 Flash** - Efficient for everyday tasks  
-- **Gemini 1.5 Pro** - Most capable for complex reasoning 
+The AI assistant uses **Gemini 2.5 Flash** - Google's latest fast and efficient model optimized for real-time conversations and code assistance. 
