@@ -3,7 +3,7 @@ import { ChatMessage } from './types';
 
 // Hardcoded model - only using Gemini 2.5 Flash
 const GEMINI_MODEL_ID = 'gemini-2.5-flash';
-const GEMINI_MODEL_NAME = 'Gemini 2.5 Flash';
+const GEMINI_MODEL_NAME = 'XRPCode Buddy';
 
 export interface UploadedFile {
     uri: string;
@@ -131,9 +131,15 @@ export class GeminiClient {
     async chatCompletion(
         messages: ChatMessage[],
         onStream?: (content: string) => void,
-        contextFile?: UploadedFile
+        contextFile?: UploadedFile,
+        signal?: AbortSignal
     ): Promise<string> {
         try {
+            // Check if already aborted
+            if (signal?.aborted) {
+                throw new DOMException('Request was aborted', 'AbortError');
+            }
+
             // Build the content array starting with the conversation
             const content: any[] = [];
 
@@ -159,11 +165,21 @@ export class GeminiClient {
                     contents: content,
                 });
                 
+                // Check if aborted after getting response
+                if (signal?.aborted) {
+                    throw new DOMException('Request was aborted', 'AbortError');
+                }
+                
                 const fullText = response.text || '';
                 let currentText = '';
                 
                 // Simulate streaming by revealing text progressively
                 for (let i = 0; i < fullText.length; i++) {
+                    // Check for abortion during streaming
+                    if (signal?.aborted) {
+                        throw new DOMException('Request was aborted', 'AbortError');
+                    }
+                    
                     currentText += fullText[i];
                     onStream(currentText);
                     // Small delay to simulate streaming
@@ -178,9 +194,19 @@ export class GeminiClient {
                     contents: content,
                 });
                 
+                // Check if aborted after getting response
+                if (signal?.aborted) {
+                    throw new DOMException('Request was aborted', 'AbortError');
+                }
+                
                 return response.text || '';
             }
         } catch (error) {
+            // Re-throw abort errors as-is
+            if (error instanceof DOMException && error.name === 'AbortError') {
+                throw error;
+            }
+            
             console.error('Chat completion error:', error);
             throw new Error(`Failed to get response from Gemini: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }

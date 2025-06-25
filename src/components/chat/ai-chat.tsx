@@ -3,7 +3,7 @@ import { ChatMessage, ChatStatus } from '@/utils/types';
 import { GeminiClient } from '@/utils/gemini-client';
 import { GeminiContextLoader, createContextLoader } from '@/utils/gemini-context-loader';
 import ChatMessageComponent from './chat-message';
-import { IoSend, IoRefresh, IoTrash, IoSparkles, IoDocument } from 'react-icons/io5';
+import { IoSend, IoRefresh, IoTrash, IoSparkles, IoDocument, IoStop } from 'react-icons/io5';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function AIChat() {
@@ -19,6 +19,7 @@ export default function AIChat() {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const geminiClient = useRef<GeminiClient | null>(null);
     const contextLoader = useRef<GeminiContextLoader | null>(null);
+    const abortController = useRef<AbortController | null>(null);
 
     // Initialize client and context loader when API key is provided
     useEffect(() => {
@@ -72,6 +73,9 @@ export default function AIChat() {
         setMessages(prev => [...prev, userMessage]);
         setInputValue('');
         setStatus(ChatStatus.STREAMING);
+
+        // Create abort controller for this request
+        abortController.current = new AbortController();
 
         // Create initial assistant message for streaming
         const assistantMessage: ChatMessage = {
@@ -128,21 +132,36 @@ export default function AIChat() {
             const response = await geminiClient.current.chatCompletion(
                 [...messages, enhancedUserMessage],
                 (content: string) => {
+                    // Check if generation was aborted
+                    if (abortController.current?.signal.aborted) {
+                        return;
+                    }
                     setStreamingMessage(prev => prev ? { ...prev, content } : null);
                 },
-                contextFile
+                contextFile,
+                abortController.current.signal
             );
 
-            // Add final message
-            const finalMessage: ChatMessage = {
-                ...assistantMessage,
-                content: response,
-            };
+            // Only complete if not aborted
+            if (!abortController.current?.signal.aborted) {
+                // Add final message
+                const finalMessage: ChatMessage = {
+                    ...assistantMessage,
+                    content: response,
+                };
 
-            setMessages(prev => [...prev, finalMessage]);
-            setStreamingMessage(null);
-            setStatus(ChatStatus.IDLE);
+                setMessages(prev => [...prev, finalMessage]);
+                setStreamingMessage(null);
+                setStatus(ChatStatus.IDLE);
+                abortController.current = null;
+            }
         } catch (error) {
+            // Handle abort gracefully
+            if (error instanceof Error && error.name === 'AbortError') {
+                console.log('Generation was stopped by user');
+                return;
+            }
+
             console.error('Error sending message:', error);
             
             const errorMessage: ChatMessage = {
@@ -150,12 +169,13 @@ export default function AIChat() {
                 role: 'assistant',
                 content: `Error: ${error instanceof Error ? error.message : 'Failed to get response'}`,
                 timestamp: new Date(),
-                model: geminiClient.current?.getModelName() || 'Gemini 2.5 Flash',
+                model: geminiClient.current?.getModelName() || 'XRPCode Buddy',
             };
 
             setMessages(prev => [...prev, errorMessage]);
             setStreamingMessage(null);
             setStatus(ChatStatus.ERROR);
+            abortController.current = null;
             
             // Reset to idle after 3 seconds
             setTimeout(() => setStatus(ChatStatus.IDLE), 3000);
@@ -182,6 +202,25 @@ export default function AIChat() {
         contextLoader.current = null;
         setContextStatus('idle');
         clearMessages();
+    };
+
+    const stopGeneration = () => {
+        if (abortController.current) {
+            abortController.current.abort();
+        }
+        
+        // Complete the current streaming message if it exists
+        if (streamingMessage) {
+            const finalMessage: ChatMessage = {
+                ...streamingMessage,
+                content: streamingMessage.content + '\n\n*[Response stopped by user]*'
+            };
+            setMessages(prev => [...prev, finalMessage]);
+        }
+        
+        setStreamingMessage(null);
+        setStatus(ChatStatus.IDLE);
+        abortController.current = null;
     };
 
     if (showApiKeyInput) {
@@ -248,9 +287,9 @@ export default function AIChat() {
                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-mountain-mist-900 border border-mountain-mist-300 dark:border-mountain-mist-600">
                         <IoSparkles size={16} className="text-curious-blue-600" />
                         <div className="flex flex-col items-start min-w-0">
-                            <span className="text-sm font-medium text-mountain-mist-700 dark:text-mountain-mist-300">Gemini 2.5 Flash</span>
+                            <span className="text-sm font-medium text-mountain-mist-700 dark:text-mountain-mist-300">XRPCode Buddy</span>
                             <span className="text-xs text-mountain-mist-500 dark:text-mountain-mist-400">
-                                Google Gemini
+                                Powered by Gemini
                             </span>
                         </div>
                     </div>
@@ -302,7 +341,7 @@ export default function AIChat() {
                                 Start a conversation
                             </h3>
                             <p className="text-mountain-mist-500 dark:text-mountain-mist-400">
-                                Ask questions, get help with code, or chat about anything with Gemini 2.5 Flash.
+                                Ask questions, get help with code, or chat about anything with XRPCode Buddy.
                                 {contextStatus === 'loaded' && (
                                     <span className="block mt-2 text-sm text-green-600">
                                         📚 XRP documentation and your currently open code files are automatically included as context.
@@ -328,32 +367,37 @@ export default function AIChat() {
 
             {/* Input */}
             <div className="border-t border-mountain-mist-200 dark:border-mountain-mist-700 p-4">
-                <div className="flex gap-3 items-end">
+                <div className="flex gap-3 items-center">
                     <div className="flex-1 relative">
                         <textarea
                             ref={textareaRef}
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
                             onKeyPress={handleKeyPress}
-                            placeholder="Message Gemini 2.5 Flash..."
+                            placeholder="Message XRPCode Buddy..."
                             disabled={status === ChatStatus.STREAMING}
-                            className="w-full px-4 py-3 pr-12 border border-mountain-mist-300 dark:border-mountain-mist-600 rounded-xl bg-white dark:bg-mountain-mist-900 text-mountain-mist-900 dark:text-mountain-mist-100 placeholder-mountain-mist-500 dark:placeholder-mountain-mist-400 focus:ring-2 focus:ring-curious-blue-500 focus:border-curious-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-[52px] max-h-32"
+                            className="w-full px-4 py-3 border border-mountain-mist-300 dark:border-mountain-mist-600 rounded-xl bg-white dark:bg-mountain-mist-900 text-mountain-mist-900 dark:text-mountain-mist-100 placeholder-mountain-mist-500 dark:placeholder-mountain-mist-400 focus:ring-2 focus:ring-curious-blue-500 focus:border-curious-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-[52px] max-h-32"
                             rows={1}
                         />
                     </div>
                     
                     <button
-                        onClick={sendMessage}
-                        disabled={!inputValue.trim() || status === ChatStatus.STREAMING}
-                        className="p-3 bg-curious-blue-600 hover:bg-curious-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-colors"
+                        onClick={status === ChatStatus.STREAMING ? stopGeneration : sendMessage}
+                        disabled={status === ChatStatus.STREAMING ? false : !inputValue.trim()}
+                        className="p-3 bg-curious-blue-600 hover:bg-curious-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-colors flex-shrink-0"
+                        title={status === ChatStatus.STREAMING ? "Stop generation" : "Send message"}
                     >
-                        <IoSend size={16} />
+                        {status === ChatStatus.STREAMING ? (
+                            <IoStop size={16} />
+                        ) : (
+                            <IoSend size={16} />
+                        )}
                     </button>
                 </div>
 
                 {status === ChatStatus.STREAMING && (
-                    <div className="mt-2 text-xs text-mountain-mist-500 dark:text-mountain-mist-400">
-                        Gemini 2.5 Flash is typing...
+                    <div className="mt-2 text-xs text-mountain-mist-500 dark:text-mountain-mist-400 text-center">
+                        XRPCode Buddy is typing...
                     </div>
                 )}
             </div>
