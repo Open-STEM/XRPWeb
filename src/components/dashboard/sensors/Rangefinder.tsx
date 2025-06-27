@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BsRulers } from 'react-icons/bs';
 import useSensorData from '../hooks/useSensorData';
 import SensorCard from './SensorCard';
 import { RangefinderData } from '../utils/sensorParsers';
 import { Dropdown, DropdownItem } from "flowbite-react";
+import { FaChartLine, FaHashtag, FaCog, FaTrash } from 'react-icons/fa';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { useGridStackContext } from '../lib/grid-stack-context';
 
 // Define a type for timestamped rangefinder data
 interface TimestampedRangeData {
@@ -19,6 +21,8 @@ const Rangefinder: React.FC = () => {
   // State to store the history of rangefinder readings
   const [rangeHistory, setRangeHistory] = useState<TimestampedRangeData[]>([]);
   const { getSensorData, requestSensors, stopSensor, sensorData } = useSensorData();
+  const { removeWidget } = useGridStackContext();
+  const widgetIdRef = useRef<string | null>(null);
   const sensorName = 'rangefinder';
   const rangeData = getSensorData<RangefinderData>(sensorName);
   const lastUpdated = sensorData.get(sensorName)?.timestamp;
@@ -27,6 +31,40 @@ const Rangefinder: React.FC = () => {
   // Calculate a percentage for distance visualization
   // Assuming max distance is 400cm as per your simulator code
   const distancePercentage = rangeData ? (rangeData.distance / 400) * 100 : 0;
+
+  // Get the GridStack auto-generated ID when component mounts
+  useEffect(() => {
+    const findGridStackId = () => {
+      // Find all grid stack items
+      const gridItems = document.querySelectorAll('.grid-stack-item');
+
+      for (const item of gridItems) {
+        // Check if this grid item contains our rangefinder component
+        // Look for the specific title that identifies this component
+        const sensorCard = item.querySelector('.sensor-card');
+        const titleElement = sensorCard?.querySelector('h3');
+
+        if (titleElement?.textContent === 'Rangefinder') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const node = (item as any).gridstackNode;
+          if (node && node.id) {
+            widgetIdRef.current = node.id;
+            console.log('Rangefinder found GridStack ID:', node.id);
+            return;
+          }
+        }
+      }
+    };
+
+    // Try to find the ID immediately
+    findGridStackId();
+
+    // If not found, try again after a short delay
+    if (!widgetIdRef.current) {
+      const timeout = setTimeout(findGridStackId, 100);
+      return () => clearTimeout(timeout);
+    }
+  }, []);
 
   // Effect to update history when new data arrives
   useEffect(() => {
@@ -53,6 +91,15 @@ const Rangefinder: React.FC = () => {
 
   const handleStop = () => {
     stopSensor(sensorName);
+  };
+
+  const handleDelete = () => {
+    if (widgetIdRef.current && removeWidget) {
+      console.log('Deleting rangefinder widget with ID:', widgetIdRef.current);
+      removeWidget(widgetIdRef.current);
+    } else {
+      console.error('Could not find rangefinder widget ID for deletion');
+    }
   };
 
   const sensorCardProps = {
@@ -89,11 +136,29 @@ const Rangefinder: React.FC = () => {
 
   return (
     <SensorCard {...sensorCardProps}>
-      <div className="absolute top-4 right-4">
-        <Dropdown label={sensorVisual} className="font-bold flex items-center text-sm border border-gray-300 rounded">
-          <DropdownItem onClick={() => handleAction('graph')}>Graph</DropdownItem>
-          <DropdownItem onClick={() => handleAction('number')}>Number</DropdownItem>
+      <div className="absolute top-4 right-4 flex items-center space-x-2">
+        <Dropdown label={<FaCog size={16} />} className="font-bold flex items-center text-sm border border-gray-300 rounded">
+          <DropdownItem onClick={() => handleAction('graph')}>
+            <div className="flex items-center space-x-2">
+              <FaChartLine size={16} />
+              <span>Graph</span>
+            </div>
+          </DropdownItem>
+          <DropdownItem onClick={() => handleAction('number')}>
+            <div className="flex items-center space-x-2">
+              <FaHashtag size={16} />
+              <span>Number</span>
+            </div>
+          </DropdownItem>
         </Dropdown>
+
+        <button
+          onClick={handleDelete}
+          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors duration-200"
+          title="Delete widget"
+        >
+          <FaTrash size={24} />
+        </button>
       </div>
       {!rangeData ? (
         <div className="flex items-center justify-center w-full h-full">

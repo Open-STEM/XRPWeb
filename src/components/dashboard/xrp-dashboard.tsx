@@ -5,34 +5,79 @@ import Gyroscope from "./sensors/Gyroscope";
 import Rangefinder from "./sensors/Rangefinder";
 import Reflectance from "./sensors/Reflectance";
 import Voltage from "./sensors/Voltage";
+import { GridStackOptions } from "gridstack";
+import AddWidgets from "./AddWidget";
+import {
+  GridStackProvider,
+  GridStackRender,
+  GridStackRenderProvider,
+} from "./lib";
+// import "gridstack/dist/gridstack.css";
+// import { ComponentProps, useState } from "react";
+
+const CELL_HEIGHT = 50;
+const BREAKPOINTS = [
+  { c: 1, w: 700 },
+  { c: 3, w: 850 },
+  { c: 6, w: 950 },
+  { c: 8, w: 1100 },
+];
+
+const COMPONENT_MAP = {
+  Current: () => <Current />,
+  Accelerometer: () => <Accelerometer />,
+  Gyroscope: () => <Gyroscope />,
+  Encoder: () => <Encoder />,
+  Reflectance: () => <Reflectance />,
+  Voltage: () => <Voltage />,
+  Rangefinder: () => <Rangefinder />
+};
+
+
+const gridOptions: GridStackOptions = {
+  acceptWidgets: true,
+  cellHeight: CELL_HEIGHT,
+  removable: '#trash',
+  columnOpts: {
+    breakpointForWindow: true,
+    breakpoints: BREAKPOINTS,
+    layout: "moveScale",
+    columnMax: 12,
+  },
+  margin: 3,
+  draggable: {
+    // handle: '.grid-stack-item-content', // Drag handle
+    scroll: true,                  // Allow scrolling while dragging
+    // containment: 'parent'          // Constrains dragging to parent container
+  },
+  float: true,
+  children: [
+
+
+  ],
+};
+
 
 export default function XRPDashboard() {
+
   return (
-    <div className="w-full max-w-8xl mx-auto p-8 bg-gray-900/95 backdrop-blur-sm rounded-xl shadow-2xl">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 ">
-        {/* Each sensor component gets equal space in the grid */}
-        <div className="w-full h-[280px] bg-white/5 rounded-lg backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-200 bg-gray-700/95">
-          <Gyroscope />
+    <div className="mx-auto px-4 pb-10 bg-slate-100 min-h-screen">
+      <GridStackProvider initialOptions={gridOptions}>
+        <div className="flex flex-col sm:flex-row justify-start items-start sm:items-center gap-8 mb-6 pt-4">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900">Sensor Dashboard</h1>
+          </div>
+          <AddWidgets />
         </div>
-        <div className="w-full h-[280px] bg-white/5 rounded-lg backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-200 bg-gray-700/95">
-          <Accelerometer />
+
+        <div className="relative top-35 border-t-4 border-gray-300">
+          <GridStackRenderProvider>
+            <GridStackRender componentMap={COMPONENT_MAP} />
+          </GridStackRenderProvider>
         </div>
-        <div className="w-full h-[280px] bg-white/5 rounded-lg backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-200 bg-gray-700/95">
-          <Current />
-        </div>
-        <div className="w-full h-[280px] bg-white/5 rounded-lg backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-200 bg-gray-700/95">
-          <Encoder />
-        </div>
-        <div className="w-full h-[280px] bg-white/5 rounded-lg backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-200 bg-gray-700/95">
-          <Voltage />
-        </div>
-        <div className="w-full h-[280px] bg-white/5 rounded-lg backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-200 bg-gray-700/95">
-          <Reflectance />
-        </div>
-        <div className="w-full h-[280px] bg-white/5 rounded-lg backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-200 bg-gray-700/95">
-          <Rangefinder />
-        </div>
-      </div>
+      </GridStackProvider>
     </div>
-  )
+
+  );
 }
+

@@ -82,7 +82,7 @@ const SensorCard: React.FC<SensorCardProps> = ({
 
   return (
 
-    <div ref={cardRef} className="sensor-card rounded-xl bg-white shadow w-full h-full flex flex-col">
+    <div ref={cardRef} className="sensor-card rounded-xl bg-white shadow w-full h-full flex flex-col border-gray-300 border-4">
       <div className="sensor-header flex justify-between items-center p-3">
         <div className="flex items-center gap-2">
           <div className="text-gray-600">
