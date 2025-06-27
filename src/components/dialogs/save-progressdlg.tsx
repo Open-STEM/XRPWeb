@@ -16,7 +16,6 @@ function SaveProgressDlg({title}: SaveProgressDlgProps) {
 
     useEffect(() => {
         AppMgr.getInstance().on(EventType.EVENT_PROGRESS, (percent) => {
-            console.log('Progress percent: ', percent);
             setCompleted(Math.round(parseFloat(percent)));
         });
     }, []);

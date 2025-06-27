@@ -169,6 +169,18 @@ function NavBar({ layoutref }: NavBarProps) {
                 }
             });
 
+            AppMgr.getInstance().on(EventType.EVENT_SHOWPROGRESS, (progress) => {
+                if (progress === Constants.SHOW_PROGRESS) {
+                    setDialogContent(<SaveProgressDlg title='saveToXRPTitle'/>);
+                    toggleDialog();
+                    AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, () => {
+                        toggleDialog();
+                        AppMgr.getInstance().eventOff(EventType.EVENT_UPLOAD_DONE);
+                        setDialogContent(<div />);
+                    });
+                }
+            });
+
             hasSubscribed = true;
         }
     });

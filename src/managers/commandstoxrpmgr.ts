@@ -313,7 +313,7 @@ export class CommandToXRPMgr {
             const next = urls[i];
             let parts = next[0];
             parts = parts.replace("XRPLib", "lib/XRPLib");
-            await this.uploadFile(parts, await this.downloadFile(parts.replace("XRPExamples", "lib/Examples") + "?version=" + this.latestLibraryVersion[2]));
+            await this.uploadFile(parts, await this.downloadFile(parts.replace("XRPExamples", "lib/XRPExamples") + "?version=" + this.latestLibraryVersion[2]));
             AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, cur_percent.toString());
             cur_percent += percent_per;
         }
@@ -427,11 +427,8 @@ export class CommandToXRPMgr {
             this.changeToJSON(hiddenLines);
             const fsData = JSON.stringify(this.treeData);
             const szData = hiddenLines[1].split(' ');
-            //console.log("File Data: " +fsData);
-            this.cmdLogger.debug("storage data: ", szData);
+            this.calculateAvaiableSpace(parseInt(szData[0]), parseInt(szData[1]), parseInt(szData[2]));
             AppMgr.getInstance().emit(EventType.EVENT_FILESYS, fsData);
-
-            //this.onFSData?.(JSON.stringify(this.DIR_STRUCT), hiddenLines[1].split(' '));
         }
 
         //window.setPercent(65, "Fetching filesystem...");
@@ -443,6 +440,21 @@ export class CommandToXRPMgr {
         if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: out of getOnBoardFSTree");
         //window.setPercent(100);
         //window.resetPercentDelay();
+    }
+
+    calculateAvaiableSpace(blockSizeBytes: number, totalBlockCount: number, totalBlocksFree: number) {
+        const totalBytes = blockSizeBytes * totalBlockCount;
+        const freeBytes = blockSizeBytes * totalBlocksFree;
+        const usedBytes = totalBytes - freeBytes;
+        const percent = Math.round((usedBytes / totalBytes) * 100);
+        const usedTotal = usedBytes / 1000000;
+        const totalTotal = totalBytes / 1000000;
+        const storageCapacity = {
+            used: usedTotal.toFixed(2),
+            total: totalTotal.toFixed(2),
+            percent: percent
+        }
+        AppMgr.getInstance().emit(EventType.EVENT_FILESYS_STORAGE, JSON.stringify(storageCapacity));
     }
 
     private DIR_DATA: string[] = [];
@@ -721,7 +733,7 @@ export class CommandToXRPMgr {
             */
 
             currentPercent = currentPercent + percentStep;
-            console.log('UploadFile current percent: ', currentPercent);
+            this.cmdLogger.debug('UploadFile current percent: ' + currentPercent);
             //if (usePercent) window.setPercent?.(currentPercent); TODO: show percentage
             if (usePercent) 
                 AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, currentPercent.toString());    

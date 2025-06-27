@@ -32,6 +32,7 @@ let hasSubscribed = false;
  * @returns
  */
 function FolderTree(treeProps: TreeProps) {
+    const [capacity, setCapacity] = useState<string>('0/0')
     const [treeData, setTreeData] = useState<FolderItem[] | undefined>(undefined);
     const [selectedItems, setSelectedItems] = useState<FolderItem[] | undefined>(undefined);
     const [isConnected, setIsConnected] = useState(false);
@@ -77,6 +78,13 @@ function FolderTree(treeProps: TreeProps) {
                     console.log(err);
                     setTreeData(undefined);
                 }
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_FILESYS_STORAGE, (storageCapacity: string) => {
+                // Update the storage capacity state here
+                console.log(`Storage capacity changed to: ${storageCapacity}`)
+                const storage = JSON.parse(storageCapacity);
+                setCapacity(storage.used + '/' + storage.total);
             });
             hasSubscribed = true;
         }
@@ -131,7 +139,7 @@ function FolderTree(treeProps: TreeProps) {
                     <span>
                         <Icon />
                     </span>
-                    <span className="mx-1">
+                    <span className="mx-1 overflow-wrap whitespace-nowrap">
                         {node.isEditing ? <Input node={node} /> : node.data.name}
                     </span>
                 </div>
@@ -349,7 +357,7 @@ function FolderTree(treeProps: TreeProps) {
                     closeFolderCallback={onCloseFolder}
                     newFileCallback={onNewFile}
                     newFolderCallback={onNewFolder}
-                    storageCapacity="14/135MB"
+                    storageCapacity={capacity}
                 />
             )}
             <div ref={ref} style={{ height: treeProps.treeData ? '40vh' : '100vh' }}>

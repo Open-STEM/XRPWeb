@@ -3,6 +3,7 @@ import { CommandToXRPMgr } from "@/managers/commandstoxrpmgr";
 import { Actions, Model } from "flexlayout-react";
 import AppMgr, { EventType } from "@/managers/appmgr";
 import { StorageKeys } from "@/utils/localstorage";
+import { Constants } from "@/utils/constants";
 
 /**
  * EditorSession - Editor session object
@@ -211,6 +212,7 @@ export default class EditorMgr {
         const session = this.editorSessions.get(id);
         if (session) {
             // save the session to XRP
+            AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
             await CommandToXRPMgr.getInstance().uploadFile(session.path, code, true).then(() =>{
                 AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
             });
