@@ -83,8 +83,8 @@ export const parseSensorData = (data: { value: string }): SensorData | null => {
     }
 
     // Remove the quotes from the parts
-    const sensorType = parts[0].replace('"', '');
-    const valuesStr = parts[1].replace('"', '');
+    const sensorType = parts[0].replace(/"/g, '');
+    const valuesStr = parts[1].replace(/"/g, '');
     const values = valuesStr.split(', ').map(v => {
       const num = parseFloat(v);
       return isNaN(num) ? v : num;
