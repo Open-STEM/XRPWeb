@@ -7,6 +7,7 @@ import { Dropdown, DropdownItem } from "flowbite-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { FaChartLine, FaHashtag, FaCog, FaTrash } from 'react-icons/fa';
 import { useGridStackContext } from '../lib/grid-stack-context';
+import i18n from '@/utils/i18n';
 
 // Define a type for timestamped accelerometer data
 interface TimestampedAccelData {
@@ -148,13 +149,13 @@ const Accelerometer: React.FC = () => {
           <DropdownItem onClick={() => handleAction('graph')}>
             <div className="flex items-center space-x-2">
               <FaChartLine size={16} />
-              <span>Graph</span>
+              <span>{i18n.t('graph')}</span>
             </div>
           </DropdownItem>
           <DropdownItem onClick={() => handleAction('number')}>
             <div className="flex items-center space-x-2">
               <FaHashtag size={16} />
-              <span>Number</span>
+              <span>{i18n.t('number')}</span>
             </div>
           </DropdownItem>
         </Dropdown>
@@ -169,7 +170,7 @@ const Accelerometer: React.FC = () => {
       </div>
       {!accelData ? (
         <div className="flex items-center justify-center w-full h-full">
-          <div className="text-gray-500">No Data Available</div>
+          <div className="text-gray-500 dark:text-gray-400">{i18n.t('no-data-available')}</div>
         </div>
       ) : (
         <div className="flex flex-col w-full h-full relative pt-12">
@@ -194,8 +195,8 @@ const Accelerometer: React.FC = () => {
                   </LineChart>
                 </ResponsiveContainer>
 
-                <div className="text-xs text-gray-500 text-center mt-2">
-                  {accelHistory.length} readings stored
+                <div className="text-xs text-gray-500 text-center mt-2 dark:text-gray-400">
+                  {accelHistory.length} {i18n.t('readings-stored')}
                 </div>
               </div>
             )

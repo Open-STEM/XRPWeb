@@ -14,6 +14,7 @@ import {
 } from "./lib";
 // import "gridstack/dist/gridstack.css";
 // import { ComponentProps, useState } from "react";
+import i18n from 'i18next';
 
 const CELL_HEIGHT = 50;
 const BREAKPOINTS = [
@@ -61,11 +62,11 @@ const gridOptions: GridStackOptions = {
 export default function XRPDashboard() {
 
   return (
-    <div className="mx-auto px-4 pb-10 bg-slate-100 min-h-screen">
+    <div className="mx-auto px-4 pb-10 bg-slate-100 min-h-screen dark:bg-mountain-mist-950">
       <GridStackProvider initialOptions={gridOptions}>
         <div className="flex flex-col sm:flex-row justify-start items-start sm:items-center gap-8 mb-6 pt-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900">Sensor Dashboard</h1>
+            <h1 className="text-4xl font-bold text-gray-600 dark:text-gray-300">{i18n.t('sensors')}</h1>
           </div>
           <AddWidgets />
         </div>

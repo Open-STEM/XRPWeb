@@ -6,6 +6,7 @@ import { Dropdown, DropdownItem } from "flowbite-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { FaChartLine, FaHashtag, FaCog, FaTrash } from 'react-icons/fa';
 import { useGridStackContext } from '../lib/grid-stack-context';
+import i18n from '@utils/i18n'; // Adjust the path if your i18n setup file is elsewhere
 
 // Define a type for timestamped encoder data
 interface TimestampedEncoderData {
@@ -159,13 +160,13 @@ const Encoder: React.FC = () => {
           <DropdownItem onClick={() => handleAction('graph')}>
             <div className="flex items-center space-x-2">
               <FaChartLine size={16} />
-              <span>Graph</span>
+              <span>{i18n.t('graph')}</span>
             </div>
           </DropdownItem>
           <DropdownItem onClick={() => handleAction('number')}>
             <div className="flex items-center space-x-2">
               <FaHashtag size={16} />
-              <span>Number</span>
+              <span>{i18n.t('number')}</span>
             </div>
           </DropdownItem>
         </Dropdown>
@@ -180,7 +181,7 @@ const Encoder: React.FC = () => {
       </div>
       {!encoderData ? (
         <div className="flex items-center justify-center w-full h-full">
-          <div className="text-gray-500">No Data Available</div>
+          <div className="text-gray-500 dark:text-gray-400">{i18n.t('no-data-available')}</div>
         </div>
       ) : (
         <div className="flex flex-col w-full h-full relative pt-12">
@@ -205,8 +206,8 @@ const Encoder: React.FC = () => {
                     <Line type="monotone" dataKey="enc4" stroke={channelColors.enc4} dot={false} name="Enc 4" />
                   </LineChart>
                 </ResponsiveContainer>
-                <div className="text-xs text-gray-500 text-center mt-2">
-                  {encoderHistory.length} readings stored
+                <div className="text-xs text-gray-500 text-center mt-2 dark:text-gray-400">
+                  {encoderHistory.length} {i18n.t('readings-stored')}
                 </div>
               </div>
             )

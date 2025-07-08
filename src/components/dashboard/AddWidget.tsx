@@ -4,6 +4,7 @@ import { Dropdown, DropdownItem } from "flowbite-react";
 import { MdSpeed } from 'react-icons/md';
 import { FaBatteryHalf, FaBolt, FaCog, FaEye, FaGlobe, FaPlus } from 'react-icons/fa';
 import { BsRulers } from 'react-icons/bs';
+import i18n from "@/utils/i18n";
 
 type ActionType = 'accelerometer' | 'current' | 'encoder' | 'gyroscope' | 'rangefinder' | 'reflectance' | 'voltage';
 
@@ -22,7 +23,7 @@ const AddWidgets: React.FC = () => {
           minW: 2,
           minH: 5,
           content: JSON.stringify({
-            name: "Accelerometer",
+            name: i18n.t('accelerometer'),
             props: {
               isActive: true
               // Remove widgetId - we'll get it from GridStack
@@ -42,7 +43,7 @@ const AddWidgets: React.FC = () => {
           minW: 1,
           minH: 5,
           content: JSON.stringify({
-            name: "Current",
+            name: i18n.t('current'),
             props: {
               isActive: true
             },
@@ -61,7 +62,7 @@ const AddWidgets: React.FC = () => {
           minW: 2,
           minH: 5,
           content: JSON.stringify({
-            name: "Gyroscope",
+            name: i18n.t('gyroscope'),
             props: {
               isActive: true
             },
@@ -80,7 +81,7 @@ const AddWidgets: React.FC = () => {
           minW: 1,
           minH: 4,
           content: JSON.stringify({
-            name: "Encoder",
+            name: i18n.t('encoder'),
             props: {
               isActive: true
             },
@@ -99,7 +100,7 @@ const AddWidgets: React.FC = () => {
           minW: 2,
           minH: 5,
           content: JSON.stringify({
-            name: "Reflectance",
+            name: i18n.t('reflectance'),
             props: {
               isActive: true
             },
@@ -118,7 +119,7 @@ const AddWidgets: React.FC = () => {
           minW: 2,
           minH: 6,
           content: JSON.stringify({
-            name: "Voltage",
+            name: i18n.t('voltage'),
             props: {
               isActive: true
             },
@@ -137,7 +138,7 @@ const AddWidgets: React.FC = () => {
           minW: 2,
           minH: 8,
           content: JSON.stringify({
-            name: "Rangefinder",
+            name: i18n.t('rangefinder'),
             props: {
               isActive: true
             },
