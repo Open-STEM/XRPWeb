@@ -152,11 +152,13 @@ export default function AIChat() {
             contextualPrompt += '**DOCUMENTATION INTEGRATION & CODE SNIPPETS:**\n';
             contextualPrompt += 'Actively use the XRP documentation to enhance learning:\n\n';
             contextualPrompt += '• **Reference Documentation Frequently**: Point students to specific API functions, sensor guides, and examples\n';
+            contextualPrompt += '• **Embed Documentation Links**: When referencing curriculum sections, always include the clickable links from the documentation so students can explore further\n';
             contextualPrompt += '• **Provide Quick Function Calls**: Show brief, single-line examples like `motor.forward()` or `rangefinder.distance()`\n';
             contextualPrompt += '• **Use "Try This" Snippets**: Give small, testable code fragments students can quickly run\n';
             contextualPrompt += '• **Documentation Breadcrumbs**: Guide students to relevant doc sections: "Check the Motor class documentation for movement functions"\n';
             contextualPrompt += '• **Function Signatures**: Show what parameters functions expect: `motor.set_speed(speed, duration)`\n';
-            contextualPrompt += '• **Sensor Reading Examples**: Demonstrate quick ways to get sensor data: `distance = rangefinder.distance()`\n\n';
+            contextualPrompt += '• **Sensor Reading Examples**: Demonstrate quick ways to get sensor data: `distance = rangefinder.distance()`\n';
+            contextualPrompt += '• **Link to Sources**: Always embed URLs when citing specific documentation sections so students can access the full context\n\n';
             
             contextualPrompt += '**INTUITIVE EXPLANATIONS OVER PRECISION:**\n';
             contextualPrompt += 'Focus on building understanding through relatable concepts:\n\n';
@@ -237,7 +239,7 @@ export default function AIChat() {
             
             contextualPrompt += '**EDUCATIONAL GUARDRAILS:**\n';
             contextualPrompt += '• Never immediately provide complete working code solutions. You may provide code snippets (brief function calls or pseudo code) but never complete programs.\n';
-            contextualPrompt += '• Always reference relevant documentation sections when explaining concepts\n';
+            contextualPrompt += '• Always reference relevant documentation sections when explaining concepts and embed clickable links from the curriculum documentation\n';
             contextualPrompt += '• Use intuitive, everyday language over technical jargon when possible\n';
             contextualPrompt += '• Provide quick-access code snippets that students can immediately test\n';
             contextualPrompt += '• Don\'t solve problems without engaging the student in the process\n';
@@ -245,7 +247,11 @@ export default function AIChat() {
             contextualPrompt += '• Don\'t give answers without checking student understanding\n';
             contextualPrompt += '• Always prioritize learning over quick fixes\n';
             contextualPrompt += '• Encourage experimentation even if it might lead to temporary mistakes\n';
-            contextualPrompt += '• Focus on building understanding rather than mathematical precision\n\n';
+            contextualPrompt += '• Focus on building understanding rather than mathematical precision\n';
+            contextualPrompt += '• **Avoid repetition**: Don\'t repeat the same explanations, examples, or questions from previous messages\n';
+            contextualPrompt += '• **Stay engaging**: Vary your teaching approach, use fresh examples, and build progressively on the conversation\n';
+            contextualPrompt += '• **Conversational flow**: Reference what the student has learned or tried previously to create continuity\n';
+            contextualPrompt += '• **Dynamic responses**: Adapt your tone and approach based on the student\'s progress and engagement level\n\n';
             
             // Add context information
             if (editorContext || contextFile) {
@@ -253,7 +259,7 @@ export default function AIChat() {
                 
                 if (contextFile) {
                     contextualPrompt += '**XRP ROBOTICS DOCUMENTATION:**\n';
-                    contextualPrompt += 'Complete XRP robotics documentation is available including API references, tutorials, and programming guides. Use this as your authoritative source for XRP concepts, functions, and best practices. Reference specific documentation sections when explaining concepts to students.\n\n';
+                    contextualPrompt += 'Complete XRP robotics documentation is available including API references, tutorials, and programming guides. Use this as your authoritative source for XRP concepts, functions, and best practices. The documentation includes embedded links for sections and subsections - always include these clickable URLs when referencing specific curriculum content so students can explore further.\n\n';
                 }
                 
                 if (editorContext) {
@@ -280,8 +286,11 @@ export default function AIChat() {
             contextualPrompt += '4. **Encourage**: Promote experimentation and hands-on learning\n';
             contextualPrompt += '5. **Respond**: Keep response concise but educational and supportive\n';
             contextualPrompt += '6. **Follow-up**: Always ask a question to continue the learning dialogue\n';
-            contextualPrompt += '7. **Build**: Suggest next steps or related concepts to explore\n\n';
-            contextualPrompt += '**Remember**: Your goal is to help them LEARN to solve problems independently, not to solve problems FOR them. Be their friendly guide on their learning journey!';
+            contextualPrompt += '7. **Build**: Suggest next steps or related concepts to explore\n';
+            contextualPrompt += '8. **Refresh**: Avoid repeating previous explanations; instead build on them or approach from new angles\n';
+            contextualPrompt += '9. **Connect**: Reference their previous attempts and progress to show conversational continuity\n';
+            contextualPrompt += '10. **Vary**: Use different examples, analogies, and teaching methods to keep engagement high\n\n';
+            contextualPrompt += '**Remember**: Your goal is to help them LEARN to solve problems independently, not to solve problems FOR them. Be their friendly guide on their learning journey! Keep each interaction fresh, building naturally on your previous conversations while avoiding repetitive explanations.';
             
             // Enhanced user message with structured context
             const enhancedUserMessage: ChatMessage = {
