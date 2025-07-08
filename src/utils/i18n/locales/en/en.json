@@ -88,6 +88,18 @@
     "update-lib-complete": "The XRP library update process has completed successfully.",
     "dashboard": "Dashboard",
     "FilesystemStorage": "Filesystem: {{ capacity }} MB",
+    "sensors": "Sensors",
+    "accelerometer": "Accelerometer",
+    "gyroscope": "Gyroscope",
+    "current": "Current",
+    "encoder": "Encoder",
+    "reflectance": "Reflectance",
+    "voltage": "Voltage",
+    "rangefinder": "Rangefinder",
+    "graph": "Graph",
+    "number": "Number",
+    "no-data-available": "No Data Available",
+    "readings-stored": "readings stored",
     "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
     "individualMotors": "Individual Motors"
 }

@@ -1,6 +1,13 @@
+const flowbiteReact = require("flowbite-react/plugin/tailwindcss");
+
 /** @type {import('tailwindcss').Config} */
 export default {
-    content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+    content: [
+        './index.html',
+        './src/**/*.{js,ts,jsx,tsx}',
+        './node_modules/flowbite-react/**/*.{js,ts,jsx,tsx}',
+        ".flowbite-react/class-list.json"
+    ],
     theme: {
         colors: {
             'curious-blue': {
@@ -100,6 +107,7 @@ export default {
     },
     plugins: [
         require('tailwindcss-debug-screens'),
-        require('@tailwindcss/typography')
+        require('@tailwindcss/typography'),
+        flowbiteReact
     ],
 };
