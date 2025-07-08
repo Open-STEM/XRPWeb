@@ -24,8 +24,11 @@ export default defineConfig({
             {
                 src: 'node_modules/flexlayout-react/style',
                 dest: './node_modules/flexlayout-react/'
-            }
-        ]
+            },
+            {
+                src: 'node_modules/gridstack/dist/gridstack.css',
+                dest: './node_modules/gridstack/dist/'
+            }        ]
     }), flowbiteReact()],
     resolve: {
         alias: [
