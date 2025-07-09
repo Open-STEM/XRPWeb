@@ -7,6 +7,8 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { FaChartLine, FaHashtag, FaCog, FaTrash } from 'react-icons/fa';
 import { useGridStackContext } from '../lib/grid-stack-context';
 import i18n from '@utils/i18n'; // Adjust the path if your i18n setup file is elsewhere
+import { FlowBiteConstants } from '@/utils/constants';
+
 
 // Define a type for timestamped encoder data
 interface TimestampedEncoderData {
@@ -156,7 +158,7 @@ const Encoder: React.FC = () => {
   return (
     <SensorCard {...sensorCardProps}>
       <div className="absolute top-4 right-4 flex items-center space-x-2">
-        <Dropdown label={<FaCog size={16} />} className="font-bold flex items-center text-sm border border-gray-300 rounded">
+        <Dropdown label={<FaCog size={16} />} inline={true} theme={FlowBiteConstants.DropdownTheme} className="font-bold flex items-center text-sm border border-gray-300 rounded">
           <DropdownItem onClick={() => handleAction('graph')}>
             <div className="flex items-center space-x-2">
               <FaChartLine size={16} />
@@ -193,7 +195,7 @@ const Encoder: React.FC = () => {
                     <XAxis
                       dataKey="timestamp"
                       tick={false}
-                      label="Time"
+                      label={i18n.t('time')}
                     />
                     <YAxis />
                     <Tooltip
@@ -273,7 +275,7 @@ const Encoder: React.FC = () => {
                         </svg>
                       </div>
                       <span className="font-mono text-sm">{value}</span>
-                      <span className="text-xs text-gray-500">ticks</span>
+                      <span className="text-xs text-gray-500">{i18n.t('ticks')}</span>
                     </div>
                   );
                 })}

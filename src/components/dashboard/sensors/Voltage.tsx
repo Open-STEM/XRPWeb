@@ -9,6 +9,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { FaChartLine, FaHashtag, FaCog, FaTrash } from 'react-icons/fa';
 import { useGridStackContext } from '../lib/grid-stack-context';
 import i18n from '@utils/i18n';
+import { FlowBiteConstants } from '@/utils/constants';
 
 // Define a type for timestamped battery data
 interface TimestampedBatteryData {
@@ -148,7 +149,7 @@ const Voltage: React.FC = () => {
   return (
     <SensorCard {...sensorCardProps}>
       <div className="absolute top-4 right-4 flex items-center space-x-2">
-        <Dropdown label={<FaCog size={16} />} className="font-bold flex items-center text-sm border border-gray-300 rounded">
+        <Dropdown label={<FaCog size={16} />} inline={true} theme={FlowBiteConstants.DropdownTheme} className="font-bold flex items-center text-sm border border-gray-300 rounded">
           <DropdownItem onClick={() => handleAction('graph')}>
             <div className="flex items-center space-x-2">
               <FaChartLine size={16} />
@@ -185,7 +186,7 @@ const Voltage: React.FC = () => {
                     <XAxis
                       dataKey="timestamp"
                       tick={false}
-                      label="Time"
+                      label={i18n.t('time')}
                     />
                     <YAxis />
                     <Tooltip
@@ -197,7 +198,7 @@ const Voltage: React.FC = () => {
                       dataKey="voltage"
                       stroke={voltageColor}
                       dot={false}
-                      name="Voltage"
+                      name={i18n.t('voltage')}
                     />
                   </LineChart>
                 </ResponsiveContainer>

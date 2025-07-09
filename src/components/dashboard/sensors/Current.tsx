@@ -8,6 +8,8 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { FaChartLine, FaHashtag, FaCog, FaTrash } from 'react-icons/fa';
 import { useGridStackContext } from '../lib/grid-stack-context';
 import i18n from '@/utils/i18n';
+import { FlowBiteConstants } from '@/utils/constants';
+
 
 // Define a type for timestamped current data
 interface TimestampedCurrentData {
@@ -159,7 +161,7 @@ const Current: React.FC = () => {
     <SensorCard {...sensorCardProps}>
       <div className="absolute top-4 right-4 flex items-center space-x-2">
         {/* View toggle dropdown */}
-        <Dropdown label={<FaCog size={16} />} className="font-bold flex items-center text-sm border border-gray-300 rounded">
+        <Dropdown label={<FaCog size={16} />} inline={true} theme={FlowBiteConstants.DropdownTheme} className="font-bold flex items-center text-sm border border-gray-300 rounded">
           <DropdownItem onClick={() => handleAction('graph')}>
             <div className="flex items-center space-x-2">
               <FaChartLine size={16} />
@@ -196,15 +198,15 @@ const Current: React.FC = () => {
                     <XAxis
                       dataKey="timestamp"
                       tick={false}
-                      label="Time"
+                      label={i18n.t('time')}
                     />
                     <YAxis />
                     <Tooltip
                       labelFormatter={(value) => new Date(value).toLocaleTimeString()}
                       formatter={(value) => typeof value === 'number' ? `${value.toFixed(0)} mA` : value}
                     />
-                    <Line type="monotone" dataKey="currL" stroke={channelColors.currL} dot={false} name="Left" />
-                    <Line type="monotone" dataKey="currR" stroke={channelColors.currR} dot={false} name="Right" />
+                    <Line type="monotone" dataKey="currL" stroke={channelColors.currL} dot={false} name={i18n.t('left')} />
+                    <Line type="monotone" dataKey="currR" stroke={channelColors.currR} dot={false} name={i18n.t('right')} />
                     <Line type="monotone" dataKey="curr3" stroke={channelColors.curr3} dot={false} name="Ch 3" />
                     <Line type="monotone" dataKey="curr4" stroke={channelColors.curr4} dot={false} name="Ch 4" />
                   </LineChart>

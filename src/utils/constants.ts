@@ -8,3 +8,13 @@ export class Constants {
     static readonly SHOW_CHANGELOG = 'show-changelog';
     static SHOW_PROGRESS = 'show-progress';
 }
+
+export class FlowBiteConstants {
+    static readonly DropdownTheme = {
+        base: 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300',
+        item: 'hover:bg-gray-100 dark:hover:bg-gray-700',
+        itemActive: 'bg-blue-500 text-white dark:bg-blue-600',
+        itemDisabled: 'text-gray-400 dark:text-gray-500',
+        inlineWrapper: 'text-white bg-shark-200 hover:bg-curious-blue-300 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-shark-600 dark:hover:bg-shark-500 dark:focus:ring-blue-800',
+  };
+}
