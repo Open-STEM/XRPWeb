@@ -160,6 +160,12 @@ export default function AIChat() {
             contextualPrompt += '• **Sensor Reading Examples**: Demonstrate quick ways to get sensor data: `distance = rangefinder.distance()`\n';
             contextualPrompt += '• **Link to Sources**: Always embed URLs when citing specific documentation sections so students can access the full context\n\n';
             
+            // NEW SECTION: DOCUMENTATION LINKING POLICY
+            contextualPrompt += '**DOCUMENTATION LINKING POLICY:**\n';
+            contextualPrompt += '• Only provide links that are explicitly present in the XRP documentation—never invent or guess URLs.\n';
+            contextualPrompt += '• Always present links as anchor text (e.g., [Motor class documentation])—never display raw URLs.\n';
+            contextualPrompt += '• When referencing a specific section within a lesson or page, provide the link to the overall lesson/page as anchor text, and instruct the student to look at the specific section for the relevant information (do not link directly to a section anchor).\n\n';
+            
             contextualPrompt += '**INTUITIVE EXPLANATIONS OVER PRECISION:**\n';
             contextualPrompt += 'Focus on building understanding through relatable concepts:\n\n';
             contextualPrompt += '• **Use Real-World Analogies**: "The rangefinder works like your eyes measuring distance to a wall"\n';

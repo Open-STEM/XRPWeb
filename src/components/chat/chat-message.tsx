@@ -47,6 +47,28 @@ md.renderer.rules.code_block = md.renderer.rules.fence = function (tokens, idx) 
   </div>`;
 };
 
+// Custom renderer for links to open in a new tab
+const defaultRender = md.renderer.rules.link_open || function(tokens, idx, options, env, self) {
+  return self.renderToken(tokens, idx, options);
+};
+md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+  // If already has target, don't duplicate
+  const aIndex = tokens[idx].attrIndex('target');
+  if (aIndex < 0) {
+    tokens[idx].attrPush(['target', '_blank']); // add new attribute
+  } else {
+    tokens[idx].attrs[aIndex][1] = '_blank'; // replace value
+  }
+  // Add rel="noopener noreferrer" for security
+  const relIndex = tokens[idx].attrIndex('rel');
+  if (relIndex < 0) {
+    tokens[idx].attrPush(['rel', 'noopener noreferrer']);
+  } else {
+    tokens[idx].attrs[relIndex][1] = 'noopener noreferrer';
+  }
+  return defaultRender(tokens, idx, options, env, self);
+};
+
 const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message }) => {
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -54,10 +76,12 @@ const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message }) => {
     if (contentRef.current) {
       // Add click handlers to copy buttons
       const copyButtons = contentRef.current.querySelectorAll('.copy-btn');
+      const listeners: Array<{button: Element, handler: () => void}> = [];
       
       copyButtons.forEach((button) => {
         const handleCopy = async () => {
-          const code = button.getAttribute('data-code');
+          const el = button as HTMLElement;
+          const code = el.getAttribute('data-code');
           if (code) {
             try {
               // Decode HTML entities
@@ -71,27 +95,28 @@ const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message }) => {
               await navigator.clipboard.writeText(decodedCode);
               
               // Visual feedback
-              const originalHTML = button.innerHTML;
-              button.innerHTML = `<svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              const originalHTML = el.innerHTML;
+              el.innerHTML = `<svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
               </svg>`;
               
               setTimeout(() => {
-                button.innerHTML = originalHTML;
+                el.innerHTML = originalHTML;
               }, 2000);
             } catch (err) {
               console.error('Failed to copy code:', err);
             }
           }
         };
-
         button.addEventListener('click', handleCopy);
-        
-        // Cleanup
-        return () => {
-          button.removeEventListener('click', handleCopy);
-        };
+        listeners.push({button: button as Element, handler: handleCopy});
       });
+      // Cleanup all listeners
+      return () => {
+        listeners.forEach(({button, handler}) => {
+          button.removeEventListener('click', handler);
+        });
+      };
     }
   }, [message.content]);
 
