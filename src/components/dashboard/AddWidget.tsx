@@ -5,6 +5,7 @@ import { MdSpeed } from 'react-icons/md';
 import { FaBatteryHalf, FaBolt, FaCog, FaEye, FaGlobe, FaPlus } from 'react-icons/fa';
 import { BsRulers } from 'react-icons/bs';
 import i18n from "@/utils/i18n";
+import { FlowBiteConstants } from "@/utils/constants";
 
 type ActionType = 'accelerometer' | 'current' | 'encoder' | 'gyroscope' | 'rangefinder' | 'reflectance' | 'voltage';
 
@@ -153,7 +154,7 @@ const AddWidgets: React.FC = () => {
 
   return (
     <div className="flex items-center mt-4 sm:mt-0">
-      <Dropdown label={<FaPlus size={20} />} className="flex items-center mt-4 sm:mt-0 ">
+      <Dropdown label={<FaPlus size={20} />} inline={true} theme={FlowBiteConstants.DropdownTheme} className="flex items-center mt-4 sm:mt-0 ">
         <DropdownItem icon={MdSpeed} onClick={() => handleAction('accelerometer')}>Accelerometer</DropdownItem>
         <DropdownItem icon={FaBolt} onClick={() => handleAction('current')}>Current</DropdownItem>
         <DropdownItem icon={FaGlobe} onClick={() => handleAction('gyroscope')}>Gyroscope</DropdownItem>

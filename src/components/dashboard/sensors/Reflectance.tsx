@@ -8,6 +8,8 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { FaChartLine, FaHashtag, FaCog, FaTrash } from 'react-icons/fa';
 import { useGridStackContext } from '../lib/grid-stack-context';
 import i18n from '@utils/i18n';
+import { FlowBiteConstants } from '@/utils/constants';
+
 
 // Define a type for timestamped reflectance data
 interface TimestampedReflectanceData {
@@ -150,7 +152,7 @@ const Reflectance: React.FC = () => {
   return (
     <SensorCard {...sensorCardProps}>
       <div className="absolute top-4 right-4 flex items-center space-x-2">
-        <Dropdown label={<FaCog size={16} />} className="font-bold flex items-center text-sm border border-gray-300 rounded">
+        <Dropdown label={<FaCog size={16} />} inline={true} theme={FlowBiteConstants.DropdownTheme} className="font-bold flex items-center text-sm border border-gray-300 rounded">
           <DropdownItem onClick={() => handleAction('graph')}>
             <div className="flex items-center space-x-2">
               <FaChartLine size={16} />
@@ -187,15 +189,15 @@ const Reflectance: React.FC = () => {
                     <XAxis
                       dataKey="timestamp"
                       tick={false}
-                      label="Time"
+                      label={i18n.t('time')}
                     />
                     <YAxis />
                     <Tooltip
                       labelFormatter={(value) => new Date(value).toLocaleTimeString()}
                       formatter={(value) => typeof value === 'number' ? value.toFixed(0) : value}
                     />
-                    <Line type="monotone" dataKey="reflectanceL" stroke={sideColors.reflectanceL} dot={false} name="Left" />
-                    <Line type="monotone" dataKey="reflectanceR" stroke={sideColors.reflectanceR} dot={false} name="Right" />
+                    <Line type="monotone" dataKey="reflectanceL" stroke={sideColors.reflectanceL} dot={false} name={i18n.t('left')} />
+                    <Line type="monotone" dataKey="reflectanceR" stroke={sideColors.reflectanceR} dot={false} name={i18n.t('right')} />
                   </LineChart>
                 </ResponsiveContainer>
                 <div className="text-xs text-gray-500 text-center mt-2 dark:text-gray-400">
@@ -220,7 +222,7 @@ const Reflectance: React.FC = () => {
                       <div className="w-6 h-6 rounded-full bg-white opacity-80"></div>
                     </div>
                     <span className="text-xs font-medium" style={{ color: sideColors.reflectanceL }}>
-                      LEFT
+                      {i18n.t('left')}
                     </span>
                   </div>
 
@@ -236,7 +238,7 @@ const Reflectance: React.FC = () => {
                       <div className="w-6 h-6 rounded-full bg-white opacity-80"></div>
                     </div>
                     <span className="text-xs font-medium" style={{ color: sideColors.reflectanceR }}>
-                      RIGHT
+                      {i18n.t('right')}
                     </span>
                   </div>
                 </div>
@@ -248,7 +250,7 @@ const Reflectance: React.FC = () => {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm font-medium" style={{ color: sideColors.reflectanceL }}>
-                      Left
+                      {i18n.t('left')}
                     </span>
                     <span className="text-sm font-mono">
                       {reflectanceData.reflectanceL}
@@ -269,7 +271,7 @@ const Reflectance: React.FC = () => {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm font-medium" style={{ color: sideColors.reflectanceR }}>
-                      Right
+                      {i18n.t('right')}
                     </span>
                     <span className="text-sm font-mono">
                       {reflectanceData.reflectanceR}
@@ -291,13 +293,13 @@ const Reflectance: React.FC = () => {
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div className="flex flex-col items-center">
                   <span className="text-xs font-medium" style={{ color: sideColors.reflectanceL }}>
-                    Left Reflectance
+                    {i18n.t('left-reflectance')}
                   </span>
                   <span className="font-mono text-lg">{reflectanceData.reflectanceL}</span>
                 </div>
                 <div className="flex flex-col items-center">
                   <span className="text-xs font-medium" style={{ color: sideColors.reflectanceR }}>
-                    Right Reflectance
+                    {i18n.t('right-reflectance')}
                   </span>
                   <span className="font-mono text-lg">{reflectanceData.reflectanceR}</span>
                 </div>

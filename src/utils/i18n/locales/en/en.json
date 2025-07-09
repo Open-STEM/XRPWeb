@@ -100,6 +100,14 @@
     "number": "Number",
     "no-data-available": "No Data Available",
     "readings-stored": "readings stored",
+    "time": "Time",
+    "left": "Left",
+    "right": "Right",
+    "left-reflectance": "Left Reflectance",
+    "right-reflectance": "Right Reflectance",
+    "distance": "Distance",
+    "distance-units": "Centimeters",
+    "ticks": "Ticks",
     "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
     "individualMotors": "Individual Motors"
 }
