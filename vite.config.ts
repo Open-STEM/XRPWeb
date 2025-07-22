@@ -101,5 +101,6 @@ export default defineConfig({
                 }
             }
         }
-    }
+    },
+    envPrefix: ['VITE_', 'GOOGLE_'],
 });
