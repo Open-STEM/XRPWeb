@@ -11,7 +11,7 @@ const TERMINAL_ID = 'xrp-shell';
 
 /**
  * Capture terminal buffer content from XTerm instance
- * Gets the last output's worth of content instead of arbitrary line count
+ * Gets the last output's worth of content, limited to 100 lines max
  */
 function captureTerminalContent(instance: any): string {
     try {
@@ -22,13 +22,14 @@ function captureTerminalContent(instance: any): string {
         const buffer = instance.buffer.active;
         const lines: string[] = [];
         const totalLines = buffer.length;
+        const MAX_LINES = 100; // Hard limit to prevent flooding context window
         
         // Start from the end and work backwards to find meaningful content
         let contentLines = 0;
         let foundContent = false;
         
         // Look backwards from the current position to find the last meaningful output
-        for (let i = totalLines - 1; i >= 0 && contentLines < 50; i--) {
+        for (let i = totalLines - 1; i >= 0 && contentLines < MAX_LINES; i--) {
             const line = buffer.getLine(i);
             if (line) {
                 const lineText = line.translateToString(true);
@@ -47,10 +48,11 @@ function captureTerminalContent(instance: any): string {
             }
         }
         
-        // If we didn't find much content, fall back to a reasonable amount
+        // If we didn't find much content, fall back to a reasonable amount (but still respect MAX_LINES)
         if (lines.length < 5 && totalLines > 0) {
             lines.length = 0;
-            const startLine = Math.max(0, totalLines - 20);
+            const fallbackLines = Math.min(20, MAX_LINES);
+            const startLine = Math.max(0, totalLines - fallbackLines);
             
             for (let i = startLine; i < totalLines; i++) {
                 const line = buffer.getLine(i);
@@ -59,6 +61,11 @@ function captureTerminalContent(instance: any): string {
                     lines.push(lineText);
                 }
             }
+        }
+        
+        // Final safety check: truncate if somehow we exceeded MAX_LINES
+        if (lines.length > MAX_LINES) {
+            lines.splice(0, lines.length - MAX_LINES);
         }
         
         return lines.join('\n').trim();
