@@ -92,8 +92,9 @@ export default function AIChat() {
             // Get uploaded context file if available
             const contextFile = contextLoader.current?.getUploadedFile() || undefined;
             
-            // Get current editor context
+            // Get current editor and terminal contexts independently
             const editorContext = contextLoader.current?.getCurrentEditorContext() || '';
+            const terminalContext = contextLoader.current?.getCurrentTerminalContext() || '';
             
             // Build comprehensive educational tutoring system prompt
             let contextualPrompt = '';
@@ -260,7 +261,7 @@ export default function AIChat() {
             contextualPrompt += '• **Dynamic responses**: Adapt your tone and approach based on the student\'s progress and engagement level\n\n';
             
             // Add context information
-            if (editorContext || contextFile) {
+            if (editorContext || terminalContext || contextFile) {
                 contextualPrompt += '**AVAILABLE CONTEXT:**\n\n';
                 
                 if (contextFile) {
@@ -279,13 +280,24 @@ export default function AIChat() {
                     contextualPrompt += editorContext;
                     contextualPrompt += '\n\n';
                 }
+                
+                if (terminalContext) {
+                    contextualPrompt += '**RECENT TERMINAL OUTPUT:**\n';
+                    contextualPrompt += 'The student\'s recent terminal activity is shown below. Use this to:\n';
+                    contextualPrompt += '• See what they\'ve tried recently\n';
+                    contextualPrompt += '• Understand any errors or issues they\'re encountering\n';
+                    contextualPrompt += '• Identify patterns in their debugging attempts\n';
+                    contextualPrompt += '• Provide targeted help based on their recent activity\n\n';
+                    contextualPrompt += terminalContext;
+                    contextualPrompt += '\n\n';
+                }
             }
             
             contextualPrompt += '**STUDENT\'S QUESTION:**\n';
             contextualPrompt += userMessage.content + '\n\n';
             
             contextualPrompt += '**YOUR EDUCATIONAL RESPONSE GUIDELINES:**\n';
-            contextualPrompt += 'Based on the student\'s question and code context, follow this approach:\n\n';
+            contextualPrompt += 'Based on the student\'s question and available context, follow this approach:\n\n';
             contextualPrompt += '1. **Assess**: Determine their learning level, style, and current understanding\n';
             contextualPrompt += '2. **Choose Level**: Select appropriate response level (HINT → CONCEPT → PSEUDOCODE → EXAMPLE → SOLUTION)\n';
             contextualPrompt += '3. **Engage**: Use Socratic questioning to guide their thinking process\n';

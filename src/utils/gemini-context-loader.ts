@@ -1,5 +1,6 @@
 import { GeminiClient, UploadedFile } from './gemini-client';
 import EditorMgr from '@/managers/editormgr';
+import TerminalMgr from '@/managers/terminalmgr';
 import { EditorType } from './types';
 
 // Single concatenated documentation file
@@ -96,6 +97,34 @@ export class GeminiContextLoader {
             loaded: this.isContextLoaded,
             fileName: this.uploadedFile?.displayName || null
         };
+    }
+
+    /**
+     * Get the current terminal context from XRP Shell
+     * This provides recent terminal output and command history
+     */
+    getCurrentTerminalContext(): string {
+        const terminalContents = TerminalMgr.getLiveTerminalContents();
+        
+        if (terminalContents.length === 0) {
+            return '';
+        }
+
+        const contextSections: string[] = [];
+        contextSections.push('The following is the recent terminal output from the XRP Shell:');
+        
+        for (const terminal of terminalContents) {
+            contextSections.push(`\n### Terminal: ${terminal.id}`);
+            contextSections.push(`**Lines:** ${terminal.lines} total lines`);
+            contextSections.push(`**Last Updated:** ${terminal.lastUpdated.toISOString()}`);
+            contextSections.push('**Description:** This shows recent commands executed and their output from the XRP robot terminal session.');
+            contextSections.push('**Recent Terminal Output:**');
+            contextSections.push('```');
+            contextSections.push(terminal.content);
+            contextSections.push('```');
+        }
+        
+        return contextSections.join('\n');
     }
 
     /**
