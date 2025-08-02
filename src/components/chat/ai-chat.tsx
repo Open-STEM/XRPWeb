@@ -11,8 +11,6 @@ export default function AIChat() {
     const [inputValue, setInputValue] = useState('');
     const [status, setStatus] = useState<ChatStatus>(ChatStatus.IDLE);
     const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(null);
-    const [apiKey, setApiKey] = useState<string>('');
-    const [showApiKeyInput, setShowApiKeyInput] = useState(true);
     const [contextStatus, setContextStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -21,15 +19,12 @@ export default function AIChat() {
     const contextLoader = useRef<GeminiContextLoader | null>(null);
     const abortController = useRef<AbortController | null>(null);
 
-    // Initialize client and context loader when API key is provided
+    // Initialize client and context loader on component mount
     useEffect(() => {
-        if (apiKey.trim()) {
-            geminiClient.current = new GeminiClient(apiKey);
-            contextLoader.current = createContextLoader(geminiClient.current);
-            setShowApiKeyInput(false);
-            loadContext();
-        }
-    }, [apiKey]);
+        geminiClient.current = new GeminiClient();
+        contextLoader.current = createContextLoader(geminiClient.current);
+        loadContext();
+    }, []);
 
     // Load documentation context
     const loadContext = async () => {
@@ -383,8 +378,7 @@ export default function AIChat() {
     };
 
     const resetConnection = () => {
-        setApiKey('');
-        setShowApiKeyInput(true);
+
         geminiClient.current = null;
         contextLoader.current = null;
         setContextStatus('idle');
@@ -410,60 +404,7 @@ export default function AIChat() {
         abortController.current = null;
     };
 
-    if (showApiKeyInput) {
-        return (
-            <div className="flex flex-col h-full">
-                <div className="flex-1 flex items-center justify-center p-8">
-                    <div className="max-w-md w-full space-y-6">
-                        <div className="text-center">
-                            <IoSparkles size={48} className="mx-auto text-curious-blue-600 mb-4" />
-                            <h2 className="text-2xl font-bold text-mountain-mist-900 dark:text-mountain-mist-100 mb-2">
-                                AI Chat
-                            </h2>
-                            <p className="text-mountain-mist-600 dark:text-mountain-mist-400">
-                                Enter your Google Gemini API key to start chatting with AI models.
-                            </p>
-                        </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-mountain-mist-700 dark:text-mountain-mist-300 mb-2">
-                                    Google Gemini API Key
-                                </label>
-                                <input
-                                    type="password"
-                                    value={apiKey}
-                                    onChange={(e) => setApiKey(e.target.value)}
-                                    placeholder="AIza..."
-                                    className="w-full px-3 py-2 border border-mountain-mist-300 dark:border-mountain-mist-600 rounded-lg bg-white dark:bg-mountain-mist-900 text-mountain-mist-900 dark:text-mountain-mist-100 focus:ring-2 focus:ring-curious-blue-500 focus:border-curious-blue-500"
-                                />
-                            </div>
-                            
-                            <button
-                                onClick={() => apiKey.trim() && setApiKey(apiKey)}
-                                disabled={!apiKey.trim()}
-                                className="w-full bg-curious-blue-600 hover:bg-curious-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors"
-                            >
-                                Connect
-                            </button>
-
-                            <div className="text-xs text-mountain-mist-500 dark:text-mountain-mist-400 text-center">
-                                Get your free API key at{' '}
-                                <a 
-                                    href="https://aistudio.google.com/app/apikey" 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-curious-blue-600 hover:underline"
-                                >
-                                    Google AI Studio
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="flex flex-col h-full bg-white dark:bg-mountain-mist-950">

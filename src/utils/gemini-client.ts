@@ -1,4 +1,3 @@
-import { GoogleGenAI, createPartFromUri } from '@google/genai';
 import { ChatMessage } from './types';
 
 // Hardcoded model - only using Gemini 2.5 Flash
@@ -12,16 +11,14 @@ export interface UploadedFile {
 }
 
 export class GeminiClient {
-    private ai: GoogleGenAI;
     private uploadedFiles: Map<string, UploadedFile> = new Map();
+    private backendUrl: string;
 
     constructor(apiKey?: string) {
-        // Use provided API key or fall back to environment variable
-        const key = apiKey || import.meta.env.VITE_GEMINI_API_KEY;
-        if (!key) {
-            throw new Error('Gemini API key is required');
-        }
-        this.ai = new GoogleGenAI({ apiKey: key });
+        // Use FastAPI backend proxy instead of direct Gemini API calls
+        this.backendUrl = '/api';
+        // Note: apiKey parameter maintained for backward compatibility but not used
+        // The backend handles API key management securely
     }
 
     /**
@@ -32,7 +29,7 @@ export class GeminiClient {
     }
 
     /**
-     * Upload a markdown file to Gemini's File API
+     * Upload a markdown file via FastAPI backend
      */
     async uploadMarkdownFile(content: string, displayName: string): Promise<UploadedFile> {
         try {
@@ -42,40 +39,23 @@ export class GeminiClient {
                 return this.uploadedFiles.get(cacheKey)!;
             }
 
+            // Create form data for upload
+            const formData = new FormData();
             const fileBlob = new Blob([content], { type: 'text/markdown' });
+            formData.append('file', fileBlob, `${displayName}.md`);
+            formData.append('display_name', displayName);
 
-            const file = await this.ai.files.upload({
-                file: fileBlob,
-                config: {
-                    displayName: displayName,
-                },
+            const response = await fetch(`${this.backendUrl}/gemini/upload`, {
+                method: 'POST',
+                body: formData,
             });
 
-            if (!file.name) {
-                throw new Error(`File upload failed - no name returned for ${displayName}`);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Upload failed: ${errorData.detail || response.statusText}`);
             }
 
-            // Wait for the file to be processed
-            let getFile = await this.ai.files.get({ name: file.name });
-            while (getFile.state === 'PROCESSING') {
-                console.log(`Processing file ${displayName}: ${getFile.state}`);
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-                getFile = await this.ai.files.get({ name: file.name });
-            }
-
-            if (getFile.state === 'FAILED') {
-                throw new Error(`File processing failed for ${displayName}`);
-            }
-
-            if (!getFile.uri || !getFile.mimeType) {
-                throw new Error(`File ${displayName} was processed but missing uri or mimeType`);
-            }
-
-            const uploadedFile: UploadedFile = {
-                uri: getFile.uri as string,
-                mimeType: getFile.mimeType as string,
-                displayName: displayName
-            };
+            const uploadedFile: UploadedFile = await response.json();
 
             // Cache the uploaded file
             this.uploadedFiles.set(cacheKey, uploadedFile);
@@ -126,7 +106,7 @@ export class GeminiClient {
     }
 
     /**
-     * Send a chat completion request to Gemini
+     * Send a chat completion request via FastAPI backend
      */
     async chatCompletion(
         messages: ChatMessage[],
@@ -140,66 +120,72 @@ export class GeminiClient {
                 throw new DOMException('Request was aborted', 'AbortError');
             }
 
-            // Build the content array starting with the conversation
-            const content: any[] = [];
+            // Prepare request payload
+            const payload = {
+                messages: messages.map(msg => ({
+                    role: msg.role === 'assistant' ? 'model' : msg.role,
+                    content: msg.content
+                })),
+                files: contextFile ? [contextFile.uri] : []
+            };
 
-            // Add the conversation as text
-            const prompt = messages.map(msg => 
-                `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
-            ).join('\n') + '\nAssistant:';
-            
-            content.push(prompt);
+            console.log('Sending chat request to backend:', payload);
 
-            // Add context file if provided
-            if (contextFile && contextFile.uri && contextFile.mimeType) {
-                const fileContent = createPartFromUri(contextFile.uri, contextFile.mimeType);
-                content.push(fileContent);
-                console.log(`Including context file: ${contextFile.displayName}`);
+            const response = await fetch(`${this.backendUrl}/gemini/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+                signal: signal
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Chat request failed: ${errorData.detail || response.statusText}`);
             }
 
             if (onStream) {
-                // For streaming, we'll simulate it by getting the full response
-                // and then streaming it character by character
-                const response = await this.ai.models.generateContent({
-                    model: GEMINI_MODEL_ID,
-                    contents: content,
-                });
-                
-                // Check if aborted after getting response
-                if (signal?.aborted) {
-                    throw new DOMException('Request was aborted', 'AbortError');
-                }
-                
-                const fullText = response.text || '';
-                let currentText = '';
-                
-                // Simulate streaming by revealing text progressively
-                for (let i = 0; i < fullText.length; i++) {
-                    // Check for abortion during streaming
-                    if (signal?.aborted) {
-                        throw new DOMException('Request was aborted', 'AbortError');
-                    }
-                    
-                    currentText += fullText[i];
-                    onStream(currentText);
-                    // Small delay to simulate streaming
-                    await new Promise(resolve => setTimeout(resolve, 20));
-                }
-                
-                return fullText;
+                // Handle streaming response
+                return await this.handleStreamingResponse(response, onStream, signal);
             } else {
-                // Non-streaming response
-                const response = await this.ai.models.generateContent({
-                    model: GEMINI_MODEL_ID,
-                    contents: content,
-                });
-                
-                // Check if aborted after getting response
-                if (signal?.aborted) {
-                    throw new DOMException('Request was aborted', 'AbortError');
+                // Handle non-streaming response
+                const reader = response.body?.getReader();
+                if (!reader) {
+                    throw new Error('No response body available');
                 }
-                
-                return response.text || '';
+
+                let fullContent = '';
+                const decoder = new TextDecoder();
+
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        const chunk = decoder.decode(value, { stream: true });
+                        const lines = chunk.split('\n');
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const data = JSON.parse(line.substring(6));
+                                    if (data.type === 'content') {
+                                        fullContent += data.content;
+                                    } else if (data.type === 'error') {
+                                        throw new Error(data.error);
+                                    }
+                                } catch (parseError) {
+                                    console.warn('Failed to parse streaming data:', parseError);
+                                }
+                            }
+                        }
+                    }
+                } finally {
+                    reader.releaseLock();
+                }
+
+                return fullContent;
             }
         } catch (error) {
             // Re-throw abort errors as-is
@@ -208,8 +194,62 @@ export class GeminiClient {
             }
             
             console.error('Chat completion error:', error);
-            throw new Error(`Failed to get response from Gemini: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            throw new Error(`Failed to get response from backend: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
+    }
+
+    /**
+     * Handle streaming response from FastAPI backend
+     */
+    private async handleStreamingResponse(
+        response: Response,
+        onStream: (content: string) => void,
+        signal?: AbortSignal
+    ): Promise<string> {
+        const reader = response.body?.getReader();
+        if (!reader) {
+            throw new Error('No response body available');
+        }
+
+        let fullContent = '';
+        const decoder = new TextDecoder();
+
+        try {
+            while (true) {
+                // Check for abortion
+                if (signal?.aborted) {
+                    throw new DOMException('Request was aborted', 'AbortError');
+                }
+
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.substring(6));
+                            if (data.type === 'content') {
+                                fullContent += data.content;
+                                onStream(fullContent);
+                            } else if (data.type === 'error') {
+                                throw new Error(data.error);
+                            } else if (data.type === 'done') {
+                                return fullContent;
+                            }
+                        } catch (parseError) {
+                            console.warn('Failed to parse streaming data:', parseError);
+                        }
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+
+        return fullContent;
     }
 
     /**
