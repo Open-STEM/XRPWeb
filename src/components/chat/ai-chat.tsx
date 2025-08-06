@@ -3,7 +3,7 @@ import { ChatMessage, ChatStatus } from '@/utils/types';
 import { GeminiClient } from '@/utils/gemini-client';
 import { GeminiContextLoader, createContextLoader } from '@/utils/gemini-context-loader';
 import ChatMessageComponent from './chat-message';
-import { IoSend, IoRefresh, IoTrash, IoSparkles, IoDocument, IoStop } from 'react-icons/io5';
+import { IoSend, IoRefresh, IoSparkles, IoDocument, IoStop } from 'react-icons/io5';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function AIChat() {
@@ -377,14 +377,6 @@ export default function AIChat() {
         setStatus(ChatStatus.IDLE);
     };
 
-    const resetConnection = () => {
-
-        geminiClient.current = null;
-        contextLoader.current = null;
-        setContextStatus('idle');
-        clearMessages();
-    };
-
     const stopGeneration = () => {
         if (abortController.current) {
             abortController.current.abort();
@@ -445,14 +437,6 @@ export default function AIChat() {
                         disabled={messages.length === 0 || status === ChatStatus.STREAMING}
                         className="p-2 text-mountain-mist-500 hover:text-mountain-mist-700 dark:text-mountain-mist-400 dark:hover:text-mountain-mist-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         title="Clear messages"
-                    >
-                        <IoTrash size={16} />
-                    </button>
-                    
-                    <button
-                        onClick={resetConnection}
-                        className="p-2 text-mountain-mist-500 hover:text-mountain-mist-700 dark:text-mountain-mist-400 dark:hover:text-mountain-mist-200 transition-colors"
-                        title="Reset connection"
                     >
                         <IoRefresh size={16} />
                     </button>
