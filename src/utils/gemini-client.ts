@@ -236,8 +236,6 @@ export class GeminiClient {
                                 onStream(fullContent);
                             } else if (data.type === 'error') {
                                 throw new Error(data.error);
-                            } else if (data.type === 'done') {
-                                return fullContent;
                             }
                         } catch (parseError) {
                             console.warn('Failed to parse streaming data:', parseError);

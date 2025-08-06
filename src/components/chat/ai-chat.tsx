@@ -12,6 +12,8 @@ export default function AIChat() {
     const [status, setStatus] = useState<ChatStatus>(ChatStatus.IDLE);
     const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(null);
     const [contextStatus, setContextStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+    const [textQueue, setTextQueue] = useState<string>('');
+    const [displayedText, setDisplayedText] = useState<string>('');
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -45,6 +47,31 @@ export default function AIChat() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, streamingMessage]);
 
+    // Smooth text animation effect
+    useEffect(() => {
+        if (!textQueue) return;
+        
+        const timer = setInterval(() => {
+            setDisplayedText(prev => {
+                if (prev.length >= textQueue.length) {
+                    // Animation complete - finalize message
+                    if (streamingMessage && status === ChatStatus.IDLE) {
+                        setMessages(msgs => [...msgs, { ...streamingMessage, content: textQueue }]);
+                        setStreamingMessage(null);
+                        setTextQueue('');
+                        return '';
+                    }
+                    return prev;
+                }
+                const newText = textQueue.slice(0, prev.length + 2); // 2 chars per frame
+                setStreamingMessage(msg => msg ? { ...msg, content: newText } : null);
+                return newText;
+            });
+        }, 10); // 10ms = ~100 chars/sec
+        
+        return () => clearInterval(timer);
+    }, [textQueue, streamingMessage, status]);
+
     // Auto-resize textarea
     useEffect(() => {
         if (textareaRef.current) {
@@ -68,6 +95,8 @@ export default function AIChat() {
         setMessages(prev => [...prev, userMessage]);
         setInputValue('');
         setStatus(ChatStatus.STREAMING);
+        setTextQueue('');
+        setDisplayedText('');
 
         // Create abort controller for this request
         abortController.current = new AbortController();
@@ -159,7 +188,7 @@ export default function AIChat() {
             // NEW SECTION: DOCUMENTATION LINKING POLICY
             contextualPrompt += '**DOCUMENTATION LINKING POLICY:**\n';
             contextualPrompt += '• Only provide links that are explicitly present in the XRP documentation—never invent or guess URLs.\n';
-            contextualPrompt += '• Always present links as anchor text (e.g., "Measuring Distances")—never display raw URLs.\n';
+            contextualPrompt += '• Always present links as anchor text (e.g., Measuring Distances)—never display raw URLs.\n';
             contextualPrompt += '• When referencing a specific section within a lesson or page, provide the link to the overall lesson/page as anchor text, and instruct the student to look at the specific section for the relevant information (do not link directly to a section anchor).\n\n';
             
             contextualPrompt += '**INTUITIVE EXPLANATIONS OVER PRECISION:**\n';
@@ -318,7 +347,7 @@ export default function AIChat() {
                     if (abortController.current?.signal.aborted) {
                         return;
                     }
-                    setStreamingMessage(prev => prev ? { ...prev, content } : null);
+                    setTextQueue(content);
                 },
                 contextFile,
                 abortController.current.signal
@@ -326,16 +355,9 @@ export default function AIChat() {
 
             // Only complete if not aborted
             if (!abortController.current?.signal.aborted) {
-                // Add final message
-                const finalMessage: ChatMessage = {
-                    ...assistantMessage,
-                    content: response,
-                };
-
-                setMessages(prev => [...prev, finalMessage]);
-                setStreamingMessage(null);
                 setStatus(ChatStatus.IDLE);
                 abortController.current = null;
+                // Let animation handle message finalization
             }
         } catch (error) {
             // Handle abort gracefully
