@@ -1,117 +1,42 @@
 import { ChatMessage } from './types';
 
-// Hardcoded model - only using Gemini 2.5 Flash
-const GEMINI_MODEL_ID = 'gemini-2.5-flash';
-const GEMINI_MODEL_NAME = 'XRPCode Buddy';
-
-export interface UploadedFile {
-    uri: string;
-    mimeType: string;
-    displayName: string;
-}
-
+/**
+ * Simplified Gemini client for XRP Code Buddy
+ * All AI configuration and teaching guidelines are now handled by the backend
+ */
 export class GeminiClient {
-    private uploadedFiles: Map<string, UploadedFile> = new Map();
     private backendUrl: string;
 
-    constructor(apiKey?: string) {
-        // Use FastAPI backend proxy instead of direct Gemini API calls
+    constructor() {
         this.backendUrl = '/api';
-        // Note: apiKey parameter maintained for backward compatibility but not used
-        // The backend handles API key management securely
     }
 
     /**
      * Get the model name for display purposes
+     * Note: This now fetches from backend to maintain single source of truth
      */
-    getModelName(): string {
-        return GEMINI_MODEL_NAME;
-    }
-
-    /**
-     * Upload a markdown file via FastAPI backend
-     */
-    async uploadMarkdownFile(content: string, displayName: string): Promise<UploadedFile> {
+    async getModelName(): Promise<string> {
         try {
-            // Check if file is already uploaded
-            const cacheKey = `${displayName}_${content.length}`;
-            if (this.uploadedFiles.has(cacheKey)) {
-                return this.uploadedFiles.get(cacheKey)!;
+            const response = await fetch(`${this.backendUrl}/model-info`);
+            if (response.ok) {
+                const data = await response.json();
+                return data.model_name || 'XRPCode Buddy';
             }
-
-            // Create form data for upload
-            const formData = new FormData();
-            const fileBlob = new Blob([content], { type: 'text/markdown' });
-            formData.append('file', fileBlob, `${displayName}.md`);
-            formData.append('display_name', displayName);
-
-            const response = await fetch(`${this.backendUrl}/gemini/upload`, {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Upload failed: ${errorData.detail || response.statusText}`);
-            }
-
-            const uploadedFile: UploadedFile = await response.json();
-
-            // Cache the uploaded file
-            this.uploadedFiles.set(cacheKey, uploadedFile);
-            
-            return uploadedFile;
         } catch (error) {
-            console.error(`Error uploading file ${displayName}:`, error);
-            throw new Error(`Failed to upload ${displayName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            console.warn('Failed to fetch model name from backend:', error);
         }
+        return 'XRPCode Buddy'; // Fallback
     }
 
     /**
-     * Upload multiple markdown files from the class_docs directory
+     * Send a simplified chat request with user message and context
      */
-    async uploadClassDocs(): Promise<UploadedFile[]> {
-        const uploadedFiles: UploadedFile[] = [];
-
-        try {
-            // In a browser environment, we can't directly read files from the file system
-            // This method assumes the markdown content is passed in or fetched via API
-            // For now, we'll return empty array and let the caller handle file reading
-            console.log('Note: uploadClassDocs requires file contents to be provided via other means in browser environment');
-            return uploadedFiles;
-        } catch (error) {
-            console.error('Error uploading class docs:', error);
-            throw new Error(`Failed to upload class docs: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-    }
-
-    /**
-     * Upload context files from provided content map
-     */
-    async uploadContextFiles(fileContents: Map<string, string>): Promise<UploadedFile[]> {
-        const uploadedFiles: UploadedFile[] = [];
-        
-        for (const [fileName, content] of fileContents.entries()) {
-            try {
-                const uploadedFile = await this.uploadMarkdownFile(content, fileName);
-                uploadedFiles.push(uploadedFile);
-                console.log(`Successfully uploaded context file: ${fileName}`);
-            } catch (error) {
-                console.warn(`Failed to upload context file ${fileName}:`, error);
-                // Continue with other files even if one fails
-            }
-        }
-
-        return uploadedFiles;
-    }
-
-    /**
-     * Send a chat completion request via FastAPI backend
-     */
-    async chatCompletion(
-        messages: ChatMessage[],
+    async chatWithContext(
+        userMessage: string,
+        conversationHistory: ChatMessage[] = [],
+        editorContext: string = '',
+        terminalContext: string = '',
         onStream?: (content: string) => void,
-        contextFile?: UploadedFile,
         signal?: AbortSignal
     ): Promise<string> {
         try {
@@ -120,18 +45,20 @@ export class GeminiClient {
                 throw new DOMException('Request was aborted', 'AbortError');
             }
 
-            // Prepare request payload
+            // Prepare simplified request payload
             const payload = {
-                messages: messages.map(msg => ({
+                user_message: userMessage,
+                conversation_history: conversationHistory.map(msg => ({
                     role: msg.role === 'assistant' ? 'model' : msg.role,
                     content: msg.content
                 })),
-                files: contextFile ? [contextFile.uri] : []
+                editor_context: editorContext,
+                terminal_context: terminalContext
             };
 
-            console.log('Sending chat request to backend:', payload);
+            console.log('Sending simplified chat request to backend');
 
-            const response = await fetch(`${this.backendUrl}/gemini/chat`, {
+            const response = await fetch(`${this.backendUrl}/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -149,43 +76,8 @@ export class GeminiClient {
                 // Handle streaming response
                 return await this.handleStreamingResponse(response, onStream, signal);
             } else {
-                // Handle non-streaming response
-                const reader = response.body?.getReader();
-                if (!reader) {
-                    throw new Error('No response body available');
-                }
-
-                let fullContent = '';
-                const decoder = new TextDecoder();
-
-                try {
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) break;
-
-                        const chunk = decoder.decode(value, { stream: true });
-                        const lines = chunk.split('\n');
-
-                        for (const line of lines) {
-                            if (line.startsWith('data: ')) {
-                                try {
-                                    const data = JSON.parse(line.substring(6));
-                                    if (data.type === 'content') {
-                                        fullContent += data.content;
-                                    } else if (data.type === 'error') {
-                                        throw new Error(data.error);
-                                    }
-                                } catch (parseError) {
-                                    console.warn('Failed to parse streaming data:', parseError);
-                                }
-                            }
-                        }
-                    }
-                } finally {
-                    reader.releaseLock();
-                }
-
-                return fullContent;
+                // Handle non-streaming response (though streaming is preferred)
+                return await this.handleNonStreamingResponse(response);
             }
         } catch (error) {
             // Re-throw abort errors as-is
@@ -199,7 +91,7 @@ export class GeminiClient {
     }
 
     /**
-     * Handle streaming response from FastAPI backend
+     * Handle streaming response from the simplified chat endpoint
      */
     private async handleStreamingResponse(
         response: Response,
@@ -251,16 +143,73 @@ export class GeminiClient {
     }
 
     /**
-     * Get all uploaded files
+     * Handle non-streaming response (fallback)
      */
-    getUploadedFiles(): UploadedFile[] {
-        return Array.from(this.uploadedFiles.values());
+    private async handleNonStreamingResponse(response: Response): Promise<string> {
+        const reader = response.body?.getReader();
+        if (!reader) {
+            throw new Error('No response body available');
+        }
+
+        let fullContent = '';
+        const decoder = new TextDecoder();
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.substring(6));
+                            if (data.type === 'content') {
+                                fullContent += data.content;
+                            } else if (data.type === 'error') {
+                                throw new Error(data.error);
+                            }
+                        } catch (parseError) {
+                            console.warn('Failed to parse streaming data:', parseError);
+                        }
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+
+        return fullContent;
     }
 
     /**
-     * Clear uploaded files cache
+     * Legacy method for backward compatibility
+     * @deprecated Use chatWithContext instead
      */
-    clearUploadedFiles(): void {
-        this.uploadedFiles.clear();
+    async chatCompletion(
+        messages: ChatMessage[],
+        onStream?: (content: string) => void,
+        _contextFile?: any, // Ignored - context now handled by backend
+        signal?: AbortSignal
+    ): Promise<string> {
+        console.warn('chatCompletion is deprecated, use chatWithContext instead');
+        
+        if (messages.length === 0) {
+            throw new Error('No messages provided');
+        }
+
+        const userMessage = messages[messages.length - 1].content;
+        const conversationHistory = messages.slice(0, -1);
+
+        return this.chatWithContext(
+            userMessage,
+            conversationHistory,
+            '', // No editor context in legacy mode
+            '', // No terminal context in legacy mode
+            onStream,
+            signal
+        );
     }
-} 
+}
