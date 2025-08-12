@@ -255,11 +255,12 @@ Blockly.Blocks['xrp_getrightencoder'] = {
 };
 
 // Servo
+let servoNames = [["1", "1"], ["2", "2"]];
 Blockly.Blocks['xrp_servo_deg'] = {
   init: function () {
     this.appendDummyInput()
       .appendField('Servo:')
-      .appendField(new Blockly.FieldDropdown([["1", "1"], ["2", "2"]]), "SERVO")
+      .appendField(new Blockly.FieldDropdown(servoNames), "SERVO")
       .appendField('Deg:');
     this.appendValueInput("degrees")
       .setCheck("Number")
@@ -560,6 +561,33 @@ Blockly.Blocks['xrp_ws_connect_server'] = {
     this.setNextStatement(true, null);
     this.setColour(190); // turquoise
     this.setTooltip("Connects the XRP web server to an existing network");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['xrp_gp_get_value'] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("Joystick:")
+      .appendField(new Blockly.FieldDropdown([["X1", "X1"], ["X2", "X2"], ["Y1", "Y1"], ["Y2", "Y2"]]), "GPVALUE")
+    this.setOutput(true, null);
+    this.setColour("#ff9248"); // crimson
+    this.setTooltip("Get the value of a gamepad joystick");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['xrp_gp_button_pressed'] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("Button:")
+      .appendField(new Blockly.FieldDropdown([["A", "BUTTON_A"], ["B", "BUTTON_B"], ["X", "BUTTON_X"], ["Y", "BUTTON_Y"], ["Bumper Left", "BUMPER_L"], ["Bumper Right", "BUMPER_R"],
+      ["Trigger Left", "TRIGGER_L"],["Trigger Right", "TRIGGER_R"],["Back", "BACK"], ["Start", "START"], 
+      ["D-PAD Up", "DPAD_UP"],["D-PAD Down", "DPAD_DN"],["D-PAD Left", "DPAD_L"],["D-PAD Right", "DPAD_R"]]), "GPBUTTON")
+      .appendField("Pressed")
+    this.setOutput(true, null);
+    this.setColour("#ff9248"); // crimson
+    this.setTooltip("Check to see if a gamepad button is pressed");
     this.setHelpUrl("");
   }
 };

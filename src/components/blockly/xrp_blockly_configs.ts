@@ -263,6 +263,21 @@ const ToolboxJson = {
                 },
             ]
         },
+        {
+            "kind": "CATEGORY",
+            "name": "Gamepad",
+            "colour": "#ff9248", // turquoise
+            "contents": [
+                {
+                    "kind": "BLOCK",
+                    "type": "xrp_gp_get_value"
+                },
+                {
+                    "kind": "BLOCK",
+                    "type": "xrp_gp_button_pressed"
+                },
+            ]
+        },
          {
             "kind": "CATEGORY",
             "contents": [
