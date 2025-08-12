@@ -32,6 +32,7 @@ export class CommandToXRPMgr {
     // Set true so most terminal output gets passed to javascript terminal
     private DEBUG_CONSOLE_ON: boolean = true;
     private HAS_MICROPYTHON: boolean = false;
+    private is_XRP_MP: boolean = false;
 
     private latestLibraryVersion: string = "";
 
@@ -163,8 +164,8 @@ export class CommandToXRPMgr {
         this.BUSY = true;
 
         let vpin = '28';
-        if (this.PROCESSOR == 2350) {
-            vpin = '46';
+        if (this.is_XRP_MP) {
+            vpin = "'BOARD_VIN_MEASURE'";
         }
 
         const cmd = 'from machine import ADC, Pin\n' + 'print(ADC(Pin(' + vpin + ')).read_u16())\n';
@@ -220,6 +221,9 @@ export class CommandToXRPMgr {
                         this.PROCESSOR = 2040;
                     }
                 }
+                if(hiddenLines[1].includes('XRP')){ //is this an XRP version of microPython?
+                    this.is_XRP_MP = true;
+                }
                 return [
                     hiddenLines[0].substring(2),
                     hiddenLines[2],
@@ -264,6 +268,10 @@ export class CommandToXRPMgr {
 
         //if no library or the library is out of date
         if (Number.isNaN(parseFloat(info[1] as string)) || this.isVersionNewer(this.latestLibraryVersion, info[1] as string)) {
+            //from now on we can only update the library if we are on an XRP version of the microPython firmware
+            if(!this.is_XRP_MP){
+                AppMgr.getInstance().emit(EventType.EVENT_MUST_UPDATE_MICROPYTHON, '');
+            }
             if (info[1]) {
                 const versions : Versions = {
                     currentVersion: (info[1] as string) === "ERROR EX" ? "None" : info[1] as string,

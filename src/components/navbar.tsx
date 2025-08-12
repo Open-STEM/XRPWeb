@@ -162,6 +162,12 @@ function NavBar({ layoutref }: NavBarProps) {
                 toggleDialog();
             });
 
+            AppMgr.getInstance().on(EventType.EVENT_MUST_UPDATE_MICROPYTHON, () => {
+                window.alert("must update MP");
+                //setDialogContent(<ChangeLogDlg closeDialog={toggleDialog}/>);
+                //toggleDialog();
+            });
+
             AppMgr.getInstance().on(EventType.EVENT_SHOWCHANGELOG, (changelog) => {
                 if (changelog === Constants.SHOW_CHANGELOG) {
                     setDialogContent(<ChangeLogDlg closeDialog={toggleDialog}/>);
