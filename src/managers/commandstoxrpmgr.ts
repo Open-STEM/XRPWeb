@@ -40,8 +40,7 @@ export class CommandToXRPMgr {
     private mpBuild: string | undefined = undefined;
     private mpFilename: string | undefined = undefined;
     phewList = ["__init__.py","dns.py","logging.py","server.py","template.py"];
-    bleList = ["__init__.py","blerepl.py", "ble_uart_peripheral.py", "isrunning"]  //bugbug: ble_uart_peripheral looks for ##XRPSTOP## so we can't update via bluetooth. Could be fixed with a hash operation
-
+    bleList = ["__init__.py","blerepl.py", "ble_uart_peripheral.py", "isrunning"] 
     XRPId:string | undefined = undefined;
 
     constructor(){
@@ -928,7 +927,26 @@ export class CommandToXRPMgr {
         if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: in executeLines");
 
         this.BUSY = true;
-        this.connection?.goCommand(lines);
+        //TODO: force a Terminal line feed
+
+        //when running from the IDE, let's clean up all the memory before the program runs to give maximum space to run (especially on the beta board)
+        var cleanUp = "import sys\n" +
+        "ble_modules = ['ble.blerepl', 'ble', 'ble.ble_uart_peripheral']\n" +
+        "for module in list(sys.modules.keys()):\n" +
+        "    if module not in ble_modules and 'XRPLib' not in module:\n" +
+        "        del sys.modules[module]\n" +
+        "essential_vars = ['ble_modules', 'gc', 'sys', 'rp2' , 'essential_vars', 'FILE_PATH']\n" +
+        "all_vars = dir()\n" +
+        "for var in all_vars:\n" +
+        "    if var not in essential_vars and not var.startswith('__'):\n" +
+        "        exec(f'del {var}')\n" +
+        "import gc\n" +
+        "gc.collect()\n";
+        //"print(gc.mem_free())\n"; 
+
+        lines = cleanUp + lines;
+
+        await this.connection?.goCommand(lines);
         this.BUSY = false;
         if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: out of executeLines");
 
