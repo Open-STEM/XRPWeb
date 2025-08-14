@@ -367,14 +367,14 @@ export class BluetoothConnection extends Connection {
                 this.bleReader = await this.btService.getCharacteristic(
                     this.RX_CHARACTERISTIC_UUID,
                 );
-            /*
+            
                 this.bleDataWriter = await this.btService.getCharacteristic(
                     this.DATA_TX_CHARACTERISTIC_UUID,
                 );
                 this.bleDataReader = await this.btService.getCharacteristic(
                     this.DATA_RX_CHARACTERISTIC_UUID,
                 );
-            */
+            
                 this.bleReader.startNotifications();
                 this.onConnected();
                 //return true;
