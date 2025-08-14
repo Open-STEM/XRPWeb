@@ -140,7 +140,7 @@ class Joystick {
         const changes: number[] = [];
         for (let i = 0; i < current.length; i++) {
             // Only consider sending a change if the difference exceeds the tolerance
-            if (Math.abs(current[i] - last[i]) > tolerance || i < 4) { //always update for the joystick numbers
+            if (Math.abs(current[i] - last[i]) > tolerance) { 
                 changes.push(i); // byte representing the array index
                 changes.push(this.quantizeFloat(current[i])); // byte representing the new value
               }
@@ -167,28 +167,22 @@ class Joystick {
 
             // Only send if there are actual changes (sending[1] > 0)
             if (sending.length > 2 && sending[1] > 0) {
-                 if (this.writeToDevice) {
-                    try {
-                        await this.writeToDevice(sending);
-                        // Update last sent state only after successful send
-                        this.lastsentArray = this.joysticksArray.slice();
-                    } catch (error) {
-                        console.error("Error writing joystick data:", error);
-                        // Decide if we should stop sending or retry?
-                        // For now, we'll keep trying but won't update lastsentArray
-                    }
-                 } else {
-                     // console.warn("Joystick: writeToDevice callback is not set.");
-                     // Silently ignore if no callback is set, or log warning.
-                 }
-            } else {
-                 // No changes detected, update lastsentArray anyway?
-                 // It's safer to update it only when data is successfully sent.
-                 // If we don't update here, the next packet will compare against the last *sent* state.
-                 // Let's update it here to reflect the current actual state as the basis for the *next* comparison.
-                 this.lastsentArray = this.joysticksArray.slice();
+                if (this.writeToDevice) {
+                try {
+                    this.lastsentArray = this.joysticksArray.slice(); //this has to go before to avoid timing problems with missing keyboard changes.
+                    await this.writeToDevice(sending);
+                    // Update last sent state only after successful send
+                } catch (error) {
+                    console.error("Error writing joystick data:", error);
+                    // Decide if we should stop sending or retry?
+                    // For now, we'll keep trying but won't update lastsentArray
+                }
+                } else {
+                    // console.warn("Joystick: writeToDevice callback is not set.");
+                    // Silently ignore if no callback is set, or log warning.
+                }
+            } 
                  this.sendingPacket = false;
-            }
         }
     }
 
@@ -322,6 +316,7 @@ class Joystick {
         // If we don't have a controller yet, use this one
         if (this.controllerIndex === -1) {
             this.controllerIndex = event.gamepad.index;
+            //TODO: Need to show an icon that says a gamepad is connected
             console.log("Using gamepad:", this.controllerIndex);
              // Optionally reset keyboard state when gamepad connects?
              // this.joysticksArray.fill(0);
@@ -337,6 +332,7 @@ class Joystick {
         // If the disconnected gamepad is the one we were using, reset the index
         if (this.controllerIndex === event.gamepad.index) {
             this.controllerIndex = -1;
+            //TODO: Need to take away the icon that shows a gamepad is connected.
             console.log("Stopped using gamepad.");
             // Optionally reset joystick state to 0
             this.joysticksArray.fill(0);
