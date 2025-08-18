@@ -47,7 +47,7 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
         scope: SCOPE,
         flow: 'auth-code',
         onSuccess: (codeResponse) => {
-            if (codeResponse.scope.includes('https://mail.google.com/')) {
+            if (codeResponse.scope.split(' ').includes('https://mail.google.com/')) {
                 setIsLogin(true);
                 authService.isLogin = true;
                 new Promise<void>((resolve) => {
