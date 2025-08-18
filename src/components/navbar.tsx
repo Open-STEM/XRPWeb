@@ -30,6 +30,7 @@ import {
     FileData,
     EditorType,
     FontSize,
+    ModeType,
 } from '@/utils/types';
 import { useFilePicker } from 'use-file-picker';
 import { MenuDataItem } from '@/widgets/menutypes';
@@ -50,12 +51,14 @@ import ViewPythonDlg from '@/components/dialogs/view-pythondlg';
 import AlertDialog from '@/components/dialogs/alertdlg';
 import BatteryBadDlg from '@/components/dialogs/battery-baddlg';
 import SaveProgressDlg from '@/components/dialogs/save-progressdlg';
-import ConfirmationDlg from './dialogs/confirmdlg';
-import UpdateDlg from './dialogs/updatedlg';
+import ConfirmationDlg from '@components/dialogs/confirmdlg';
+import UpdateDlg from '@components/dialogs/updatedlg';
 import React from 'react';
 import { CreateEditorTab } from '@/utils/editorUtils';
-import ChangeLogDlg from './dialogs/changelog';
+import ChangeLogDlg from '@components/dialogs/changelog';
 import { IJsonTabNode } from 'flexlayout-react';
+import GoogleLoginDlg from '@components/dialogs/logindlg';
+import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -94,14 +97,18 @@ function NavBar({ layoutref }: NavBarProps) {
     });
     const [xprID, setXrpId] = useState<{ platform?: string; XRPID?: string } | null>(null);
     const [activeTab, setActiveTab] = useLocalStorage(StorageKeys.ACTIVETAB, '');
+    const authService = AppMgr.getInstance().authService;
+    const driveService = AppMgr.getInstance().driveService;
 
     useEffect(() => {
         if (!hasSubscribed) {
             // subscribe to the connection event
-            AppMgr.getInstance().on(EventType.EVENT_CONNECTION_STATUS, (state: string) => {
+            AppMgr.getInstance().on(EventType.EVENT_CONNECTION_STATUS, async (state: string) => {
                 if (state === ConnectionState.Connected.toString()) {
                     setConnected(true);
                     setRunning(false);
+                    const mode = parseInt(localStorage.getItem(StorageKeys.MODESETTING) ?? '0');
+                    processModeChange(mode);
                 } else if (state === ConnectionState.Disconnected.toString()) {
                     setConnected(false);
                     setXrpId(null);
@@ -120,36 +127,53 @@ function NavBar({ layoutref }: NavBarProps) {
                 }
             });
 
-            AppMgr.getInstance().on(EventType.EVENT_OPEN_FILE, async (filepath: string) => {
-                const filename = filepath.split('/').pop();
+            AppMgr.getInstance().on(EventType.EVENT_OPEN_FILE, async (filePathDataJson: string) => {
+                const filePathData = JSON.parse(filePathDataJson);
+                const filename = filePathData.xrpPath.split('/').pop();
                 if (filename && EditorMgr.getInstance().hasEditorSession(filename)) return;
                 const fileType = filename?.includes('.blocks') ? FileType.BLOCKLY : FileType.PYTHON;
                 const fileData: NewFileData = {
                     parentId: '',
-                    path: filepath,
+                    path: filePathData.xrpPath,
+                    gpath: filePathData.gPath,
                     name: filename || '',
                     filetype: fileType,
                 };
                 CreateEditorTab(fileData, layoutref);
                 setActiveTab(fileData.name)
-                await CommandToXRPMgr.getInstance()
-                    .getFileContents(filepath)
-                    .then((content) => {
-                        // if the file is a block files, extract the blockly JSON out of the comment ##XRPBLOCKS
-                        let bytes = content;
+                // Need to access the connection status directly from the manager because the React isConnected state available 
+                // isn't available in the thread context
+                const isConnected = AppMgr.getInstance().getConnection()?.isConnected() ?? false;
+                if (isConnected) {
+                    await CommandToXRPMgr.getInstance()
+                        .getFileContents(filePathData.xrpPath)
+                        .then((content) => {
+                            // if the file is a block files, extract the blockly JSON out of the comment ##XRPBLOCKS
+                            let bytes = content;
+                            if (fileType === FileType.BLOCKLY) {
+                                const data: string = new TextDecoder().decode(new Uint8Array(bytes));
+                                const lines: string[] = data.split('##XRPBLOCKS ');
+                                bytes = Array.from(new TextEncoder().encode(lines.slice(-1)[0]));
+                            }
+                            const text =
+                                typeof bytes === 'string'
+                                    ? bytes
+                                    : new TextDecoder().decode(new Uint8Array(bytes));
+                            // set the content in the editor
+                            const loadContent = { name: filename, content: text };
+                            AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
+                        });
+                } if (authService.isLogin) {
+                    // get the content from Google Drive
+                    driveService.getFileContents(filePathData.gPath).then((fileContent) => {
+                        let content;
                         if (fileType === FileType.BLOCKLY) {
-                            const data: string = new TextDecoder().decode(new Uint8Array(bytes));
-                            const lines: string[] = data.split('##XRPBLOCKS ');
-                            bytes = Array.from(new TextEncoder().encode(lines.slice(-1)[0]));
+                            content = fileContent?.split('##XRPBLOCKS ');
                         }
-                        const text =
-                            typeof bytes === 'string'
-                                ? bytes
-                                : new TextDecoder().decode(new Uint8Array(bytes));
-                        // set the content in the editor
-                        const loadContent = { name: filename, content: text };
+                        const loadContent = { name: filename, content: content?.at(1)};
                         AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
                     });
+                }
             });
 
             AppMgr.getInstance().on(EventType.EVENT_MICROPYTHON_UPDATE, (versions) => {
@@ -191,6 +215,30 @@ function NavBar({ layoutref }: NavBarProps) {
 
     if (errors.length > 0) {
         return <div>Error: {errors.values.toString()}</div>;
+    }
+
+    /**
+     * processModeChange - perform various function base on mode
+     * @param mode 
+     */
+    function processModeChange(mode: number | undefined) {
+        if (mode === ModeType.GOOUSER) {
+            if (!AppMgr.getInstance().authService.isLogin) {
+                setDialogContent(<GoogleLoginDlg toggleDialog={toggleDialog}></GoogleLoginDlg>);
+                toggleDialog();
+            } else if (AppMgr.getInstance().authService.isLogin) {
+                const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
+                fireGoogleUserTree(username ?? '');
+            }
+        } else if (mode === ModeType.USER) {
+            // check if there is an active user in localstorage
+            const user = localStorage.getItem(StorageKeys.XRPUSER)?.replace(/"/g, '');
+            if (user === undefined || user === "") {
+                // output an alert message and inform the user
+                setDialogContent(<AlertDialog alertMessage={i18n.t('no-user-message')} toggleDialog={toggleDialog} />);
+                toggleDialog();
+            }
+        }
     }
 
     /**
@@ -589,7 +637,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * onSettingsClicked - handle the setting button click event
      */
     function onSettingsClicked() {
-        setDialogContent(<SettingsDlg toggleDialog={toggleDialog} />);
+        setDialogContent(<SettingsDlg isXrpConnected={isConnected} toggleDialog={toggleDialog} />);
         toggleDialog();
     }
 

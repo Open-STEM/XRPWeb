@@ -7,6 +7,9 @@ export class Constants {
     static readonly TRASH_FOLDER = '/trash';
     static readonly SHOW_CHANGELOG = 'show-changelog';
     static SHOW_PROGRESS = 'show-progress';
+    static readonly ADMIN_FILE = 'admin.json';
+    static readonly GUSERS_FOLDER = '/gusers/';
+    static readonly XRPCODES = 'XRPCodes';
 }
 
 export class FlowBiteConstants {
