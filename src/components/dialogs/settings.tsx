@@ -72,7 +72,7 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
      * @returns {boolean} - Returns true if the username is valid, otherwise false.
      */
     const validateUsername = (username: string): boolean => {
-        const regex = /^[A-z][A-z0-9-_]{4,11}$/;
+        const regex = /^[A-Za-z][A-Za-z0-9-_]{4,11}$/;
         return regex.test(username);
     };
 
