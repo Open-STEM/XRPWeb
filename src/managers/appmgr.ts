@@ -57,6 +57,10 @@ type Events = {
     [EventType.EVENT_XRPLIB_UPDATE]: string;
     [EventType.EVENT_XRPLIB_UPDATE_DONE]: string;
     [EventType.EVENT_SHOWCHANGELOG]: string;
+    [EventType.EVENT_DASHBOARD_DATA]: string;
+    [EventType.EVENT_SHOWPROGRESS]: string;
+    [EventType.EVENT_FILESYS_STORAGE]: string;
+    [EventType.EVENT_MUST_UPDATE_MICROPYTHON]: string;
 };
 
 /**
