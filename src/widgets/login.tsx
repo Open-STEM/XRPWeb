@@ -62,8 +62,8 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
                         driveService.setAccessToken(token.access_token);
                         // check if XRPCodes folder exists, if not create it
                         try {
-                            const folderId = await driveService.findFolderByName(XRPCODES);
-                            if (!folderId) {
+                            const folder = await driveService.findFolderByName(XRPCODES);
+                            if (!folder) {
                                 await driveService.createFolder(XRPCODES);
                             }
                         } catch (error) {
