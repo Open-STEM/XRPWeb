@@ -69,6 +69,7 @@ export default class ConnectionMgr {
                 await this.cmdToXRPMgr.clearIsRunning();
                 this.xrpID = await this.cmdToXRPMgr.checkIfNeedUpdate();
                 this.IDSet(connType);
+                //TODO: if this was a bluetooth connection this is where to take down the spinner.
             }
         } else if (state === ConnectionState.Disconnected) {
             this.appMgr.emit(
