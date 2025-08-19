@@ -263,6 +263,7 @@ export class BluetoothConnection extends Connection {
             })
             .then(async (device) => {
                 this.connLogger.info('Connecting to device...');
+                //TODO: Put up a spinner until connection is fully complete, including reading the directory.
                 this.bleDevice = device;
                 if (device.gatt?.connected) {
                     console.log("Reconnecting...");
