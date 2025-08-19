@@ -550,16 +550,17 @@ function NavBar({ layoutref }: NavBarProps) {
                 .batteryVoltage()
                 .then((voltage) => {
                     const connectionType = AppMgr.getInstance().getConnectionType();
-                    if (connectionType === ConnectionType.BLUETOOTH) {
-                        if (voltage < 0.4) {
+                    if (connectionType === ConnectionType.USB) {
+                        if (voltage < 0.45) {
                             // display a confirmation message to ask the user to turn on the power switch
                             setDialogContent(<PowerSwitchAlert cancelCallback={toggleDialog} />);
                             toggleDialog();
                             continueExecution = false;
                         }
-                    } else if (connectionType === ConnectionType.USB) {
-                        if (voltage < 0.4) {
+                    } else if (connectionType === ConnectionType.BLUETOOTH) {
+                        if (voltage < 0.45) {
                             // display a confirmation message to ask the user to turn on the power switch
+                            //this one will only happen if they are using a power device plugged into the USB port and the power switch is off.
                             setDialogContent(<PowerSwitchAlert cancelCallback={toggleDialog} />);
                             toggleDialog();
                         } else if (voltage < 5.0) {
