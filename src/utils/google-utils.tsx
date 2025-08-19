@@ -1,6 +1,34 @@
 import AppMgr, { EventType } from "@/managers/appmgr";
 import { FolderItem } from "./types";
 import { Constants } from "./constants";
+import { GoogleDriveFile } from "@/services/google-drive";
+
+/**
+ * transformGDriveTreeToFolderTree - recursively convert the GoogleDriveFile tree to FolderItem tree
+ * @param username - username to be used in XRP Robot path
+ * @param driveItem - tree items from Google Drive
+ * @returns - A FolderItem structure
+ */
+const transformGDriveTreeToFolderTree = (username: string, driveItem: GoogleDriveFile): FolderItem => {
+    const itemType: 'file' | 'folder' = 
+        driveItem.mimeType === 'application/vnd.google-apps.folder' ? 'folder' : 'file';
+
+    const folderItem: FolderItem = {
+        name: driveItem.name,
+        id: driveItem.id,
+        fileId: driveItem.id,
+        isReadOnly: false, 
+        path: Constants.GUSERS_FOLDER + username,
+        children: null
+    }
+
+    if (driveItem.children && driveItem.children.length > 0 && itemType === 'folder') {
+        folderItem.children = driveItem.children.map(child =>
+            transformGDriveTreeToFolderTree(username, child)
+        );
+    }
+    return folderItem;
+};
 
 /**
  * fireGoogleUserTree - get a list of Google files in XRPCodes folder and generate a folder tree
@@ -8,33 +36,11 @@ import { Constants } from "./constants";
 export const fireGoogleUserTree = async (username: string) => {
     const driveService = AppMgr.getInstance().driveService;
 
-    await driveService.getFileList(Constants.XRPCODES).then((files) => {
-        if (files) {
-            const children = files.map((file) => ({
-                name: file.name,
-                id: file.id,
-                fileId: file.id,
-                isReadOnly: false, // Assuming all files are writable
-                path: Constants.GUSERS_FOLDER + username,
-                children: file.mimeType === 'application/vnd.google-apps.folder' ? [] : null
-            }));
-
-            // find the XRPCodes's file ID first
-            AppMgr.getInstance().driveService.findFolderByName(Constants.XRPCODES).then((fileId) => {
-                const gfolderTree: FolderItem = {
-                    name: Constants.XRPCODES,
-                    id: Constants.XRPCODES,
-                    isReadOnly: false,
-                    path: Constants.GUSERS_FOLDER + username,
-                    children: children,
-                    fileId: fileId ?? undefined, // Google Drive file ID not applicable here
-                };
-                AppMgr.getInstance().emit(
-                    EventType.EVENT_FILESYS,
-                    JSON.stringify([gfolderTree]),
-                );
-            })
-        }
+    await driveService.buildTree(Constants.XRPCODES).then((tree) => {
+        if (tree) {
+            const folderTree = transformGDriveTreeToFolderTree(username, tree);
+            AppMgr.getInstance().emit(EventType.EVENT_FILESYS, JSON.stringify([folderTree]));
+        };
     });
 }
 

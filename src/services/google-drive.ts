@@ -7,9 +7,9 @@ interface GoogleDriveFileMetadata {
     mimeType: string;
     // Add other fields you might want, like 'exportLinks' for Google Workspace files
     exportLinks?: { [key: string]: string };
-}
+};
 
-interface GoogleDriveFile {
+export interface GoogleDriveFile {
     id: string;
     name: string;
     mimeType: string;
@@ -20,9 +20,11 @@ interface GoogleDriveFile {
     webViewLink?: string;
     webContentLink?: string;
     thumbnailLink?: string;
+    parents?: string[];
+    children?: GoogleDriveFile[]
     // createdTime?: string;
     // modifiedTime?: string;
-}
+};
 
 /**
  * Google Drive Service class for handling file operations.
@@ -109,22 +111,67 @@ class GoogleDriveService {
             throw new Error('Access token is not set. Please authenticate first.');
         }
 
-        let folderId = null;
+        let folder = null;
         try {
-            folderId = await this.findFolderByName(folderName);
-            if (folderId) {
-                this._modeLogger.debug(`Folder found: ${folderId}`);
+            folder = await this.findFolderByName(folderName);
+            if (folder) {
+                this._modeLogger.debug(`Folder found: ${folder.id}`);
             } else {
                 this._modeLogger.error(`Folder "${folderName}" not found.`);
-                return;
+                return undefined;
             }
         } catch (error) {
             this._modeLogger.error('Error finding folder:', error);
-            return;
+            return undefined;
         }
 
+        return this.listAllFiles(folder.id);
+    }
+
+    /**
+     * listAllFiles - recursively list all the Google Drive under the specified folder ID.
+     * @param folderId - folder ID of to be build from
+     */
+    async listAllFiles(folderId: string): Promise<GoogleDriveFile[]> {
+        let tree: GoogleDriveFile[] = [];
+
+        const files = await this.getFileListByFolderId(folderId);
+        if (files) {
+            for (const file of files) {
+                if (file.mimeType === 'application/vnd.google-apps.folder') {
+                    const subfolderFiles = await this.listAllFiles(file.id);
+                    tree = tree.concat(subfolderFiles);
+                    tree.push({
+                        id: file.id!,
+                        name: file.name!,
+                        mimeType: file.mimeType!,
+                        kind: file.kind!,
+                        parents: file.parents || undefined
+                    });
+                } else {
+                    tree.push({
+                        id: file.id!,
+                        name: file.name!,
+                        mimeType: file.mimeType!,
+                        kind: file.kind!,
+                        parents: file.parents || undefined
+                    });
+                }
+            }
+        }
+
+        return tree;
+    }    
+
+    /**
+     * getFileListByFolderId - retrieves a list of Google Drive's files and directories within the
+     *                         specified folder ID.
+     * @param folderId 
+     * @returns - promise an array of GoogleDriveFile[]
+     */
+    async getFileListByFolderId(folderId: string): Promise<GoogleDriveFile[]> {
         const query = `'${folderId}' in parents and trashed = false`;
-        const fields = 'files(id, name, mimeType)';
+        const fields = 'files(id, name, mimeType, parents)';
         const url = new URL(this._driveApiUrl);
         url.searchParams.append('q', query);
         url.searchParams.append('fields', fields);
@@ -151,8 +198,59 @@ class GoogleDriveService {
             .catch((error) => {
                 this._modeLogger.error('Error fetching files:', error);
             });
-
+            
         return files;
+    }
+
+    /**
+     * getChildren - recursively retrieve Google Drive folder items
+     * @param folderId 
+     * @returns Google file items in a tree
+     */
+    async getChildren(folderId: string): Promise<GoogleDriveFile[]> {
+        const items: GoogleDriveFile[] = [];
+
+        const files = await this.getFileListByFolderId(folderId);
+        for (const file of files) {
+            const item: GoogleDriveFile = {
+                id: file.id,
+                name: file.name,
+                kind: file.kind,
+                mimeType: file.mimeType,
+                parents: file.parents || undefined
+            };
+
+            if (file.mimeType === 'application/vnd.google-apps.folder') {
+                item.children = await this.getChildren(file.id);
+            }
+            items.push(item);
+        }
+
+        return items;        
+    }
+
+    /**
+     * buildTree - recursively builds a tree of files and folders under a given folder ID
+     * @param folderId 
+     * @returns A promise that resolves to a Google Drive Tree representing the folder tree
+     */
+    async buildTree(folderName: string): Promise<GoogleDriveFile> {
+        const foundFolder = await this.findFolderByName(folderName);
+
+        if (!foundFolder || !foundFolder.id || !foundFolder.name || !foundFolder.mimeType || !foundFolder.kind) {
+            throw new Error('Folder not found or missing required properties.');
+        }
+
+        const rootNode: GoogleDriveFile = {
+            id: foundFolder.id,
+            name: foundFolder.name,
+            mimeType: foundFolder.mimeType,
+            kind: foundFolder.kind,
+            parents: foundFolder.parents,
+            children: await this.getChildren(foundFolder.id),
+        };
+        
+        return rootNode;
     }
 
     /**
@@ -265,11 +363,11 @@ class GoogleDriveService {
      * findFolderByName - search Google Drive for the given folderName and return the folder ID
      * @param folderName
      * @param parentFolderId
-     * @returns
+     * @returns - a file ID in string
      */
-    async findFolderByName(folderName: string, parentFolderId?: string): Promise<string | null> {
+    async findFolderByName(folderName: string, parentFolderId?: string): Promise<GoogleDriveFile | null> {
         let query = `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
-        const fields = 'files(id, name, mimeType)';
+        const fields = 'files(id, name, kind, mimeType)';
         if (parentFolderId) {
             query += ` and '${parentFolderId}' in parents`;
         }
@@ -297,7 +395,12 @@ class GoogleDriveService {
 
             const data = await response.json();
             if (data.files && data.files.length > 0) {
-                return data.files[0].id; // Return the first matching folder ID
+                return {
+                    id: data.files[0].id,
+                    name: data.files[0].name,
+                    mimeType: data.files[0].mimeType,
+                    kind: data.files[0].kind
+                }; // Return the first matching folder ID
             }
             return null; // No folder found
         } catch (error) {
