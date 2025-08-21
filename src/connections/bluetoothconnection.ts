@@ -206,7 +206,7 @@ export class BluetoothConnection extends Connection {
     private async onConnected() {
         this.connectionStates = ConnectionState.Connected;
         this.lastProgramRan = undefined;
-        if (this.connLogger) {
+        if (this.connLogger) { //BUGBUG: why is this dependent on the connLogger?
             this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
         }
         this.readWorker();
@@ -218,7 +218,7 @@ export class BluetoothConnection extends Connection {
      */
     private onDisconnected() {
         this.connectionStates = ConnectionState.Disconnected;
-        if (this.connLogger) {
+        if (this.connLogger) { //BUGBUG: why is this dependent on the connLogger?
             this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
         }
     }
