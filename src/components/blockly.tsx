@@ -1,13 +1,16 @@
 import { pythonGenerator } from 'blockly/python';
+import { registerFieldColour } from '@blockly/field-colour';
 import { BlocklyWorkspace, Workspace } from 'react-blockly';
 import BlocklyConfigs from '@components/blockly/xrp_blockly_configs';
 import * as Blockly from 'blockly/core';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { StorageKeys } from '@/utils/localstorage';
 import EditorMgr, { EditorSession } from '@/managers/editormgr';
 import moment from 'moment';
+
+registerFieldColour(); //Plugin needs to be registered. Used for the Color LED on the non beta board. 
 
 const blocklyDarkTheme = Blockly.Theme.defineTheme('dark', {
     base: Blockly.Themes.Classic,
@@ -125,6 +128,8 @@ interface BlocklyEditorProps {
  * @returns
  */
 function BlocklyEditor({ name }: BlocklyEditorProps) {
+    const [toolboxKey, setToolboxKey] = useState(0); // Force re-render when toolbox updates
+    
     /**
      * saveEditor
      */
@@ -196,6 +201,30 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                 }
             });
 
+            AppMgr.getInstance().on(EventType.EVENT_BLOCKLY_TOOLBOX_UPDATED, () => {
+                // Force a re-render of the Blockly workspace to show new blocks
+                const ws = Blockly.getMainWorkspace();
+                if (ws) {
+                    // Save current workspace content
+                    const content = Blockly.serialization.workspaces.save(ws);
+                    
+                    // Force component re-render with new toolbox
+                    setToolboxKey(prev => prev + 1);
+                    
+                    // Restore workspace content after re-render
+                    setTimeout(() => {
+                        const newWs = Blockly.getMainWorkspace();
+                        if (newWs) {
+                            Blockly.serialization.workspaces.load(content, newWs);
+                            // @ts-expect-error - it is a valid function
+                            newWs.scrollCenter();
+                            // @ts-expect-error - it is a valid function
+                            newWs.zoomToFit();
+                        }
+                    }, 100);
+                }
+            });
+
             AppMgr.getInstance().on(EventType.EVENT_GENPYTHON, (activeTab) => {
                 if (name === activeTab) {
                     const session: EditorSession | undefined =
@@ -234,6 +263,7 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
 
     return (
         <BlocklyWorkspace
+            key={toolboxKey} // Force re-render when toolbox updates
             className="h-full" // you can use whatever classes are appropriate for your app's CSS
             toolboxConfiguration={BlocklyConfigs.ToolboxJson} // this must be a JSON toolbox definition
             workspaceConfiguration={{
