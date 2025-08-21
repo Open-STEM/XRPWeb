@@ -608,6 +608,20 @@ Blockly.Blocks['xrp_sleep'] = {
   }
 };
 
+// Text
+Blockly.Blocks['comment'] = {
+  init: function() {
+    this.appendDummyInput()
+        .appendField("Comment")
+        .appendField(new Blockly.FieldTextInput(""), "TEXT");
+    this.setColour(60); // yellow
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setTooltip("Add a comment to your code.");
+    this.setHelpUrl("");
+  }
+};
+
 // OTHER BLOCK COLORS - These colors can be found in the xrp_blockly_toolbox1.js file
 // BLOCK TYPE --> COLOR
 // Loops --> grass green

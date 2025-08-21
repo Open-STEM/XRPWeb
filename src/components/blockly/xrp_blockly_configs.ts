@@ -426,6 +426,10 @@ const ToolboxJson = {
             "contents": [
                 {
                     "kind": "BLOCK",
+                    "type": "comment"
+                },
+                {
+                    "kind": "BLOCK",
                     "blockxml": "<block type=\"text_print\">\n                <value name=\"TEXT\">\n                  <shadow type=\"text\">\n                    <field name=\"TEXT\">abc</field>\n                  </shadow>\n                </value>\n              </block>",
                     "type": "text_print"
                 },
@@ -491,6 +495,7 @@ const ToolboxJson = {
         {
             "kind": "CATEGORY",
             "contents": [
+               
                 {
                     "kind": "BLOCK",
                     "blockxml": "<block type=\"lists_create_with\">\n                <mutation items=\"0\"></mutation>\n              </block>",

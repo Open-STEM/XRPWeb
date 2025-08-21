@@ -371,4 +371,9 @@ pythonGenerator.forBlock['xrp_sleep'] = function (block) {
   return code;
 };
 
+//Text
+pythonGenerator.forBlock['comment'] = function(block) {
+  var text = block.getFieldValue('TEXT');
+  return '# ' + text + '\n';
+};
 
