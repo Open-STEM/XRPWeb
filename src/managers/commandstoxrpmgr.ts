@@ -32,6 +32,7 @@ export class CommandToXRPMgr {
     // Set true so most terminal output gets passed to javascript terminal
     private DEBUG_CONSOLE_ON: boolean = true;
     private HAS_MICROPYTHON: boolean = false;
+    private is_XRP_MP: boolean = false;
 
     private latestLibraryVersion: string = "";
 
@@ -39,8 +40,7 @@ export class CommandToXRPMgr {
     private mpBuild: string | undefined = undefined;
     private mpFilename: string | undefined = undefined;
     phewList = ["__init__.py","dns.py","logging.py","server.py","template.py"];
-    bleList = ["__init__.py","blerepl.py", "ble_uart_peripheral.py", "isrunning"]  //bugbug: ble_uart_peripheral looks for ##XRPSTOP## so we can't update via bluetooth. Could be fixed with a hash operation
-
+    bleList = ["__init__.py","blerepl.py", "ble_uart_peripheral.py", "isrunning"] 
     XRPId:string | undefined = undefined;
 
     constructor(){
@@ -163,8 +163,8 @@ export class CommandToXRPMgr {
         this.BUSY = true;
 
         let vpin = '28';
-        if (this.PROCESSOR == 2350) {
-            vpin = '46';
+        if (this.is_XRP_MP) {
+            vpin = "'BOARD_VIN_MEASURE'";
         }
 
         const cmd = 'from machine import ADC, Pin\n' + 'print(ADC(Pin(' + vpin + ')).read_u16())\n';
@@ -220,6 +220,9 @@ export class CommandToXRPMgr {
                         this.PROCESSOR = 2040;
                     }
                 }
+                if(hiddenLines[1].includes('XRP')){ //is this an XRP version of microPython?
+                    this.is_XRP_MP = true;
+                }
                 return [
                     hiddenLines[0].substring(2),
                     hiddenLines[2],
@@ -264,6 +267,10 @@ export class CommandToXRPMgr {
 
         //if no library or the library is out of date
         if (Number.isNaN(parseFloat(info[1] as string)) || this.isVersionNewer(this.latestLibraryVersion, info[1] as string)) {
+            //from now on we can only update the library if we are on an XRP version of the microPython firmware
+            if(!this.is_XRP_MP){
+                AppMgr.getInstance().emit(EventType.EVENT_MUST_UPDATE_MICROPYTHON, '');
+            }
             if (info[1]) {
                 const versions : Versions = {
                     currentVersion: (info[1] as string) === "ERROR EX" ? "None" : info[1] as string,
@@ -920,7 +927,26 @@ export class CommandToXRPMgr {
         if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: in executeLines");
 
         this.BUSY = true;
-        this.connection?.goCommand(lines);
+        //TODO: force a Terminal line feed
+
+        //when running from the IDE, let's clean up all the memory before the program runs to give maximum space to run (especially on the beta board)
+        var cleanUp = "import sys\n" +
+        "ble_modules = ['ble.blerepl', 'ble', 'ble.ble_uart_peripheral']\n" +
+        "for module in list(sys.modules.keys()):\n" +
+        "    if module not in ble_modules and 'XRPLib' not in module:\n" +
+        "        del sys.modules[module]\n" +
+        "essential_vars = ['ble_modules', 'gc', 'sys', 'rp2' , 'essential_vars', 'FILE_PATH']\n" +
+        "all_vars = dir()\n" +
+        "for var in all_vars:\n" +
+        "    if var not in essential_vars and not var.startswith('__'):\n" +
+        "        exec(f'del {var}')\n" +
+        "import gc\n" +
+        "gc.collect()\n";
+        //"print(gc.mem_free())\n"; 
+
+        lines = cleanUp + lines;
+
+        await this.connection?.goCommand(lines);
         this.BUSY = false;
         if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: out of executeLines");
 

@@ -4,6 +4,7 @@ import Connection, { ConnectionState } from '@/connections/connection';
 import { USBConnection } from '@/connections/usbconnection';
 import { BluetoothConnection } from '@/connections/bluetoothconnection';
 import { CommandToXRPMgr } from './commandstoxrpmgr';
+import PluginMgr from './pluginmgr';
 import { Constants } from '@/utils/constants';
 import { StorageKeys } from '@/utils/localstorage';
 
@@ -13,6 +14,7 @@ import { StorageKeys } from '@/utils/localstorage';
 export default class ConnectionMgr {
     private appMgr: AppMgr;
     private cmdToXRPMgr: CommandToXRPMgr = CommandToXRPMgr.getInstance();
+    private pluginMgr: PluginMgr = PluginMgr.getInstance();
     private connections: Connection[] = [];
     private activeConnection: Connection | null = null;
 
@@ -98,6 +100,11 @@ export default class ConnectionMgr {
                 await this.cmdToXRPMgr.clearIsRunning();
                 this.xrpID = await this.cmdToXRPMgr.checkIfNeedUpdate();
                 this.IDSet(connType);
+                
+                // Check for plugins after connection is established
+                await this.pluginMgr.pluginCheck();
+                
+                //TODO: if this was a bluetooth connection this is where to take down the spinner.
             }
         } else if (state === ConnectionState.Disconnected) {
             this.appMgr.emit(

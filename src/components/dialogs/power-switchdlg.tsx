@@ -1,6 +1,8 @@
 import i18n from "@/utils/i18n";
 import DialogFooter from "@components/dialogs/dialog-footer";
-import XRPControllerPower from "@assets/images/XRP_Controller-Power.jpg";
+//import XRPControllerPowerBeta from "@assets/images/XRP_Controller-Power.jpg";
+import XRPControllerPower from "@assets/images/XRP-nonbeta-controller-power.jpg"
+//TODO: This needs to have some logic to display the correct image based on which board is attached.
 
 interface PowerSwitchAlertProps {
     cancelCallback: () => void;
