@@ -11,11 +11,15 @@ import apilink from '@assets/images/api.svg';
 import python from '@assets/images/python.svg';
 import convert from '@assets/images/convert.svg';
 import dashboard from '@assets/images/dashboard.svg';
+import drivers from '@assets/images/drivers.svg';
 import forum from '@assets/images/forum.svg';
 import cirriculum from '@assets/images/cirriculum.svg';
 import changelog from '@assets/images/changelog.svg';
+import settings from '@assets/images/settings.svg';
+import chatbot from '@assets/images/chatbot.svg';
 import { TiArrowSortedDown } from 'react-icons/ti';
-import { IoPlaySharp, IoSettings } from 'react-icons/io5';
+import { IoPlaySharp } from 'react-icons/io5';
+import { MdMoreVert } from "react-icons/md";
 import { IoStop } from 'react-icons/io5';
 import { useEffect, useRef, useState } from 'react';
 import i18n from '@/utils/i18n';
@@ -50,7 +54,7 @@ import PowerSwitchAlert from '@/components/dialogs/power-switchdlg';
 import ViewPythonDlg from '@/components/dialogs/view-pythondlg';
 import AlertDialog from '@/components/dialogs/alertdlg';
 import BatteryBadDlg from '@/components/dialogs/battery-baddlg';
-import SaveProgressDlg from '@/components/dialogs/save-progressdlg';
+import ProgressDlg from '@/components/dialogs/progressdlg';
 import ConfirmationDlg from '@components/dialogs/confirmdlg';
 import UpdateDlg from '@components/dialogs/updatedlg';
 import React from 'react';
@@ -59,6 +63,7 @@ import ChangeLogDlg from '@components/dialogs/changelog';
 import { IJsonTabNode } from 'flexlayout-react';
 import GoogleLoginDlg from '@components/dialogs/logindlg';
 import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
+import XRPDriverInstallDlg from './dialogs/driver-installs';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,6 +78,7 @@ let hasSubscribed = false;
  * @returns
  */
 function NavBar({ layoutref }: NavBarProps) {
+    const [isMoreMenuOpen, setMoreMenuOpen] = useState(false);
     const [isConnected, setConnected] = useState(false);
     const [isRunning, setRunning] = useState(false);
     const [isBlockly, setBlockly] = useState(false);
@@ -201,7 +207,7 @@ function NavBar({ layoutref }: NavBarProps) {
 
             AppMgr.getInstance().on(EventType.EVENT_SHOWPROGRESS, (progress) => {
                 if (progress === Constants.SHOW_PROGRESS) {
-                    setDialogContent(<SaveProgressDlg title='saveToXRPTitle'/>);
+                    setDialogContent(<ProgressDlg title='saveToXRPTitle'/>);
                     toggleDialog();
                     AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, () => {
                         toggleDialog();
@@ -266,7 +272,7 @@ function NavBar({ layoutref }: NavBarProps) {
         // await CommandToXRPMgr.getInstance().updateMicroPython();
         let writable: FileSystemWritableFileStream;
         try {
-            setDialogContent(<SaveProgressDlg title='mpUpdateTitle'/>);
+            setDialogContent(<ProgressDlg title='mpUpdateTitle'/>);
             toggleDialog();
             await CommandToXRPMgr.getInstance().enterBootSelect();
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -305,7 +311,7 @@ function NavBar({ layoutref }: NavBarProps) {
     async function handleXRPLibUpdateConfirmed() {
         toggleDialog();
         try {
-            setDialogContent(<SaveProgressDlg title='xrpLibUpdateTitle'/>);
+            setDialogContent(<ProgressDlg title='xrpLibUpdateTitle'/>);
             toggleDialog();
             await CommandToXRPMgr.getInstance().updateLibrary();
         } catch (err) {
@@ -381,7 +387,7 @@ function NavBar({ layoutref }: NavBarProps) {
         console.log(i18n.t('saveFile'));
         if (EditorMgr.getInstance().hasEditorSession(activeTab)) {
             AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
-            setDialogContent(<SaveProgressDlg title='saveToXRPTitle'/>);
+            setDialogContent(<ProgressDlg title='saveToXRPTitle'/>);
             AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, () => {
                 toggleDialog();
                 AppMgr.getInstance().eventOff(EventType.EVENT_UPLOAD_DONE);
@@ -407,7 +413,7 @@ function NavBar({ layoutref }: NavBarProps) {
             session.path = fileData.path + '/' + fileData.name;
             AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
             // start the progress dialog
-            setDialogContent(<SaveProgressDlg title='saveToXRPTitle'/>);
+            setDialogContent(<ProgressDlg title='saveToXRPTitle'/>);
             toggleDialog();
             // subscribe to the UploadFile complete event
             AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, () => {
@@ -538,11 +544,16 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function viewDashboard() {
         console.log(i18n.t('dashboard'));
+        // check if the dashboard tab is already open
+        if (EditorMgr.getInstance().hasEditorSession('Dashboard')) {
+            setActiveTab('Dashboard');
+            return;
+        }
         const tabInfo: IJsonTabNode = {
             component: 'dashboard',
-            name: 'Dashboard',
+            name: i18n.t('dashboard'),
             id: 'DashboardId',
-            helpText: 'Dashboard',
+            helpText: i18n.t('dashboard')
         };
         layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
         setActiveTab('Dashboard');
@@ -584,6 +595,18 @@ function NavBar({ layoutref }: NavBarProps) {
                 setDialogContent(
                     <AlertDialog
                         alertMessage={i18n.t('XRP-not-connected')}
+                        toggleDialog={toggleDialog}
+                    />,
+                );
+                toggleDialog();
+                return;
+            }
+
+            // make sure this is not the dashboard tab
+            if (activeTab === 'Dashboard') {
+                setDialogContent(
+                    <AlertDialog
+                        alertMessage={i18n.t('dashboard-no-run')}
                         toggleDialog={toggleDialog}
                     />,
                 );
@@ -644,7 +667,42 @@ function NavBar({ layoutref }: NavBarProps) {
      * onSettingsClicked - handle the setting button click event
      */
     function onSettingsClicked() {
+        setMoreMenuOpen(false);
         setDialogContent(<SettingsDlg isXrpConnected={isConnected} toggleDialog={toggleDialog} />);
+        toggleDialog();
+    }
+
+    /**
+     * onAiClicked - handle the AI button click event
+     */
+    function onAiClicked() {
+        // put the AI chat bot lanuch here
+    }
+
+    /**
+     * onDashboardClicked - handle the Dashboard button click event
+     */
+    function onDashboardClicked() {
+        setMoreMenuOpen(false);
+        viewDashboard();
+    }
+
+    /**
+     * onDriverClicked - handle the Driver button click event
+     */
+    function onDriverClicked() {
+        setMoreMenuOpen(false);
+        if (!isConnected) {
+            setDialogContent(
+                <AlertDialog
+                    alertMessage={i18n.t('XRP-not-connected')}
+                    toggleDialog={toggleDialog}
+                />,
+            );
+            toggleDialog();
+            return;
+        }
+        setDialogContent(<XRPDriverInstallDlg toggleDialog={toggleDialog}/>);
         toggleDialog();
     }
 
@@ -654,6 +712,13 @@ function NavBar({ layoutref }: NavBarProps) {
     function ChangeLog() {
         setDialogContent(<ChangeLogDlg closeDialog={toggleDialog}/>);
         toggleDialog();
+    }
+
+    /**
+     * toggleMoreDropdown - toggle the more dropdown menu
+     */
+    function toggleMoreDropdown() {
+        setMoreMenuOpen(!isMoreMenuOpen);
     }
 
     /**
@@ -734,12 +799,6 @@ function NavBar({ layoutref }: NavBarProps) {
                     clicked: FontMinus,
                     isView: true,
                 },
-                {
-                    label: i18n.t('dashboard'),
-                    iconImage: dashboard,
-                    clicked: viewDashboard,
-                    isView: true,
-                }
             ],
         },
         {
@@ -774,8 +833,31 @@ function NavBar({ layoutref }: NavBarProps) {
         },
     ];
 
+    const moreMenu: MenuDataItem[] = [
+        {
+            label: i18n.t('ai-chat'),
+            iconImage: chatbot,
+            clicked: onAiClicked,
+        },
+        {
+            label: i18n.t('dashboard'),
+            iconImage: dashboard,
+            clicked: onDashboardClicked,
+        },
+        { 
+            label: i18n.t('drivers'),
+            iconImage: drivers,
+            clicked: onDriverClicked,
+        },
+        {
+            label: i18n.t('settings'),
+            iconImage: settings,
+            clicked: onSettingsClicked,
+        }
+    ];
+
     return (
-        <div className="flex items-center justify-between p-1 px-10">
+        <div className="flex items-center justify-between p-1 px-5 shadow-md">
             <div className="flex flex-row gap-4 transition-all">
                 {/** Logo */}
                 <img src={logo} alt="logo" width="100" height="50" />
@@ -862,9 +944,29 @@ function NavBar({ layoutref }: NavBarProps) {
                         </>
                     )}
                 </button>
-                <button id="settingsId" onClick={onSettingsClicked}>
-                    <IoSettings size={'1.5em'} />
-                </button>
+                <div className='group relative transition-all'>
+                    <button id="settingsId" onClick={toggleMoreDropdown} className={`flex flex-row rounded-3xl p-1 ${isMoreMenuOpen ? 'bg-curious-blue-400 dark:bg-mountain-mist-800' : 'bg-curious-blue-700 dark:bg-mountain-mist-950'}`}>
+                        <MdMoreVert size={'1.5em'} />
+                    </button>
+                    {isMoreMenuOpen &&
+                        <div className="absolute right-0 top-11 w-40 z-[100] mx-auto flex flex-col bg-curious-blue-700 py-3 shadow-md transition-all dark:bg-mountain-mist-950 dark:group-hover:bg-mountain-mist-950">
+                            <ul id="pythonId" className="flex cursor-pointer flex-col">
+                                {moreMenu.map((item, ci) => (
+                                    <li
+                                        key={ci}
+                                        className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500`}
+                                        onClick={item.clicked}
+                                    >
+                                        <MenuItem
+                                            isConnected={isConnected && !isRunning}
+                                            item={item}
+                                        />
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+        }           
+                </div>
             </div>
             <Dialog isOpen={isDlgOpen} toggleDialog={toggleDialog} ref={dialogRef}>
                 {dialogContent}

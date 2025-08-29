@@ -4,6 +4,7 @@ import { Actions, Model } from "flexlayout-react";
 import AppMgr, { EventType } from "@/managers/appmgr";
 import { StorageKeys } from "@/utils/localstorage";
 import { Constants } from "@/utils/constants";
+import { Workspace } from "react-blockly";
 
 /**
  * EditorSession - Editor session object
@@ -17,6 +18,7 @@ export type EditorSession = {
     isSubscribed: boolean;
     fontsize: number;
     content?: string;
+    workspace?: Workspace;
 };
 
 /**
