@@ -378,6 +378,37 @@ export class CommandToXRPMgr {
     
     /*** File Routines  ***/
 
+    async getInstalledDrivers(): Promise<string[]> {
+        const installedDrivers: string[] = [];
+        if (this.BUSY == true) {
+            return installedDrivers;
+        }
+        this.BUSY = true;
+        if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: in getInstalledDrivers");
+
+        const cmd = "import os\n" +
+            "try:\n" +
+            "    files = os.listdir('lib')\n" +
+            "    for file in files:\n" +
+            "        print(file)\n" +
+            "except Exception as err:\n" +
+            "    print('Some kind of error while listing drivers...' + err)\n";
+
+        const hiddenLines = await this.connection?.writeUtilityCmdRaw(cmd, true, 1);
+
+        await this.connection?.getToNormal(3);
+        this.BUSY = false;
+        if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: out of getInstalledDrivers");
+
+        if (hiddenLines != undefined && hiddenLines.length > 0) {
+            hiddenLines[0] = hiddenLines[0].substring(2); //remove the first line which is the OK
+            for (let i = 0; i < hiddenLines.length; i++) {
+                installedDrivers.push(hiddenLines[i]);
+            }
+        }
+        return installedDrivers;
+    }
+
     async getOnBoardFSTree() {
         if (this.BUSY == true) {
             return;
@@ -930,7 +961,7 @@ export class CommandToXRPMgr {
         //TODO: force a Terminal line feed
 
         //when running from the IDE, let's clean up all the memory before the program runs to give maximum space to run (especially on the beta board)
-        var cleanUp = "import sys\n" +
+        const cleanUp = "import sys\n" +
         "ble_modules = ['ble.blerepl', 'ble', 'ble.ble_uart_peripheral']\n" +
         "for module in list(sys.modules.keys()):\n" +
         "    if module not in ble_modules and 'XRPLib' not in module:\n" +

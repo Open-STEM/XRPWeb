@@ -34,6 +34,7 @@ export enum EventType {
     EVENT_SHOWCHANGELOG = 'show-changelog', // show changelog
     EVENT_DASHBOARD_DATA = 'dashboard-data', // dashboard event
     EVENT_SHOWPROGRESS = 'show-progress', // show progress
+    EVENT_PROGRESS_ITEM = 'progress-item', // show the item title for the progress display
     EVENT_FILESYS_STORAGE = 'filesys-storage', // storage capacity
     EVENT_MUST_UPDATE_MICROPYTHON = 'must-micropython-update', //If not an XRP version of MicroPython they must update before updating XRPLib
     EVENT_BLOCKLY_TOOLBOX_UPDATED = 'blockly-toolbox-updated', // Blockly toolbox has been updated
@@ -62,6 +63,7 @@ type Events = {
     [EventType.EVENT_SHOWCHANGELOG]: string;
     [EventType.EVENT_DASHBOARD_DATA]: string;
     [EventType.EVENT_SHOWPROGRESS]: string;
+    [EventType.EVENT_PROGRESS_ITEM]: string;
     [EventType.EVENT_FILESYS_STORAGE]: string;
     [EventType.EVENT_MUST_UPDATE_MICROPYTHON]: string;
     [EventType.EVENT_BLOCKLY_TOOLBOX_UPDATED]: string;

@@ -10,6 +10,7 @@ export class Constants {
     static readonly ADMIN_FILE = 'admin.json';
     static readonly GUSERS_FOLDER = '/gusers/';
     static readonly XRPCODES = 'XRPCodes';
+    static readonly LIBDIR = '/lib/';
 }
 
 export class FlowBiteConstants {
