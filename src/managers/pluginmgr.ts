@@ -6,16 +6,17 @@ import * as Blockly from 'blockly/core';
 interface PluginBlock {
     kind: string;
     type: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
 }
 
-interface Plugin {
+export interface Plugin {
     friendly_name: string;
     blocks_url: string;
     script_url: string;
 }
 
-interface PluginConfig {
+export interface PluginConfig {
     plugins: Plugin[];
 }
 
@@ -67,7 +68,7 @@ export default class PluginMgr {
     private async loadPlugins(): Promise<void> {
         try {
             // Try to read plugin.json from the XRP device
-            const pluginContent = await this.cmdToXRPMgr.getFileContents('lib/plugin.json');
+            const pluginContent = await this.cmdToXRPMgr.getFileContents('lib/plugins/plugins.json');
             if (pluginContent) {
                 const pluginText = new TextDecoder().decode(new Uint8Array(pluginContent));
                 this.pluginConfig = JSON.parse(pluginText);
@@ -98,6 +99,7 @@ export default class PluginMgr {
      */
     private ensureThirdPartyCategory(): void {
         const toolbox = BlocklyConfigs.ToolboxJson;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const contents = toolbox.contents as any[];
 
         // Check if "3rd Party" category already exists
@@ -147,6 +149,7 @@ export default class PluginMgr {
      */
     private async addPluginToToolbox(plugin: Plugin): Promise<void> {
         const toolbox = BlocklyConfigs.ToolboxJson;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const contents = toolbox.contents as any[];
 
         // Find the "3rd Party" category
@@ -207,7 +210,13 @@ export default class PluginMgr {
 
         try {
             // Dynamic import of the plugin script
-            await import(/* @vite-ignore */ scriptUrl);
+            let url;
+            if (process.env.NODE_ENV === 'development') {
+                url = '/public' + scriptUrl;
+            } else {
+                url = scriptUrl;
+            }
+            await import(/* @vite-ignore */ url);
             this.loadedScripts.add(scriptUrl);
         } catch (error) {
             console.error(`Error loading script ${scriptUrl}:`, error);
@@ -221,6 +230,7 @@ export default class PluginMgr {
     private async configNonBeta(): Promise<void> {
         // Add color LED block to Control Board category
         const toolbox = BlocklyConfigs.ToolboxJson;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const contents = toolbox.contents as any[];
 
         const controlBoardCategory = contents.find(cat => 
@@ -236,7 +246,7 @@ export default class PluginMgr {
         this.extendServoArrayForRP2350();
 
         // Load the supporting script (use Vite public root)
-        await this.loadScript('/public/plugins/2350/nonbeta_blocks.js');
+        await this.loadScript('/plugins/2350/nonbeta_blocks.js');
     }
 
     /**
@@ -280,6 +290,7 @@ export default class PluginMgr {
     /**
      * Get the current toolbox configuration
      */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public getToolboxConfiguration(): any {
         return BlocklyConfigs.ToolboxJson;
     }
