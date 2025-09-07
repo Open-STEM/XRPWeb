@@ -49,14 +49,35 @@ rectangle XRPWebApp {
     usecase "Edit Block Program" as bl
     usecase "Run Robot Program" as run
     usecase "Release Driver" as rd
+    usecase "Chat with AI Assistant" as ai_chat
 }
 student --> py
 student --> bl
 student --> run
+student --> ai_chat
 admin --> mw
 thirdparty -->rd
 @enduml
 ```
+
+## AI Assistant (XRP Code Buddy)
+
+The XRP Web Development Application integrates an educational AI Assistant, "XRP Code Buddy," powered by the Gemini API. This assistant is designed to guide students through robotics programming challenges using best teaching practices rather than simply providing solutions.
+
+### AI Interaction Workflow
+
+1.  **Initialization**: The `XRPCodeBuddy` backend component is initialized with the Gemini API key (securely stored as an environment variable) and configured with safety settings. XRP robotics documentation is loaded once on startup and provided to Gemini as foundational context.
+2.  **Student Interaction**: When a student sends a message to the AI bot from the frontend:
+    *   The frontend sends the student's message, the current editor content, recent terminal output, and the conversation history to the backend.
+    *   The backend's `XRPCodeBuddy` component dynamically constructs a comprehensive "teaching prompt." This prompt embeds:
+        *   Core teaching philosophy and graduated response framework (Hint, Concept, Pseudocode, Example, Solution).
+        *   Guidelines for integrating documentation, providing code snippets, and fostering intuitive explanations.
+        *   Contextual information: the student's current code, recent terminal output, and a reference to the pre-loaded XRP documentation.
+        *   The complete conversation history for continuity.
+    *   The backend securely calls the Gemini API with this enriched prompt.
+    *   Gemini generates a streaming response, adhering to the provided teaching guidelines.
+    *   The backend streams Gemini's response back to the frontend.
+3.  **Secure API Key Management**: The backend acts as a secure proxy, ensuring the Gemini API key is never exposed to the client-side frontend application.
 
 ## Technology
 
@@ -69,6 +90,8 @@ This software architecture specifies the following technology stack for developm
 - JSON
 - Bluetooth (BLE) protocol
 - HTTPS protocol
+- Python (FastAPI) for AI Backend
+- Google Gemini API for AI functionalities
 
 ## Context
 
@@ -90,19 +113,24 @@ Enterprise_Boundary(c0, "XRP") {
     Person(csa, "XRP Admin", "XRP Web Administrator")
 
     System(xrpdev, "XRP Web App", "Allow XRP users to write robotics program for the XRP on the XRP website.")
+    System(xrp_ai_backend, "XRP AI Backend", "Securely proxies AI requests and provides educational context to Gemini API.")
 }
 
 System(XRPBot, "XRP Robot", "XRP Hardware platform.")
+System_Ext(gemini_api, "Gemini API", "Google's AI model for generative responses")
 
 Rel_R(user, csa, "Asks questions to", "Email, Discord")
 
-Rel_R(user, xrpdev, "develope software for the XRP.")
+Rel_R(user, xrpdev, "develope software for the XRP and interacts with AI.")
 
 Rel_R(user, XRPBot, "student run software on the XRP robot")
 
 Rel(csa, xrpdev, "manage XRP Web deployment and maintainance of XRPWeb")
+Rel(csa, xrp_ai_backend, "manage XRP AI Backend deployment and API key configuration")
 
 Rel_R(xrpdev, XRPBot, "Update XRP or Run the robot program")
+Rel_R(xrpdev, xrp_ai_backend, "sends AI chat requests to", "HTTPS/JSON")
+Rel_R(xrp_ai_backend, gemini_api, "makes generative model calls to", "HTTPS")
 
 @enduml
 ```
@@ -139,13 +167,6 @@ System_Boundary(c1, "XRP Platform") {
     Container(xrp_power, "XRP Battery Pack", "XRP power", "Provides power to the platform")
 }
 
-Rel_D(user, xrp, "Uses", "hardwrae")
-Rel_D(xrp, xrp_kernel, "Execute", "Python")
-Rel_D(xrp_kernel, xrp_motion, "Mobility", "actuators")
-Rel_D(xrp_kernel, xrp_sensors, "Sensing", "Sensors")
-Rel_D(xrp, xrp_power, "Power", "Battery")
-
-
 SHOW_LEGEND()
 @enduml
 ```
@@ -167,13 +188,17 @@ Person(csa, "XRP Admin", "XRP Web Administrator")
 title Container diagram for XRP Web
 
 System_Boundary(c1, "XRP Web IDE") {
-    Container(web_app, "Web Application", "Typescript, React", "Provides an interactive environment to develop robot program")
+    Container(web_app, "Web Application", "Typescript, React", "Provides an interactive environment to develop robot program and interact with the AI assistant.")
+    Container(ai_backend, "AI Backend", "Python, FastAPI, XRPCodeBuddy", "Securely proxies AI requests to Gemini, manages API key, and provides educational context.")
 }
 
 System_Ext(xrp, "XRP Platform", "The XRP Robot Platform")
+System_Ext(gemini_api, "Gemini API", "Google's AI model for generative responses")
 
 Rel(user, web_app, "uses", "HTTPS")
 Rel(csa, web_app, "uses", "HTTPS")
+Rel(web_app, ai_backend, "sends AI chat requests to", "HTTPS/JSON")
+Rel(ai_backend, gemini_api, "makes generative model calls to", "HTTPS")
 Rel_D(web_app, xrp, "", "")
 
 @enduml
@@ -194,6 +219,7 @@ LAYOUT_WITH_LEGEND()
 title Component diagram for XRP Web Development Application
 
 System_Ext(xrp, "XRP Platform", "The XRP Robot Platform")
+System_Ext(gemini_api, "Gemini API", "Google's AI model for generative responses")
 
 Container_Boundary(xrpweb, "XRP Web Development Application") {
     Component(main, "Application", "Initalize system")
@@ -204,17 +230,29 @@ Container_Boundary(xrpweb, "XRP Web Development Application") {
     Component(block, "Block Editor (Blockly)", "Allows the user to edit block programs")
     Component(filesys, "File System", "Provides access to XRP file system")
     Component(runtime, "Initate Runtime", "Start Robot program in the XRP Platform")
-
-    Rel(main, layout, "Initialize Layout", "Create the application layout")
-    Rel(main, nav, "Initalize Navigation", "Create application navigation")
-    Rel(repl, xrp, "Uses", "Serial interface to XRP Platform")
-    Rel(nav, filesys, "Uses", "View, navigate file systems")
-    Rel(nav, repl, "Connect", "Connect to the XRP Platform")
-    Rel(nav, editor, "Python Source", "Allow user to edit Python program")
-    Rel(nav, block, "Block Source", "Allow user to edit block program")
-    Rel(nav, runtime, "Run Program", "Run Robot Program")
-    Rel(runtime, xrp, "Run Program", "Running Robot Program")
+    Component(ai_chat_ui, "AI Chat UI", "React Component", "Provides interface for students to chat with the AI assistant")
 }
+
+Container_Boundary(xrp_ai_backend_boundary, "XRP AI Backend (Deployed on Cloud Run)") {
+    Component(code_buddy_logic, "XRPCodeBuddy", "Python", "Manages AI interactions, teaching prompts, and context.")
+    Component(fastapi_app, "FastAPI App", "Python", "Exposes API endpoints for frontend, proxies requests to XRPCodeBuddy and Gemini.")
+}
+
+Rel(main, layout, "Initialize Layout", "Create the application layout")
+Rel(main, nav, "Initalize Navigation", "Create application navigation")
+Rel(repl, xrp, "Uses", "Serial interface to XRP Platform")
+Rel(nav, filesys, "Uses", "View, navigate file systems")
+Rel(nav, repl, "Connect", "Connect to the XRP Platform")
+Rel(nav, editor, "Python Source", "Allow user to edit Python program")
+Rel(nav, block, "Block Source", "Allow user to edit block program")
+Rel(nav, runtime, "Run Program", "Run Robot Program")
+Rel(nav, ai_chat_ui, "Access AI Assistant", "Navigates to AI chat interface")
+Rel(runtime, xrp, "Run Program", "Running Robot Program")
+
+Rel(ai_chat_ui, fastapi_app, "sends AI chat requests to", "HTTPS/JSON")
+Rel(fastapi_app, code_buddy_logic, "uses", "Python function calls")
+Rel(code_buddy_logic, gemini_api, "makes generative model calls to", "HTTPS")
+
 @enduml
 ```
 
@@ -251,6 +289,9 @@ This section documents the major classes which are based on the React Component 
     class Navbar {
         render()
     }
+    class AIChatUI {
+        render()
+    }
 
     Component <|-- Navbar
     Component <|-- XrpLayout
@@ -258,6 +299,7 @@ This section documents the major classes which are based on the React Component 
     Component <|-- Filesys
     Component <|-- Blockly
     Component <|-- MonacoEditor
+    Component <|-- AIChatUI
     ConnectionMgr *-- Navbar
     FlexLayout *-- XrpLayout
     MonacoEditor *-- XrpLayout
@@ -277,6 +319,7 @@ The application components manages the core functionality of the following featu
 - Connection Management (Cable and Bluetooth)
 - File Management (User and System Filesystem)
 - Editor Session Management
+- AI Chat Management
 
 ```plantuml
 @startuml
@@ -285,12 +328,16 @@ The application components manages the core functionality of the following featu
     class CommandToXRPMgr
     class EditorMgr
     class StreamWorker
+    class ChatMgr {
+        chat_with_ai()
+        upload_context()
+    }
 
     StreamWorker *-- ConnectionMgr
     CommandToXRPMgr *-- ConnectionMgr
     ConnectionMgr *-- AppMgr
     EditorMgr *-- AppMgr
-
+    ChatMgr *-- AppMgr
 @enduml
 ```
 
@@ -324,9 +371,16 @@ actor Student #red
 participant XrpWeb
 participant XrpFiles
 participant XrpRobot
+participant XrpAiBackend <<Google Cloud Run>>
+participant GeminiAPI <<Google Gemini>>
 
 XrpWeb->XrpRobot: Connect to XRP Robot
 Student->XrpWeb: Editing Robot Program
+Student->XrpWeb: Chat with AI Assistant
+XrpWeb->XrpAiBackend: Send chat request (code, terminal, history, message)
+XrpAiBackend->GeminiAPI: Call Gemini API (with teaching prompt, documentation)
+GeminiAPI-->XrpAiBackend: Stream AI response
+XrpAiBackend-->XrpWeb: Stream AI response
 Student->XrpRobot: Running Robot Program
 Student->XrpFiles: Viewing files on XRP Robot
 XrpFiles->XrpRobot: Retrieving file content from XRP Robot
@@ -339,7 +393,7 @@ The figure below depicts the how the Web application is deployed.
 
 ```plantuml
 @startuml
-  !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+  !include https://raw.githubusercontent.com/plantuml-stdlib/C4-Plantuml/master/C4_Deployment.puml
 
 AddElementTag("fallback", $bgColor="#c0c0c0")
 AddRelTag("fallback", $textColor="#c0c0c0", $lineColor="#438DD5")
@@ -347,22 +401,32 @@ AddRelTag("fallback", $textColor="#c0c0c0", $lineColor="#438DD5")
 
 title Deployment Diagram for XRP Web Development Application
 
-Deployment_Node(xrpwebserver, "XRP Server Infrastructure", "WPI Server Farm"){
-    Deployment_Node(dn, "WPI Web server", "Ubuntu 16.04 LTS"){
-        Deployment_Node(apache, "Apache Tomcat", "Apache Tomcat 8.x"){
-            Container(xrpWeb, "XRP Web Server", "Vite & React", "Provides Integrated Robot Software Development")
+Deployment_Node(xrpwebserver, "XRP Web Frontend Infrastructure", "WPI Server Farm") {
+    Deployment_Node(dn, "WPI Web server", "Ubuntu 16.04 LTS") {
+        Deployment_Node(apache, "Apache Tomcat", "Apache Tomcat 8.x") {
+            Container(xrpWeb, "XRP Web Server", "Vite & React", "Hosts static assets for the Single Page Application")
         }
     }
 }
 
-
-Deployment_Node(comp, "Customer's computer", "Microsoft Windows or Apple macOS"){
-    Deployment_Node(browser, "Web Browser", "Google Chrome, Mozilla Firefox, Apple Safari or Microsoft Edge"){
-        Container(xrpserver, "Single Page Web Application", "Vite & React", "Provides Integrated Robot Software Development")
+Deployment_Node(gcp, "Google Cloud Platform", "Managed Services") {
+    Deployment_Node(cloud_run, "Cloud Run Service", "Serverless Compute", "Scalable, managed container execution") {
+        Container(xrpAiBackend, "XRP AI Backend", "Python, FastAPI, Docker", "Securely proxies AI requests, manages API key, and provides educational context.")
     }
 }
 
-Rel(xrpserver, xrpWeb, "Makes Https requests to server", "json/HTTPS")
+
+Deployment_Node(comp, "Customer's computer", "Microsoft Windows or Apple macOS") {
+    Deployment_Node(browser, "Web Browser", "Google Chrome, Mozilla Firefox, Apple Safari or Microsoft Edge") {
+        Container(xrpserver, "Single Page Web Application", "Vite & React", "Provides Integrated Robot Software Development and AI Assistant interface")
+    }
+}
+
+System_Ext(gemini_api, "Gemini API", "Google's AI model for generative responses")
+
+Rel(xrpserver, xrpWeb, "Retrieves static assets from", "HTTPS")
+Rel(xrpserver, xrpAiBackend, "Makes AI chat requests to", "HTTPS/JSON")
+Rel(xrpAiBackend, gemini_api, "Makes generative model calls to", "HTTPS")
 
 SHOW_LEGEND()
 @enduml
@@ -371,6 +435,7 @@ SHOW_LEGEND()
 ## Architecture Decisions
 
 Vite and React was choosen as the user interface development framework as they are supported by the Open Source community as well as companies like Facebook and Vercel. Both are respected UI framework which are used by a large development comminity.
+Google Cloud Run was selected for the AI Backend deployment to provide automatic scalability, managed infrastructure, and enhanced security for the Gemini API key, ensuring robust performance for thousands of concurrent students.
 
 ## Quality Requirements
 
@@ -382,6 +447,7 @@ The XRP Web Development application is developed and meet the following quality 
 ## Security Requirements
 
 XRP Web Development application is hosted in a server farm at WPI. Https secured protocol is used. A valid server HTTP server certificate is configured for the XRPCode subdomain.
+The XRP AI Backend leverages Google Cloud's security features, including IAM for service account management and environment variables for secure API key storage, preventing exposure of sensitive credentials to client-side applications.
 
 ## Coding Standards
 
@@ -505,7 +571,7 @@ This software architecture is based on all open-source software and tools. It le
 - Prettier
 - Github Copilot Chat
 
-## Ricks
+## Risks
 
 The following list a potential list of risks.
 
