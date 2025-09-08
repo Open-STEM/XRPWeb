@@ -11,6 +11,8 @@ export class Constants {
     static readonly GUSERS_FOLDER = '/gusers/';
     static readonly XRPCODES = 'XRPCodes';
     static readonly LIBDIR = '/lib/';
+    static readonly CONNECTED = "Connected";
+    static readonly DISCONNECTED = "Disconnected";
 }
 
 export class FlowBiteConstants {

@@ -1,6 +1,9 @@
 // ##### joystickmgr.ts #####
 // Wraps the joystick procedures into a class
 
+import { Constants } from "@/utils/constants";
+import AppMgr, { EventType } from "./appmgr";
+
 class Joystick {
 
     // State Arrays
@@ -316,7 +319,7 @@ class Joystick {
         // If we don't have a controller yet, use this one
         if (this.controllerIndex === -1) {
             this.controllerIndex = event.gamepad.index;
-            //TODO: Need to show an icon that says a gamepad is connected
+            AppMgr.getInstance().emit(EventType.EVENT_GAMEPAD_STATUS, Constants.CONNECTED);
             console.log("Using gamepad:", this.controllerIndex);
              // Optionally reset keyboard state when gamepad connects?
              // this.joysticksArray.fill(0);
@@ -332,8 +335,7 @@ class Joystick {
         // If the disconnected gamepad is the one we were using, reset the index
         if (this.controllerIndex === event.gamepad.index) {
             this.controllerIndex = -1;
-            //TODO: Need to take away the icon that shows a gamepad is connected.
-            console.log("Stopped using gamepad.");
+            AppMgr.getInstance().emit(EventType.EVENT_GAMEPAD_STATUS, Constants.DISCONNECTED);
             // Optionally reset joystick state to 0
             this.joysticksArray.fill(0);
             // Ensure the next packet reflects this zero state if needed immediately

@@ -17,6 +17,7 @@ import cirriculum from '@assets/images/cirriculum.svg';
 import changelog from '@assets/images/changelog.svg';
 import settings from '@assets/images/settings.svg';
 import chatbot from '@assets/images/chatbot.svg';
+import gamepad from'@assets/images/gamepad.svg';
 import { TiArrowSortedDown } from 'react-icons/ti';
 import { IoPlaySharp } from 'react-icons/io5';
 import { MdMoreVert } from "react-icons/md";
@@ -84,6 +85,7 @@ function NavBar({ layoutref }: NavBarProps) {
     const [isBlockly, setBlockly] = useState(false);
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [isDlgOpen, setDlgOpen] = useState(false);
+    const [isGamepadConnected, setGamepadConnected] = useState<boolean>(false);
     const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
     const { openFilePicker, loading, errors } = useFilePicker({
         multiple: true,
@@ -214,6 +216,14 @@ function NavBar({ layoutref }: NavBarProps) {
                         AppMgr.getInstance().eventOff(EventType.EVENT_UPLOAD_DONE);
                         setDialogContent(<div />);
                     });
+                }
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_GAMEPAD_STATUS, (status: string) => {
+                if (status === Constants.CONNECTED) {
+                        setGamepadConnected(true)
+                } else if (status === Constants.DISCONNECTED) {
+                    setGamepadConnected(false);
                 }
             });
 
@@ -908,6 +918,8 @@ function NavBar({ layoutref }: NavBarProps) {
                         )}
                     </div>
                 ))}
+                {/* place the joystick icon here after the menu*/}
+                <img className={`mt-1 ${isGamepadConnected ? 'visible' : 'hidden'}`} src={gamepad} alt='game pad' width={40} height={30} />
             </div>
             {/** platform infor and connect button*/}
             <div className="flex flex-row items-center gap-4">
