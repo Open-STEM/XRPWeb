@@ -867,7 +867,7 @@ function NavBar({ layoutref }: NavBarProps) {
     ];
 
     return (
-        <div className="flex items-center justify-between p-1 px-5 shadow-md">
+        <div className="flex items-center justify-between p-1 px-5 shadow-md text-shark-100">
             <div className="flex flex-row gap-4 transition-all">
                 {/** Logo */}
                 <img src={logo} alt="logo" width="100" height="50" />
