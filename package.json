@@ -15,6 +15,7 @@
     "postinstall": "flowbite-react patch"
   },
   "dependencies": {
+    "@blockly/field-colour": "^6.0.4",
     "@codingame/esbuild-import-meta-url-plugin": "^1.0.2",
     "@codingame/monaco-vscode-chat-extensions-notebook-task-terminal-testing-common": "^11.1.2",
     "@codingame/monaco-vscode-configuration-service-override": "^11.1.2",
@@ -32,7 +33,6 @@
     "@xterm/addon-attach": "^0.11.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",
-    "@blockly/field-colour": "^6.0.4",
     "file-saver": "^2.0.5",
     "flexlayout-react": "^0.8.1",
     "flowbite-react": "^0.11.7",

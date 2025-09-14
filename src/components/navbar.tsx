@@ -11,7 +11,6 @@ import apilink from '@assets/images/api.svg';
 import python from '@assets/images/python.svg';
 import convert from '@assets/images/convert.svg';
 import dashboard from '@assets/images/dashboard.svg';
-import chat from '@assets/images/chat.svg';
 import drivers from '@assets/images/drivers.svg';
 import forum from '@assets/images/forum.svg';
 import cirriculum from '@assets/images/cirriculum.svg';

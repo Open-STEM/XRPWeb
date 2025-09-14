@@ -13,8 +13,6 @@ export default function AIChat() {
     const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(null);
     const [contextStatus, setContextStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
     const [textQueue, setTextQueue] = useState<string>('');
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [displayedText, setDisplayedText] = useState<string>(''); // Used in animation effect
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -38,24 +36,24 @@ export default function AIChat() {
 
     // Smooth text animation effect
     useEffect(() => {
-        if (!textQueue) return;
+        if (!textQueue || !streamingMessage) return;
+        
+        let currentLength = streamingMessage.content.length;
         
         const timer = setInterval(() => {
-            setDisplayedText(prev => {
-                if (prev.length >= textQueue.length) {
-                    // Animation complete - finalize message
-                    if (streamingMessage && status === ChatStatus.IDLE) {
-                        setMessages(msgs => [...msgs, { ...streamingMessage, content: textQueue }]);
-                        setStreamingMessage(null);
-                        setTextQueue('');
-                        return '';
-                    }
-                    return prev;
+            if (currentLength >= textQueue.length) {
+                // Animation complete - finalize message
+                if (status === ChatStatus.IDLE) {
+                    setMessages(msgs => [...msgs, { ...streamingMessage, content: textQueue }]);
+                    setStreamingMessage(null);
+                    setTextQueue('');
                 }
-                const newText = textQueue.slice(0, prev.length + 2); // 2 chars per frame
-                setStreamingMessage(msg => msg ? { ...msg, content: newText } : null);
-                return newText;
-            });
+                return;
+            }
+            
+            currentLength = Math.min(currentLength + 2, textQueue.length); // 2 chars per frame
+            const newText = textQueue.slice(0, currentLength);
+            setStreamingMessage(msg => msg ? { ...msg, content: newText } : null);
         }, 3);  // 3ms = ~300 chars/sec (delay to roll out response)
         
         return () => clearInterval(timer);
@@ -85,7 +83,6 @@ export default function AIChat() {
         setInputValue('');
         setStatus(ChatStatus.STREAMING);
         setTextQueue('');
-        setDisplayedText('');
 
         // Create abort controller for this request
         abortController.current = new AbortController();

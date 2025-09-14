@@ -48,10 +48,10 @@ md.renderer.rules.code_block = md.renderer.rules.fence = function (tokens, idx) 
 };
 
 // Custom renderer for links to open in a new tab
-const defaultRender = md.renderer.rules.link_open || function(tokens, idx, options, env, self) {
+const defaultRender = md.renderer.rules.link_open || function(tokens, idx, options, _env, self) {
   return self.renderToken(tokens, idx, options);
 };
-md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+md.renderer.rules.link_open = function (tokens, idx, options, _env, self) {
   // If already has target, don't duplicate
   const aIndex = tokens[idx].attrIndex('target');
   if (aIndex < 0) {
@@ -66,7 +66,7 @@ md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
   } else if (tokens[idx].attrs) {
     tokens[idx].attrs[relIndex][1] = 'noopener noreferrer';
   }
-  return defaultRender(tokens, idx, options, env, self);
+  return defaultRender(tokens, idx, options, _env, self);
 };
 
 const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message }) => {
