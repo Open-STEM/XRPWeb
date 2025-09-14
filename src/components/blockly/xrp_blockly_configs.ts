@@ -263,6 +263,21 @@ const ToolboxJson = {
                 },
             ]
         },
+        {
+            "kind": "CATEGORY",
+            "name": "Gamepad",
+            "colour": "#ff9248", // turquoise
+            "contents": [
+                {
+                    "kind": "BLOCK",
+                    "type": "xrp_gp_get_value"
+                },
+                {
+                    "kind": "BLOCK",
+                    "type": "xrp_gp_button_pressed"
+                },
+            ]
+        },
          {
             "kind": "CATEGORY",
             "contents": [
@@ -411,6 +426,10 @@ const ToolboxJson = {
             "contents": [
                 {
                     "kind": "BLOCK",
+                    "type": "comment"
+                },
+                {
+                    "kind": "BLOCK",
                     "blockxml": "<block type=\"text_print\">\n                <value name=\"TEXT\">\n                  <shadow type=\"text\">\n                    <field name=\"TEXT\">abc</field>\n                  </shadow>\n                </value>\n              </block>",
                     "type": "text_print"
                 },
@@ -476,6 +495,7 @@ const ToolboxJson = {
         {
             "kind": "CATEGORY",
             "contents": [
+               
                 {
                     "kind": "BLOCK",
                     "blockxml": "<block type=\"lists_create_with\">\n                <mutation items=\"0\"></mutation>\n              </block>",

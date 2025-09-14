@@ -206,7 +206,7 @@ export class BluetoothConnection extends Connection {
     private async onConnected() {
         this.connectionStates = ConnectionState.Connected;
         this.lastProgramRan = undefined;
-        if (this.connLogger) {
+        if (this.connLogger) { //BUGBUG: why is this dependent on the connLogger?
             this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
         }
         this.readWorker();
@@ -218,7 +218,7 @@ export class BluetoothConnection extends Connection {
      */
     private onDisconnected() {
         this.connectionStates = ConnectionState.Disconnected;
-        if (this.connLogger) {
+        if (this.connLogger) { //BUGBUG: why is this dependent on the connLogger?
             this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
         }
     }
@@ -263,6 +263,7 @@ export class BluetoothConnection extends Connection {
             })
             .then(async (device) => {
                 this.connLogger.info('Connecting to device...');
+                //TODO: Put up a spinner until connection is fully complete, including reading the directory.
                 this.bleDevice = device;
                 if (device.gatt?.connected) {
                     console.log("Reconnecting...");
@@ -367,14 +368,14 @@ export class BluetoothConnection extends Connection {
                 this.bleReader = await this.btService.getCharacteristic(
                     this.RX_CHARACTERISTIC_UUID,
                 );
-            /*
+            
                 this.bleDataWriter = await this.btService.getCharacteristic(
                     this.DATA_TX_CHARACTERISTIC_UUID,
                 );
                 this.bleDataReader = await this.btService.getCharacteristic(
                     this.DATA_RX_CHARACTERISTIC_UUID,
                 );
-            */
+            
                 this.bleReader.startNotifications();
                 this.onConnected();
                 //return true;

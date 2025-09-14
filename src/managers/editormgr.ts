@@ -4,6 +4,7 @@ import { Actions, Model } from "flexlayout-react";
 import AppMgr, { EventType } from "@/managers/appmgr";
 import { StorageKeys } from "@/utils/localstorage";
 import { Constants } from "@/utils/constants";
+import { Workspace } from "react-blockly";
 
 /**
  * EditorSession - Editor session object
@@ -12,10 +13,12 @@ import { Constants } from "@/utils/constants";
 export type EditorSession = {
     id: string;
     path: string;
+    gpath?: string,
     type: EditorType;
     isSubscribed: boolean;
     fontsize: number;
     content?: string;
+    workspace?: Workspace;
 };
 
 /**
@@ -30,6 +33,7 @@ export type EditorSession = {
 export type EditorStore = {
     id: string;
     path: string;
+    gpath?: string;
     isBlockly: boolean;
     isSavedToXRP: boolean;
     content: string;
@@ -226,11 +230,22 @@ export default class EditorMgr {
     public async saveEditor(id: string, code: string) {
         const session = this.editorSessions.get(id);
         if (session) {
-            // save the session to XRP
-            AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
-            await CommandToXRPMgr.getInstance().uploadFile(session.path, code, true).then(() =>{
-                AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
-            });
+            const isConnected = AppMgr.getInstance().getConnection()?.isConnected() ?? false;
+            if (isConnected) {
+                // save the session to XRP
+                AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
+                await CommandToXRPMgr.getInstance().uploadFile(session.path, code, true).then(() =>{
+                    AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
+                });
+            }
+            
+            if (AppMgr.getInstance().authService.isLogin) {
+                const mineType = session.type === EditorType.PYTHON ? 'text/x-python' : 'application/json';
+                const blob = new Blob([code], { type: mineType});
+                const filename = session.path.split('/').pop();
+
+                AppMgr.getInstance().driveService.upsertFileToGoogleDrive(blob, filename ?? '', mineType, session.gpath);
+            }
         }
     }
 
@@ -245,6 +260,7 @@ export default class EditorMgr {
         const editorStore: EditorStore = {
             id: session.id,
             path: session.path,
+            gpath: session.gpath,
             isBlockly: session.type === EditorType.BLOCKLY,
             isSavedToXRP: true,
             content: code,

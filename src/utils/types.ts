@@ -9,9 +9,10 @@ export enum FileType {
     OTHER
 }
 
-export enum ViewType {
-    FOLDER = 0,
-    SYSTEM = 1
+export enum ModeType {
+    SYSTEM = 0,
+    USER = 1,
+    GOOUSER = 2
 }
 
 export enum EditorType {
@@ -36,6 +37,7 @@ export interface FolderItem {
     isReadOnly: boolean;
     icon?: React.ComponentType;
     path: string;
+    fileId?: string;    // Google Drive file ID
     parent?: FolderItem;
     children: FolderItem[] | null;
 };
@@ -48,13 +50,14 @@ export type ListItem = {
 export type NewFileData = {
     name: string;
     path: string,
+    gpath?: string,
     filetype: FileType
     parentId: string;
     content?: string;
 }
 
 export type SettingData = {
-    view: number
+    mode: number
 }
 
 export type FileData = {
@@ -90,3 +93,10 @@ export interface ChatSession {
     createdAt: Date;
     updatedAt: Date;
 }
+
+export type AdminData = {
+    name: string;
+    email: string;
+    isAmin: boolean;
+    mode: ModeType;
+};

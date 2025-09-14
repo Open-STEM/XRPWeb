@@ -253,6 +253,16 @@ const MonacoEditor = ({
                     EditorMgr.updateLiveContent(name, editorSession.content);
                 }
     
+                editor.current.onDidChangeModelContent(() => {
+                    const code = editor.current?.getValue();
+                    if (code) {
+                        EditorMgr.getInstance().SaveToLocalStorage(
+                            EditorMgr.getInstance().getEditorSession(name) as EditorSession,
+                            code,
+                        );
+                    }
+                });
+
                 editor.current.addAction({
                     id: 'save',
                     label: i18n.t('save'),

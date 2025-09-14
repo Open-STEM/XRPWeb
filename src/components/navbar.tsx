@@ -12,11 +12,16 @@ import python from '@assets/images/python.svg';
 import convert from '@assets/images/convert.svg';
 import dashboard from '@assets/images/dashboard.svg';
 import chat from '@assets/images/chat.svg';
+import drivers from '@assets/images/drivers.svg';
 import forum from '@assets/images/forum.svg';
 import cirriculum from '@assets/images/cirriculum.svg';
 import changelog from '@assets/images/changelog.svg';
+import settings from '@assets/images/settings.svg';
+import chatbot from '@assets/images/chatbot.svg';
+import gamepad from'@assets/images/gamepad.svg';
 import { TiArrowSortedDown } from 'react-icons/ti';
-import { IoPlaySharp, IoSettings } from 'react-icons/io5';
+import { IoPlaySharp } from 'react-icons/io5';
+import { MdMoreVert } from "react-icons/md";
 import { IoStop } from 'react-icons/io5';
 import { useEffect, useRef, useState } from 'react';
 import i18n from '@/utils/i18n';
@@ -31,6 +36,7 @@ import {
     FileData,
     EditorType,
     FontSize,
+    ModeType,
 } from '@/utils/types';
 import { useFilePicker } from 'use-file-picker';
 import { MenuDataItem } from '@/widgets/menutypes';
@@ -50,13 +56,16 @@ import PowerSwitchAlert from '@/components/dialogs/power-switchdlg';
 import ViewPythonDlg from '@/components/dialogs/view-pythondlg';
 import AlertDialog from '@/components/dialogs/alertdlg';
 import BatteryBadDlg from '@/components/dialogs/battery-baddlg';
-import SaveProgressDlg from '@/components/dialogs/save-progressdlg';
-import ConfirmationDlg from './dialogs/confirmdlg';
-import UpdateDlg from './dialogs/updatedlg';
+import ProgressDlg from '@/components/dialogs/progressdlg';
+import ConfirmationDlg from '@components/dialogs/confirmdlg';
+import UpdateDlg from '@components/dialogs/updatedlg';
 import React from 'react';
 import { CreateEditorTab } from '@/utils/editorUtils';
-import ChangeLogDlg from './dialogs/changelog';
+import ChangeLogDlg from '@components/dialogs/changelog';
 import { IJsonTabNode } from 'flexlayout-react';
+import GoogleLoginDlg from '@components/dialogs/logindlg';
+import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
+import XRPDriverInstallDlg from './dialogs/driver-installs';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -71,11 +80,13 @@ let hasSubscribed = false;
  * @returns
  */
 function NavBar({ layoutref }: NavBarProps) {
+    const [isMoreMenuOpen, setMoreMenuOpen] = useState(false);
     const [isConnected, setConnected] = useState(false);
     const [isRunning, setRunning] = useState(false);
     const [isBlockly, setBlockly] = useState(false);
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [isDlgOpen, setDlgOpen] = useState(false);
+    const [isGamepadConnected, setGamepadConnected] = useState<boolean>(false);
     const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
     const { openFilePicker, loading, errors } = useFilePicker({
         multiple: true,
@@ -95,14 +106,18 @@ function NavBar({ layoutref }: NavBarProps) {
     });
     const [xprID, setXrpId] = useState<{ platform?: string; XRPID?: string } | null>(null);
     const [activeTab, setActiveTab] = useLocalStorage(StorageKeys.ACTIVETAB, '');
+    const authService = AppMgr.getInstance().authService;
+    const driveService = AppMgr.getInstance().driveService;
 
     useEffect(() => {
         if (!hasSubscribed) {
             // subscribe to the connection event
-            AppMgr.getInstance().on(EventType.EVENT_CONNECTION_STATUS, (state: string) => {
+            AppMgr.getInstance().on(EventType.EVENT_CONNECTION_STATUS, async (state: string) => {
                 if (state === ConnectionState.Connected.toString()) {
                     setConnected(true);
                     setRunning(false);
+                    const mode = parseInt(localStorage.getItem(StorageKeys.MODESETTING) ?? '0');
+                    processModeChange(mode);
                 } else if (state === ConnectionState.Disconnected.toString()) {
                     setConnected(false);
                     setXrpId(null);
@@ -121,36 +136,53 @@ function NavBar({ layoutref }: NavBarProps) {
                 }
             });
 
-            AppMgr.getInstance().on(EventType.EVENT_OPEN_FILE, async (filepath: string) => {
-                const filename = filepath.split('/').pop();
+            AppMgr.getInstance().on(EventType.EVENT_OPEN_FILE, async (filePathDataJson: string) => {
+                const filePathData = JSON.parse(filePathDataJson);
+                const filename = filePathData.xrpPath.split('/').pop();
                 if (filename && EditorMgr.getInstance().hasEditorSession(filename)) return;
                 const fileType = filename?.includes('.blocks') ? FileType.BLOCKLY : FileType.PYTHON;
                 const fileData: NewFileData = {
                     parentId: '',
-                    path: filepath,
+                    path: filePathData.xrpPath,
+                    gpath: filePathData.gPath,
                     name: filename || '',
                     filetype: fileType,
                 };
                 CreateEditorTab(fileData, layoutref);
                 setActiveTab(fileData.name)
-                await CommandToXRPMgr.getInstance()
-                    .getFileContents(filepath)
-                    .then((content) => {
-                        // if the file is a block files, extract the blockly JSON out of the comment ##XRPBLOCKS
-                        let bytes = content;
+                // Need to access the connection status directly from the manager because the React isConnected state available 
+                // isn't available in the thread context
+                const isConnected = AppMgr.getInstance().getConnection()?.isConnected() ?? false;
+                if (isConnected) {
+                    await CommandToXRPMgr.getInstance()
+                        .getFileContents(filePathData.xrpPath)
+                        .then((content) => {
+                            // if the file is a block files, extract the blockly JSON out of the comment ##XRPBLOCKS
+                            let bytes = content;
+                            if (fileType === FileType.BLOCKLY) {
+                                const data: string = new TextDecoder().decode(new Uint8Array(bytes));
+                                const lines: string[] = data.split('##XRPBLOCKS ');
+                                bytes = Array.from(new TextEncoder().encode(lines.slice(-1)[0]));
+                            }
+                            const text =
+                                typeof bytes === 'string'
+                                    ? bytes
+                                    : new TextDecoder().decode(new Uint8Array(bytes));
+                            // set the content in the editor
+                            const loadContent = { name: filename, content: text };
+                            AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
+                        });
+                } if (authService.isLogin) {
+                    // get the content from Google Drive
+                    driveService.getFileContents(filePathData.gPath).then((fileContent) => {
+                        let content;
                         if (fileType === FileType.BLOCKLY) {
-                            const data: string = new TextDecoder().decode(new Uint8Array(bytes));
-                            const lines: string[] = data.split('##XRPBLOCKS ');
-                            bytes = Array.from(new TextEncoder().encode(lines.slice(-1)[0]));
+                            content = fileContent?.split('##XRPBLOCKS ');
                         }
-                        const text =
-                            typeof bytes === 'string'
-                                ? bytes
-                                : new TextDecoder().decode(new Uint8Array(bytes));
-                        // set the content in the editor
-                        const loadContent = { name: filename, content: text };
+                        const loadContent = { name: filename, content: content?.at(1)};
                         AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
                     });
+                }
             });
 
             AppMgr.getInstance().on(EventType.EVENT_MICROPYTHON_UPDATE, (versions) => {
@@ -163,6 +195,12 @@ function NavBar({ layoutref }: NavBarProps) {
                 toggleDialog();
             });
 
+            AppMgr.getInstance().on(EventType.EVENT_MUST_UPDATE_MICROPYTHON, () => {
+                window.alert("must update MP");
+                //setDialogContent(<ChangeLogDlg closeDialog={toggleDialog}/>);
+                //toggleDialog();
+            });
+
             AppMgr.getInstance().on(EventType.EVENT_SHOWCHANGELOG, (changelog) => {
                 if (changelog === Constants.SHOW_CHANGELOG) {
                     setDialogContent(<ChangeLogDlg closeDialog={toggleDialog}/>);
@@ -172,13 +210,21 @@ function NavBar({ layoutref }: NavBarProps) {
 
             AppMgr.getInstance().on(EventType.EVENT_SHOWPROGRESS, (progress) => {
                 if (progress === Constants.SHOW_PROGRESS) {
-                    setDialogContent(<SaveProgressDlg title='saveToXRPTitle'/>);
+                    setDialogContent(<ProgressDlg title='saveToXRPTitle'/>);
                     toggleDialog();
                     AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, () => {
                         toggleDialog();
                         AppMgr.getInstance().eventOff(EventType.EVENT_UPLOAD_DONE);
                         setDialogContent(<div />);
                     });
+                }
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_GAMEPAD_STATUS, (status: string) => {
+                if (status === Constants.CONNECTED) {
+                        setGamepadConnected(true)
+                } else if (status === Constants.DISCONNECTED) {
+                    setGamepadConnected(false);
                 }
             });
 
@@ -192,6 +238,30 @@ function NavBar({ layoutref }: NavBarProps) {
 
     if (errors.length > 0) {
         return <div>Error: {errors.values.toString()}</div>;
+    }
+
+    /**
+     * processModeChange - perform various function base on mode
+     * @param mode 
+     */
+    function processModeChange(mode: number | undefined) {
+        if (mode === ModeType.GOOUSER) {
+            if (!AppMgr.getInstance().authService.isLogin) {
+                setDialogContent(<GoogleLoginDlg toggleDialog={toggleDialog}></GoogleLoginDlg>);
+                toggleDialog();
+            } else if (AppMgr.getInstance().authService.isLogin) {
+                const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
+                fireGoogleUserTree(username ?? '');
+            }
+        } else if (mode === ModeType.USER) {
+            // check if there is an active user in localstorage
+            const user = localStorage.getItem(StorageKeys.XRPUSER)?.replace(/"/g, '');
+            if (user === undefined || user === "") {
+                // output an alert message and inform the user
+                setDialogContent(<AlertDialog alertMessage={i18n.t('no-user-message')} toggleDialog={toggleDialog} />);
+                toggleDialog();
+            }
+        }
     }
 
     /**
@@ -213,7 +283,7 @@ function NavBar({ layoutref }: NavBarProps) {
         // await CommandToXRPMgr.getInstance().updateMicroPython();
         let writable: FileSystemWritableFileStream;
         try {
-            setDialogContent(<SaveProgressDlg title='mpUpdateTitle'/>);
+            setDialogContent(<ProgressDlg title='mpUpdateTitle'/>);
             toggleDialog();
             await CommandToXRPMgr.getInstance().enterBootSelect();
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -252,7 +322,7 @@ function NavBar({ layoutref }: NavBarProps) {
     async function handleXRPLibUpdateConfirmed() {
         toggleDialog();
         try {
-            setDialogContent(<SaveProgressDlg title='xrpLibUpdateTitle'/>);
+            setDialogContent(<ProgressDlg title='xrpLibUpdateTitle'/>);
             toggleDialog();
             await CommandToXRPMgr.getInstance().updateLibrary();
         } catch (err) {
@@ -328,7 +398,7 @@ function NavBar({ layoutref }: NavBarProps) {
         console.log(i18n.t('saveFile'));
         if (EditorMgr.getInstance().hasEditorSession(activeTab)) {
             AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
-            setDialogContent(<SaveProgressDlg title='saveToXRPTitle'/>);
+            setDialogContent(<ProgressDlg title='saveToXRPTitle'/>);
             AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, () => {
                 toggleDialog();
                 AppMgr.getInstance().eventOff(EventType.EVENT_UPLOAD_DONE);
@@ -354,7 +424,7 @@ function NavBar({ layoutref }: NavBarProps) {
             session.path = fileData.path + '/' + fileData.name;
             AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
             // start the progress dialog
-            setDialogContent(<SaveProgressDlg title='saveToXRPTitle'/>);
+            setDialogContent(<ProgressDlg title='saveToXRPTitle'/>);
             toggleDialog();
             // subscribe to the UploadFile complete event
             AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, () => {
@@ -485,11 +555,16 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function viewDashboard() {
         console.log(i18n.t('dashboard'));
+        // check if the dashboard tab is already open
+        if (EditorMgr.getInstance().hasEditorSession('Dashboard')) {
+            setActiveTab('Dashboard');
+            return;
+        }
         const tabInfo: IJsonTabNode = {
             component: 'dashboard',
-            name: 'Dashboard',
+            name: i18n.t('dashboard'),
             id: 'DashboardId',
-            helpText: 'Dashboard',
+            helpText: i18n.t('dashboard')
         };
         layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
         setActiveTab('Dashboard');
@@ -553,6 +628,18 @@ function NavBar({ layoutref }: NavBarProps) {
                 return;
             }
 
+            // make sure this is not the dashboard tab or AI chat tab
+            if (activeTab === 'Dashboard' || activeTab === 'AI Chat') {
+                setDialogContent(
+                    <AlertDialog
+                        alertMessage={i18n.t('dashboard-no-run')}
+                        toggleDialog={toggleDialog}
+                    />,
+                );
+                toggleDialog();
+                return;
+            }
+
             setRunning(true);
 
             // Check battery voltage && version
@@ -560,16 +647,17 @@ function NavBar({ layoutref }: NavBarProps) {
                 .batteryVoltage()
                 .then((voltage) => {
                     const connectionType = AppMgr.getInstance().getConnectionType();
-                    if (connectionType === ConnectionType.BLUETOOTH) {
-                        if (voltage < 0.4) {
+                    if (connectionType === ConnectionType.USB) {
+                        if (voltage < 0.45) {
                             // display a confirmation message to ask the user to turn on the power switch
                             setDialogContent(<PowerSwitchAlert cancelCallback={toggleDialog} />);
                             toggleDialog();
                             continueExecution = false;
                         }
-                    } else if (connectionType === ConnectionType.USB) {
-                        if (voltage < 0.4) {
+                    } else if (connectionType === ConnectionType.BLUETOOTH) {
+                        if (voltage < 0.45) {
                             // display a confirmation message to ask the user to turn on the power switch
+                            //this one will only happen if they are using a power device plugged into the USB port and the power switch is off.
                             setDialogContent(<PowerSwitchAlert cancelCallback={toggleDialog} />);
                             toggleDialog();
                         } else if (voltage < 5.0) {
@@ -605,7 +693,43 @@ function NavBar({ layoutref }: NavBarProps) {
      * onSettingsClicked - handle the setting button click event
      */
     function onSettingsClicked() {
-        setDialogContent(<SettingsDlg toggleDialog={toggleDialog} />);
+        setMoreMenuOpen(false);
+        setDialogContent(<SettingsDlg isXrpConnected={isConnected} toggleDialog={toggleDialog} />);
+        toggleDialog();
+    }
+
+    /**
+     * onAiClicked - handle the AI button click event
+     */
+    function onAiClicked() {
+        setMoreMenuOpen(false);
+        openAIChat();
+    }
+
+    /**
+     * onDashboardClicked - handle the Dashboard button click event
+     */
+    function onDashboardClicked() {
+        setMoreMenuOpen(false);
+        viewDashboard();
+    }
+
+    /**
+     * onDriverClicked - handle the Driver button click event
+     */
+    function onDriverClicked() {
+        setMoreMenuOpen(false);
+        if (!isConnected) {
+            setDialogContent(
+                <AlertDialog
+                    alertMessage={i18n.t('XRP-not-connected')}
+                    toggleDialog={toggleDialog}
+                />,
+            );
+            toggleDialog();
+            return;
+        }
+        setDialogContent(<XRPDriverInstallDlg toggleDialog={toggleDialog}/>);
         toggleDialog();
     }
 
@@ -615,6 +739,13 @@ function NavBar({ layoutref }: NavBarProps) {
     function ChangeLog() {
         setDialogContent(<ChangeLogDlg closeDialog={toggleDialog}/>);
         toggleDialog();
+    }
+
+    /**
+     * toggleMoreDropdown - toggle the more dropdown menu
+     */
+    function toggleMoreDropdown() {
+        setMoreMenuOpen(!isMoreMenuOpen);
     }
 
     /**
@@ -695,12 +826,6 @@ function NavBar({ layoutref }: NavBarProps) {
                     clicked: FontMinus,
                     isView: true,
                 },
-                {
-                    label: i18n.t('dashboard'),
-                    iconImage: dashboard,
-                    clicked: viewDashboard,
-                    isView: true,
-                }
             ],
         },
         {
@@ -727,11 +852,6 @@ function NavBar({ layoutref }: NavBarProps) {
                     link: 'https://xrp.discourse.group/',
                 },
                 {
-                    label: 'AI Chat',
-                    iconImage: chat,
-                    clicked: openAIChat,
-                },
-                {
                     label: i18n.t('changeLog'),
                     iconImage: changelog,
                     clicked: ChangeLog,
@@ -740,8 +860,31 @@ function NavBar({ layoutref }: NavBarProps) {
         },
     ];
 
+    const moreMenu: MenuDataItem[] = [
+        {
+            label: i18n.t('ai-chat'),
+            iconImage: chatbot,
+            clicked: onAiClicked,
+        },
+        {
+            label: i18n.t('dashboard'),
+            iconImage: dashboard,
+            clicked: onDashboardClicked,
+        },
+        { 
+            label: i18n.t('drivers'),
+            iconImage: drivers,
+            clicked: onDriverClicked,
+        },
+        {
+            label: i18n.t('settings'),
+            iconImage: settings,
+            clicked: onSettingsClicked,
+        }
+    ];
+
     return (
-        <div className="flex items-center justify-between p-1 px-10">
+        <div className="flex items-center justify-between p-1 px-5 shadow-md text-shark-100">
             <div className="flex flex-row gap-4 transition-all">
                 {/** Logo */}
                 <img src={logo} alt="logo" width="100" height="50" />
@@ -792,6 +935,8 @@ function NavBar({ layoutref }: NavBarProps) {
                         )}
                     </div>
                 ))}
+                {/* place the joystick icon here after the menu*/}
+                <img className={`mt-1 ${isGamepadConnected ? 'visible' : 'hidden'}`} src={gamepad} alt='game pad' width={40} height={30} />
             </div>
             {/** platform infor and connect button*/}
             <div className="flex flex-row items-center gap-4">
@@ -828,9 +973,29 @@ function NavBar({ layoutref }: NavBarProps) {
                         </>
                     )}
                 </button>
-                <button id="settingsId" onClick={onSettingsClicked}>
-                    <IoSettings size={'1.5em'} />
-                </button>
+                <div className='group relative transition-all'>
+                    <button id="settingsId" onClick={toggleMoreDropdown} className={`flex flex-row rounded-3xl p-1 ${isMoreMenuOpen ? 'bg-curious-blue-400 dark:bg-mountain-mist-800' : 'bg-curious-blue-700 dark:bg-mountain-mist-950'}`}>
+                        <MdMoreVert size={'1.5em'} />
+                    </button>
+                    {isMoreMenuOpen &&
+                        <div className="absolute right-0 top-11 w-40 z-[100] mx-auto flex flex-col bg-curious-blue-700 py-3 shadow-md transition-all dark:bg-mountain-mist-950 dark:group-hover:bg-mountain-mist-950">
+                            <ul id="pythonId" className="flex cursor-pointer flex-col">
+                                {moreMenu.map((item, ci) => (
+                                    <li
+                                        key={ci}
+                                        className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500`}
+                                        onClick={item.clicked}
+                                    >
+                                        <MenuItem
+                                            isConnected={isConnected && !isRunning}
+                                            item={item}
+                                        />
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+        }           
+                </div>
             </div>
             <Dialog isOpen={isDlgOpen} toggleDialog={toggleDialog} ref={dialogRef}>
                 {dialogContent}

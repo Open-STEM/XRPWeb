@@ -1,13 +1,17 @@
 import { pythonGenerator } from 'blockly/python';
+import { registerFieldColour } from '@blockly/field-colour';
 import { BlocklyWorkspace, Workspace } from 'react-blockly';
 import BlocklyConfigs from '@components/blockly/xrp_blockly_configs';
 import * as Blockly from 'blockly/core';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { StorageKeys } from '@/utils/localstorage';
 import EditorMgr, { EditorSession } from '@/managers/editormgr';
 import moment from 'moment';
+import { EditorType } from '@/utils/types';
+
+registerFieldColour(); //Plugin needs to be registered. Used for the Color LED on the non beta board. 
 
 const blocklyDarkTheme = Blockly.Theme.defineTheme('dark', {
     base: Blockly.Themes.Classic,
@@ -125,11 +129,24 @@ interface BlocklyEditorProps {
  * @returns
  */
 function BlocklyEditor({ name }: BlocklyEditorProps) {
+    const [toolboxKey, setToolboxKey] = useState(0); // Force re-render when toolbox updates
+
+    /**
+     * handleOnInject
+     */
+    function handleOnInject(ws: Workspace) {
+        // save the ws for this editor session
+        const editorSession = EditorMgr.getInstance().getEditorSession(name);
+        if (editorSession) {
+            editorSession.workspace = ws;
+        }
+    }
+    
     /**
      * saveEditor
      */
     function saveEditor() {
-        const ws = Blockly.getMainWorkspace();
+        const ws = EditorMgr.getInstance().getEditorSession(name)?.workspace;
         if (ws) {
             const activeTab = localStorage.getItem(StorageKeys.ACTIVETAB)?.replace(/^"|"$/g, '');
             if (activeTab === name) {
@@ -157,8 +174,12 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
     });
 
     function onWorkspaceDidChange(ws: Workspace | undefined) {
-        const code = pythonGenerator.workspaceToCode(ws);
-        console.log(code);
+        if (ws) {
+            const blocklyCode = JSON.stringify(Blockly.serialization.workspaces.save(ws));
+            EditorMgr.getInstance().SaveToLocalStorage(
+                EditorMgr.getInstance().getEditorSession(name) as EditorSession,
+                blocklyCode);
+        }
     }
 
     useEffect(() => {
@@ -167,7 +188,7 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
             !EditorMgr.getInstance().hasSubscription(name)
         ) {
             AppMgr.getInstance().on(EventType.EVENT_THEME, (theme) => {
-                const ws = Blockly.getMainWorkspace();
+                const ws = EditorMgr.getInstance().getEditorSession(name)?.workspace;
 
                 if (ws) {
                     // Not sure why the compiler complain but it works at runtime
@@ -181,7 +202,7 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                 const loadContent = JSON.parse(content);
                 if (loadContent.name !== name) return;
 
-                const ws = Blockly.getMainWorkspace();
+                const ws = EditorMgr.getInstance().getEditorSession(name)?.workspace;
                 if (ws) {
                     Blockly.serialization.workspaces.load(JSON.parse(loadContent.content), ws);
                     // @ts-expect-error - it is a valid function
@@ -196,12 +217,51 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                 }
             });
 
+            AppMgr.getInstance().on(EventType.EVENT_EDITOR, (type) => {
+                if (type === EditorType.BLOCKLY) {
+                    const ws = EditorMgr.getInstance().getEditorSession(name)?.workspace;
+                    if (ws) {
+                        console.log('rescrolling to center!')
+                        // @ts-expect-error - it is a valid function
+                        ws.scrollCenter();
+                        setTimeout(() => {
+                            // @ts-expect-error - it is a valid function
+                            ws.scrollCenter();
+                        }, 200)
+                    }                                     
+                }
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_BLOCKLY_TOOLBOX_UPDATED, () => {
+                // Force a re-render of the Blockly workspace to show new blocks
+                const ws = EditorMgr.getInstance().getEditorSession(name)?.workspace;
+                if (ws) {
+                    // Save current workspace content
+                    const content = Blockly.serialization.workspaces.save(ws);
+                    
+                    // Force component re-render with new toolbox
+                    setToolboxKey(prev => prev + 1);
+                    
+                    // Restore workspace content after re-render
+                    setTimeout(() => {
+                        const newWs = Blockly.getMainWorkspace();
+                        if (newWs) {
+                            Blockly.serialization.workspaces.load(content, newWs);
+                            // @ts-expect-error - it is a valid function
+                            newWs.scrollCenter();
+                            // @ts-expect-error - it is a valid function
+                            newWs.zoomToFit();
+                        }
+                    }, 100);
+                }
+            });
+
             AppMgr.getInstance().on(EventType.EVENT_GENPYTHON, (activeTab) => {
                 if (name === activeTab) {
                     const session: EditorSession | undefined =
                     EditorMgr.getInstance().getEditorSession(activeTab);
                     if (session) {
-                        const ws = Blockly.getMainWorkspace();
+                        const ws = session?.workspace;
                         const code = pythonGenerator.workspaceToCode(ws);
                         if (ws && code) {
                             session.content = code;
@@ -219,15 +279,13 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
         } else {
             const editorSession = EditorMgr.getInstance().getEditorSession(name);
             if (editorSession && editorSession.content) {
-                const ws = Blockly.getMainWorkspace();
-                if (ws) {
-                    Blockly.serialization.workspaces.load(
-                        JSON.parse(editorSession.content),
-                        ws
-                    );
-                    // @ts-expect-error - it is a valid function
-                    ws.scrollCenter();
-                }
+                // There appears to be some timing issues in loading the content into the workspace
+                // Set 100 ms delay to accommendate the timing issue
+                const loadEditor = (name: string, content: string) => {
+                    const loadContent = { name: name, content: content};
+                    AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));                    
+                };
+                setTimeout(loadEditor, 100, name, editorSession.content);
             }
         }
 
@@ -274,6 +332,7 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
 
     return (
         <BlocklyWorkspace
+            key={toolboxKey} // Force re-render when toolbox updates
             className="h-full" // you can use whatever classes are appropriate for your app's CSS
             toolboxConfiguration={BlocklyConfigs.ToolboxJson} // this must be a JSON toolbox definition
             workspaceConfiguration={{
@@ -299,6 +358,7 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
             }}
             initialJson={BlocklyConfigs.InitialJson}
             onWorkspaceChange={onWorkspaceDidChange}
+            onInject={handleOnInject}
         />
     );
 }

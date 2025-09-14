@@ -3,6 +3,8 @@ import mitt from 'mitt';
 import Connection from '@/connections/connection';
 import { ConnectionType, EditorType, FolderItem } from '@/utils/types';
 import { BluetoothConnection } from '@/connections/bluetoothconnection';
+import GoogleAuthService from '@/services/google-auth';
+import GoogleDriveService from '@/services/google-drive';
 
 export enum Themes {
     DARK = 'dark',
@@ -30,8 +32,13 @@ export enum EventType {
     EVENT_XRPLIB_UPDATE = 'xrplib-update',              // XRP update request
     EVENT_XRPLIB_UPDATE_DONE = 'xrplib-update-done',    // XRP update done
     EVENT_SHOWCHANGELOG = 'show-changelog', // show changelog
+    EVENT_DASHBOARD_DATA = 'dashboard-data', // dashboard event
     EVENT_SHOWPROGRESS = 'show-progress', // show progress
+    EVENT_PROGRESS_ITEM = 'progress-item', // show the item title for the progress display
     EVENT_FILESYS_STORAGE = 'filesys-storage', // storage capacity
+    EVENT_MUST_UPDATE_MICROPYTHON = 'must-micropython-update', //If not an XRP version of MicroPython they must update before updating XRPLib
+    EVENT_BLOCKLY_TOOLBOX_UPDATED = 'blockly-toolbox-updated', // Blockly toolbox has been updated
+    EVENT_GAMEPAD_STATUS = 'gamepad-status', // Gamepad status on/off
 }
 
 type Events = {
@@ -55,8 +62,13 @@ type Events = {
     [EventType.EVENT_XRPLIB_UPDATE]: string;
     [EventType.EVENT_XRPLIB_UPDATE_DONE]: string;
     [EventType.EVENT_SHOWCHANGELOG]: string;
+    [EventType.EVENT_DASHBOARD_DATA]: string;
     [EventType.EVENT_SHOWPROGRESS]: string;
+    [EventType.EVENT_PROGRESS_ITEM]: string;
     [EventType.EVENT_FILESYS_STORAGE]: string;
+    [EventType.EVENT_MUST_UPDATE_MICROPYTHON]: string;
+    [EventType.EVENT_BLOCKLY_TOOLBOX_UPDATED]: string;
+    [EventType.EVENT_GAMEPAD_STATUS]: string;
 };
 
 /**
@@ -66,21 +78,39 @@ type Events = {
  *          Editors
  */
 export default class AppMgr {
-    private theme: string | undefined;
-    private static instance: AppMgr;
-    private emitter = mitt<Events>();
-    private connectionMgr: connecionMgr | null = null;
-    private folderData : FolderItem[] | null = null;
+    private _theme: string | undefined;
+    private static _instance: AppMgr;
+    private _emitter = mitt<Events>();
+    private _connectionMgr: connecionMgr | null = null;
+    private _folderData : FolderItem[] | null = null;
+    private _authService: GoogleAuthService = new GoogleAuthService();
+    private _driveService: GoogleDriveService = new GoogleDriveService();
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     private AppMgr() {}
 
     public static getInstance(): AppMgr {
-        if (!AppMgr.instance) {
-            AppMgr.instance = new AppMgr();
+        if (!AppMgr._instance) {
+            AppMgr._instance = new AppMgr();
         }
-        return this.instance;
+        return this._instance;
+    }
+
+    /**
+     * driveService - return the Google Drive service instance
+     * @return GoogleDriveService
+     */
+    public get authService(): GoogleAuthService {
+        return this._authService;
+    }
+
+    /**
+     * driveService - return the Google Drive service instance
+     * @return GoogleDriveService
+     */
+    public get driveService(): GoogleDriveService {
+        return this._driveService;
     }
 
     /**
@@ -91,14 +121,14 @@ export default class AppMgr {
         this.onThemeChange(window.matchMedia('(prefers-color-scheme: dark)').matches ? Themes.DARK : Themes.LIGHT);
         // listen to system theme change event
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => this.onThemeChange(e.matches ? Themes.DARK : Themes.LIGHT));
-        this.connectionMgr = new connecionMgr(this); 
+        this._connectionMgr = new connecionMgr(this); 
     }
 
     /**
      * stop clean up connection and object etcs.
      */
     public stop(): void {
-        this.connectionMgr?.getConnection()?.disconnect();
+        this._connectionMgr?.getConnection()?.disconnect();
         this.off();
     }
 
@@ -108,11 +138,11 @@ export default class AppMgr {
      */
     private onThemeChange(theme:string) {
         if (theme === Themes.DARK) {
-            this.theme = Themes.DARK;
-            this.emitter.emit(EventType.EVENT_THEME, this.theme);
+            this._theme = Themes.DARK;
+            this._emitter.emit(EventType.EVENT_THEME, this._theme);
         } else {
-            this.theme = Themes.LIGHT;
-            this.emitter.emit(EventType.EVENT_THEME, this.theme);
+            this._theme = Themes.LIGHT;
+            this._emitter.emit(EventType.EVENT_THEME, this._theme);
         }
     }
 
@@ -121,7 +151,7 @@ export default class AppMgr {
      * @returns theme
      */
     public getTheme(): string {
-        return this.theme || Themes.LIGHT;
+        return this._theme || Themes.LIGHT;
     }
 
     /**
@@ -131,7 +161,7 @@ export default class AppMgr {
      */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public on(eventName: EventType, handler: (...args: any[]) => void): void {
-        this.emitter.on(eventName, handler);
+        this._emitter.on(eventName, handler);
     }
 
     /**
@@ -139,7 +169,7 @@ export default class AppMgr {
      * @param eventName 
      */
     public eventOff(eventName: EventType) {
-        this.emitter.off(eventName);
+        this._emitter.off(eventName);
     }
 
     /**
@@ -148,24 +178,24 @@ export default class AppMgr {
      * @param eventData
      */
     public emit(eventName: EventType, eventData: string): void {
-        this.emitter.emit(eventName, eventData);
+        this._emitter.emit(eventName, eventData);
     }
 
     /**
      * Remove all listeners for a given event
      */
     public off(): void {
-        this.emitter.all.clear();
+        this._emitter.all.clear();
     }
 
     /**
      * getConnection - return the active connection
      */
     public getConnection(): Connection | null {
-        if (!this.connectionMgr) {
+        if (!this._connectionMgr) {
             throw new Error('Connection manager is not initialized');
         }
-        return this.connectionMgr.getConnection();
+        return this._connectionMgr.getConnection();
     }
 
     /**
@@ -173,7 +203,7 @@ export default class AppMgr {
      * @returns ConnectionType
      */
     public getConnectionType(): ConnectionType {
-        const connection = this.connectionMgr?.getConnection() 
+        const connection = this._connectionMgr?.getConnection() 
         return connection instanceof BluetoothConnection ? ConnectionType.BLUETOOTH : ConnectionType.USB;
     }
 
@@ -182,7 +212,7 @@ export default class AppMgr {
      * @param folderData 
      */
     public setFoderData(folderData: FolderItem[]) {
-        this.folderData = folderData;
+        this._folderData = folderData;
     }
 
 
@@ -207,12 +237,16 @@ export default class AppMgr {
      * getFolderList - return a list of XRP folder except the 'lib' directory
      */
     public getFolderList() : FolderItem[] | null {
-        if (!this.folderData) {
+        if (!this._folderData) {
             return null;
         }
 
+        if (this._folderData?.at(0)?.children?.length === 0  || this._folderData?.at(0)?.children === null) {
+            return this._folderData;
+        }
+
         // remove the lib directory first
-        const folders = this.folderData?.at(0)?.children?.filter(folder => (folder.name !== 'lib' && folder.children !== null)).map(folder => ({ 
+        const folders = this._folderData?.at(0)?.children?.filter(folder => (folder.name !== 'lib' && folder.children !== null)).map(folder => ({ 
             name: folder.name,
             id: folder.id,
             isReadOnly: folder.isReadOnly,
@@ -221,5 +255,40 @@ export default class AppMgr {
         })) ?? null;
 
         return folders ? this.filterFolders(folders) : null;
+    }
+
+    /**
+     * getUserFolderList - return a list of user folders
+     * @returns a list of user folders
+     *          if no user folders, return null
+     */
+    public getUserFolderList(): FolderItem[] | null {
+        if (!this._folderData) {
+            return null;
+        }
+
+        // find the user folder
+        const userFolders = this._folderData?.at(0)?.children?.filter(folder => (folder.name === 'users' && folder.children !== null)).map(folder => ({ 
+            name: folder.name,
+            id: folder.id,
+            isReadOnly: folder.isReadOnly,
+            path: folder.path,
+            children: folder.children
+        })) ?? null;
+
+        let userlist: FolderItem[] | null = null;
+        // if users folder's children not null, list all of the users folder's children
+        if (userFolders && userFolders.length > 0 && userFolders[0].children) {
+            // filter out folders that do not have children
+            userlist = userFolders[0].children.filter(folder => (folder.children !== null)).map(folder => ({
+                name: folder.name,
+                id: folder.id,
+                isReadOnly: folder.isReadOnly,
+                path: folder.path,
+                children: folder.children
+            }));
+        }
+
+        return userlist;
     }
 }

@@ -1,6 +1,38 @@
 // ##### tablemgr.ts #####
 // Wraps the table procedures into a class
 import logger from "@/utils/logger";
+import AppMgr, { EventType } from "./appmgr";
+
+export interface NetworkTable {
+    gyro: {
+        yaw: number;
+        roll: number;
+        pitch: number;
+    },
+    accelerometer: {
+        accX: number;
+        accY: number;
+        accZ: number;
+    },
+    encoders: {
+        encL: number;
+        encR: number;
+        enc3: number;
+        enc4: number;
+    },
+    current: {
+        currL: number;
+        currR: number;
+        curr3: number;
+        curr4: number;
+    },
+    distance: number;
+    reflectance: {
+        reflectanceL: number;
+        reflectanceR: number;
+    },
+    voltage: number;
+}
 
 class TableMgr {
     protected tableLogger = logger.child({module: 'table'});
@@ -17,6 +49,14 @@ class TableMgr {
         0.0,   // encR
         0.0,   // enc3
         0.0,   // enc4
+        0.0,   // currentL
+        0.0,   // currentR
+        0.0,   // current3
+        0.0,   // current4
+        0.0,   // distance
+        0.0,   // reflectanceL
+        0.0,   // reflectanceR
+        0.0,   // voltage
     ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,7 +70,15 @@ private tableNames: any = {
     "encL": 6,
     "encR": 7,
     "enc3": 8,
-    "enc4": 9
+    "enc4": 9,
+    "currR": 10,
+    "currL": 11,
+    "curr3": 12,
+    "curr4": 13,
+    "dist": 14,
+    "reflectanceL": 15,
+    "reflectanceR": 16,
+    "voltage": 17
 };
 
 private readonly TypeInt: number = 0;
@@ -44,6 +92,43 @@ private buffer: Uint8Array = new Uint8Array();
     }
 
     // --- Public Methods ---
+
+    /**
+     * getValue - get the value of a table entry
+     * @returns the network table
+     */
+    private getTable(): NetworkTable {
+        return {
+            gyro: {
+                yaw: this.tableArray[this.tableNames["yaw"]],
+                roll: this.tableArray[this.tableNames["roll"]],
+                pitch: this.tableArray[this.tableNames["pitch"]],
+            },
+            accelerometer: {
+                accX: this.tableArray[this.tableNames["accX"]],
+                accY: this.tableArray[this.tableNames["accY"]],
+                accZ: this.tableArray[this.tableNames["accZ"]],
+            },
+            encoders: {
+                encL: this.tableArray[this.tableNames["encL"]],
+                encR: this.tableArray[this.tableNames["encR"]],
+                enc3: this.tableArray[this.tableNames["enc3"]],
+                enc4: this.tableArray[this.tableNames["enc4"]],
+            },
+            current: {
+                currL: this.tableArray[this.tableNames["currL"]],
+                currR: this.tableArray[this.tableNames["currR"]],
+                curr3: this.tableArray[this.tableNames["curr3"]],
+                curr4: this.tableArray[this.tableNames["curr4"]],
+            },
+            distance: this.tableArray[this.tableNames["dist"]],
+            reflectance: {
+                reflectanceL: this.tableArray[this.tableNames["reflectanceL"]],
+                reflectanceR: this.tableArray[this.tableNames["reflectanceR"]],
+            },
+            voltage: this.tableArray[this.tableNames["voltage"]],
+        };
+    }
 
     public getValue(name: string): number | null{
         const index = this.tableNames[name];
@@ -78,6 +163,9 @@ private buffer: Uint8Array = new Uint8Array();
             }
             
         }
+
+        // this.tableLogger.debug("table data: " + JSON.stringify(this.getTable()));
+        AppMgr.getInstance().emit(EventType.EVENT_DASHBOARD_DATA, JSON.stringify(this.getTable()));
     }
 
      private processBuffer(data: Uint8Array){

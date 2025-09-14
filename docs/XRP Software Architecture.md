@@ -293,6 +293,14 @@ This section documents the major classes which are based on the React Component 
         render()
     }
 
+    class Dialog {
+        render()
+    }
+
+    class Dashboard {
+        render()
+    }
+
     Component <|-- Navbar
     Component <|-- XrpLayout
     Component <|-- XRPShell
@@ -300,6 +308,8 @@ This section documents the major classes which are based on the React Component 
     Component <|-- Blockly
     Component <|-- MonacoEditor
     Component <|-- AIChatUI
+    Component <|-- Dialog
+    Component <|-- Dashboard
     ConnectionMgr *-- Navbar
     FlexLayout *-- XrpLayout
     MonacoEditor *-- XrpLayout

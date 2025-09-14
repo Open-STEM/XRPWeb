@@ -26,6 +26,7 @@ const layout_json: IJsonModel = {
         tabSetEnableDeleteWhenEmpty: false,
         tabSetEnableDrag: false,
         tabSetEnableDrop: false,
+        tabEnableRename: false
     },
     borders: [
         {

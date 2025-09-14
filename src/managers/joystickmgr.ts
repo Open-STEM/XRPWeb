@@ -1,6 +1,9 @@
 // ##### joystickmgr.ts #####
 // Wraps the joystick procedures into a class
 
+import { Constants } from "@/utils/constants";
+import AppMgr, { EventType } from "./appmgr";
+
 class Joystick {
 
     // State Arrays
@@ -15,6 +18,14 @@ class Joystick {
         0,   // bY
         0,   // bL
         0,   // bR
+        0,   // tL
+        0,   // tR
+        0,   // bK
+        0,   // sT
+        0,   // dU
+        0,   // dD
+        0,   // dL
+        0,   // dR
     ];
 
     private lastsentArray: number[] = [];
@@ -30,6 +41,15 @@ class Joystick {
     private readonly bY: number = 7;
     private readonly bL: number = 8;
     private readonly bR: number = 9;
+    private readonly tL: number = 10;
+    private readonly tR: number = 11;
+    private readonly bK: number = 12;
+    private readonly sT: number = 13;
+    private readonly dU: number = 14;
+    private readonly dD: number = 15;
+    private readonly dL: number = 16;
+    private readonly dR: number = 17;
+
 
     // Keycodes being used (readonly as they are constants)
     private readonly left1: string = 'KeyA';
@@ -46,10 +66,16 @@ class Joystick {
     private readonly buttonY: string = 'Digit4';
     private readonly bumperL: string = 'Digit5';
     private readonly bumperR: string = 'Digit6';
+    private readonly triggerL: string = 'Digit7';
+    private readonly triggerR: string = 'Digit8';
+    private readonly back: string = 'Digit9';
+    private readonly start: string = 'Digit0';
 
     // State Flags and Indices
     private listening: boolean = false;
     private sendPacket: boolean = false; // Controls if sendAPacket actually sends
+    private sendingPacket: boolean = false; //don't re-enter to send next if the last one hasn't finished
+
     private controllerIndex: number = -1; // Use -1 to indicate no controller initially
     private intervalID: number | undefined = undefined; // Using number for browser compatibility
 
@@ -117,7 +143,7 @@ class Joystick {
         const changes: number[] = [];
         for (let i = 0; i < current.length; i++) {
             // Only consider sending a change if the difference exceeds the tolerance
-            if (Math.abs(current[i] - last[i]) > tolerance || i < 4) { //always update for the joystick numbers
+            if (Math.abs(current[i] - last[i]) > tolerance) { 
                 changes.push(i); // byte representing the array index
                 changes.push(this.quantizeFloat(current[i])); // byte representing the new value
               }
@@ -134,7 +160,9 @@ class Joystick {
      * Periodically called to send the current joystick state if changed.
      */
     private async sendAPacket(): Promise<void> {
+        if(this.sendingPacket) return;
         if (this.sendPacket) {
+            this.sendingPacket = true;
             // If a gamepad is connected, update the status from it first
             this.updateStatus(); // Reads keyboard state OR gamepad state
 
@@ -142,27 +170,22 @@ class Joystick {
 
             // Only send if there are actual changes (sending[1] > 0)
             if (sending.length > 2 && sending[1] > 0) {
-                 if (this.writeToDevice) {
-                    try {
-                        await this.writeToDevice(sending);
-                        // Update last sent state only after successful send
-                        this.lastsentArray = this.joysticksArray.slice();
-                    } catch (error) {
-                        console.error("Error writing joystick data:", error);
-                        // Decide if we should stop sending or retry?
-                        // For now, we'll keep trying but won't update lastsentArray
-                    }
-                 } else {
-                     // console.warn("Joystick: writeToDevice callback is not set.");
-                     // Silently ignore if no callback is set, or log warning.
-                 }
-            } else {
-                 // No changes detected, update lastsentArray anyway?
-                 // It's safer to update it only when data is successfully sent.
-                 // If we don't update here, the next packet will compare against the last *sent* state.
-                 // Let's update it here to reflect the current actual state as the basis for the *next* comparison.
-                 this.lastsentArray = this.joysticksArray.slice();
-            }
+                if (this.writeToDevice) {
+                try {
+                    this.lastsentArray = this.joysticksArray.slice(); //this has to go before to avoid timing problems with missing keyboard changes.
+                    await this.writeToDevice(sending);
+                    // Update last sent state only after successful send
+                } catch (error) {
+                    console.error("Error writing joystick data:", error);
+                    // Decide if we should stop sending or retry?
+                    // For now, we'll keep trying but won't update lastsentArray
+                }
+                } else {
+                    // console.warn("Joystick: writeToDevice callback is not set.");
+                    // Silently ignore if no callback is set, or log warning.
+                }
+            } 
+                 this.sendingPacket = false;
         }
     }
 
@@ -182,13 +205,21 @@ class Joystick {
                 this.joysticksArray[this.x2] = gamepad.axes.length > 2 ? gamepad.axes[2] : 0.0;
                 this.joysticksArray[this.y2] = gamepad.axes.length > 3 ? gamepad.axes[3] : 0.0;
 
-                // It should likely be buttons[0], buttons[1], buttons[2], etc.
+                //  Read buttons (ensure enough buttons exist)
                 this.joysticksArray[this.bA] = gamepad.buttons.length > 0 ? gamepad.buttons[0].value : 0;
                 this.joysticksArray[this.bB] = gamepad.buttons.length > 1 ? gamepad.buttons[1].value : 0; 
                 this.joysticksArray[this.bX] = gamepad.buttons.length > 2 ? gamepad.buttons[2].value : 0; 
                 this.joysticksArray[this.bY] = gamepad.buttons.length > 3 ? gamepad.buttons[3].value : 0; 
                 this.joysticksArray[this.bL] = gamepad.buttons.length > 4 ? gamepad.buttons[4].value : 0; 
                 this.joysticksArray[this.bR] = gamepad.buttons.length > 5 ? gamepad.buttons[5].value : 0; 
+                this.joysticksArray[this.tL] =  gamepad.buttons.length > 6 ?gamepad.buttons[6].value : 0;
+                this.joysticksArray[this.tR] =  gamepad.buttons.length > 7 ?gamepad.buttons[7].value : 0;
+                this.joysticksArray[this.bK] =  gamepad.buttons.length > 8 ?gamepad.buttons[8].value : 0;
+                this.joysticksArray[this.sT] =  gamepad.buttons.length > 9 ?gamepad.buttons[9].value : 0;
+                this.joysticksArray[this.dU] =  gamepad.buttons.length > 12 ?gamepad.buttons[12].value : 0;
+                this.joysticksArray[this.dD] =  gamepad.buttons.length > 13 ?gamepad.buttons[13].value : 0;
+                this.joysticksArray[this.dL] =  gamepad.buttons.length > 14 ?gamepad.buttons[14].value : 0;
+                this.joysticksArray[this.dR] =  gamepad.buttons.length > 15 ?gamepad.buttons[15].value : 0;
 
                 // If gamepad is active, we generally ignore keyboard state for this cycle
                 // Or, we could potentially merge them if needed (e.g., keyboard buttons + joystick axes)
@@ -222,6 +253,10 @@ class Joystick {
             case this.buttonY: this.joysticksArray[this.bY] = 1; break;
             case this.bumperL: this.joysticksArray[this.bL] = 1; break;
             case this.bumperR: this.joysticksArray[this.bR] = 1; break;
+            case this.triggerL: this.joysticksArray[this.tL] = 1; break;
+            case this.triggerR: this.joysticksArray[this.tR] = 1; break;
+            case this.back: this.joysticksArray[this.bK] = 1; break;
+            case this.start: this.joysticksArray[this.sT] = 1; break;
         }
     }
 
@@ -247,6 +282,10 @@ class Joystick {
             case this.buttonY: this.joysticksArray[this.bY] = 0; break;
             case this.bumperL: this.joysticksArray[this.bL] = 0; break;
             case this.bumperR: this.joysticksArray[this.bR] = 0; break;
+            case this.triggerL: this.joysticksArray[this.tL] = 0; break;
+            case this.triggerR: this.joysticksArray[this.tR] = 0; break;
+            case this.back: this.joysticksArray[this.bK] = 0; break;
+            case this.start: this.joysticksArray[this.sT] = 0; break;
         }
     }
 
@@ -280,6 +319,7 @@ class Joystick {
         // If we don't have a controller yet, use this one
         if (this.controllerIndex === -1) {
             this.controllerIndex = event.gamepad.index;
+            AppMgr.getInstance().emit(EventType.EVENT_GAMEPAD_STATUS, Constants.CONNECTED);
             console.log("Using gamepad:", this.controllerIndex);
              // Optionally reset keyboard state when gamepad connects?
              // this.joysticksArray.fill(0);
@@ -295,7 +335,7 @@ class Joystick {
         // If the disconnected gamepad is the one we were using, reset the index
         if (this.controllerIndex === event.gamepad.index) {
             this.controllerIndex = -1;
-            console.log("Stopped using gamepad.");
+            AppMgr.getInstance().emit(EventType.EVENT_GAMEPAD_STATUS, Constants.DISCONNECTED);
             // Optionally reset joystick state to 0
             this.joysticksArray.fill(0);
             // Ensure the next packet reflects this zero state if needed immediately

@@ -1,9 +1,12 @@
 import AppMgr, { EventType } from '@/managers/appmgr';
-import { ConnectionCMD, ConnectionType } from '@/utils/types';
+import { ConnectionCMD, ConnectionType, ModeType } from '@/utils/types';
 import Connection, { ConnectionState } from '@/connections/connection';
 import { USBConnection } from '@/connections/usbconnection';
 import { BluetoothConnection } from '@/connections/bluetoothconnection';
 import { CommandToXRPMgr } from './commandstoxrpmgr';
+import PluginMgr from './pluginmgr';
+import { Constants } from '@/utils/constants';
+import { StorageKeys } from '@/utils/localstorage';
 
 /**
  * ConnectionMgr - manages USB and Bluetooth connection to the XRP Robot
@@ -11,6 +14,7 @@ import { CommandToXRPMgr } from './commandstoxrpmgr';
 export default class ConnectionMgr {
     private appMgr: AppMgr;
     private cmdToXRPMgr: CommandToXRPMgr = CommandToXRPMgr.getInstance();
+    private pluginMgr: PluginMgr = PluginMgr.getInstance();
     private connections: Connection[] = [];
     private activeConnection: Connection | null = null;
 
@@ -55,11 +59,38 @@ export default class ConnectionMgr {
     public async connectCallback(state: ConnectionState, connType: ConnectionType) {
         this.activeConnection = this.connections[connType];
         if (state === ConnectionState.Connected) {
-            this.appMgr.emit(
-                EventType.EVENT_CONNECTION_STATUS,
-                ConnectionState.Connected.toString(),
-            );
             if (await this.activeConnection.getToREPL()) {
+                const adminFilePath = '/' + Constants.ADMIN_FILE;
+                // get mode settings
+                try {
+                    await this.cmdToXRPMgr.getFileContents(adminFilePath).then((data) => {
+                        if (data.length > 0) {
+                            const json = new TextDecoder().decode(new Uint8Array(data));
+                            const adminData = JSON.parse(json);
+                            localStorage.setItem(StorageKeys.MODESETTING, adminData.mode);
+                        }
+                    });
+                } catch(error) {
+                    console.log('Error retrieving admin data' + error);
+                    // if the Google User is logged in, set this user to be the admin
+                    if (AppMgr.getInstance().authService.isLogin) {
+                        // create the admin data
+                        const userProfile = AppMgr.getInstance().authService.userProfile;
+                        const content = JSON.stringify({
+                            name: userProfile.name,
+                            email: userProfile.email,
+                            mode: ModeType.GOOUSER,
+                        });
+                        await CommandToXRPMgr.getInstance().uploadFile(
+                            adminFilePath,
+                            content?.toString() ?? '',
+                        );                        
+                    }
+                }
+                this.appMgr.emit(
+                    EventType.EVENT_CONNECTION_STATUS,
+                    ConnectionState.Connected.toString(),
+                );
                 await this.cmdToXRPMgr.getOnBoardFSTree();
                 await this.activeConnection.getToNormal();
                 if (connType == ConnectionType.USB) {
@@ -69,6 +100,11 @@ export default class ConnectionMgr {
                 await this.cmdToXRPMgr.clearIsRunning();
                 this.xrpID = await this.cmdToXRPMgr.checkIfNeedUpdate();
                 this.IDSet(connType);
+                
+                // Check for plugins after connection is established
+                await this.pluginMgr.pluginCheck();
+                
+                //TODO: if this was a bluetooth connection this is where to take down the spinner.
             }
         } else if (state === ConnectionState.Disconnected) {
             this.appMgr.emit(
