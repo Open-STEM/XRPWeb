@@ -73,3 +73,6 @@ htmlcov/
 
 # pyenv
 .python-version
+
+# Build analysis and stats
+stats.html
