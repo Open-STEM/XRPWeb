@@ -15,6 +15,7 @@ import { StorageKeys } from '@/utils/localstorage';
 import EditorMgr, { EditorStore } from '@/managers/editormgr';
 import { CreateEditorTab } from '@/utils/editorUtils';
 import XRPDashboard from '@/components/dashboard/xrp-dashboard';
+import AIChat from '@/components/chat/ai-chat';
 
 /**
  *  Layout-React's layout JSON to specify the XRPWeb's single page application's layout
@@ -104,6 +105,8 @@ const factory = (node: TabNode) => {
         return <BlocklyEditor name={node.getName()} />;
     } else if (component == 'dashboard') {
         return <XRPDashboard />;
+    } else if (component == 'aichat') {
+        return <AIChat />;
     }
 };
 
