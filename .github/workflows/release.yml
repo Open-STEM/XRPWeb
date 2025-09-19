@@ -26,14 +26,12 @@ jobs:
         run: npm run test
       - name: Build
         run: npm run build
-      - name: Download artifact
-        uses: actions/download-artifact@v5
-        with:
-          name: static-site
       - name: Archive site content
         uses: thedoctor0/zip-release@master
         with:
-          filename: xrpweb.zip
+          type: 'zip'
+          directory: './dist'
+          filename: xrpweb-v${{ github.run_number }}.zip
       - name: Create Release
         id: create_new_release
         uses: softprops/action-gh-release@v2.3.3
@@ -42,15 +40,15 @@ jobs:
           name: Release ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upload Release
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload Build artifacts
+        uses: svenstaro/upload-release-action@v2
         with:
-          upload_url: ${{ steps.create_new_release.outputs.upload_url }}
-          asset_path: ./xrpweb.zip
-          asset_name: xrpweb-v${{ github.run_number }}.zip
-          asset_content_type: application/zip
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: xrpweb-v${{ github.run_number }}.zip
+          asset_name: xrpweb
+          tag: ${{ github.ref }}
+          overwrite: true
+
 
 
 
