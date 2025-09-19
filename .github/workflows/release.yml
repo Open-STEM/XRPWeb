@@ -26,13 +26,11 @@ jobs:
         run: npm run test
       - name: Build
         run: npm run build
-      - name: Download artifact
-        uses: actions/download-artifact@v5
-        with:
-          name: static-site
       - name: Archive site content
         uses: thedoctor0/zip-release@master
         with:
+          type: 'zip'
+          directory: './dist'
           filename: xrpweb.zip
       - name: Create Release
         id: create_new_release
@@ -48,7 +46,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_new_release.outputs.upload_url }}
-          asset_path: ./xrpweb.zip
+          asset_path: .
           asset_name: xrpweb-v${{ github.run_number }}.zip
           asset_content_type: application/zip
 
