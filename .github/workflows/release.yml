@@ -31,7 +31,7 @@ jobs:
         with:
           type: 'zip'
           directory: './dist'
-          filename: xrpweb.zip
+          filename: xrpweb-v${{ github.run_number }}
       - name: Create Release
         id: create_new_release
         uses: softprops/action-gh-release@v2.3.3
@@ -46,7 +46,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_new_release.outputs.upload_url }}
-          asset_path: .
+          asset_path: './'
           asset_name: xrpweb-v${{ github.run_number }}.zip
           asset_content_type: application/zip
 
