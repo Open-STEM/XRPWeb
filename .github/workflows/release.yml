@@ -36,8 +36,8 @@ jobs:
       - name: Create Release
         id: create_new_release
         uses: softprops/action-gh-release@v2.3.3
+      - name: Upload Artifact
+        uses: ncipollo/release-action@v1.12.0
         with:
-          files: |
-            steps.build-archive.outputs.xrpweb-v${{ github.run_number }}.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: xrpweb-v${{ github.run_number }}.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
