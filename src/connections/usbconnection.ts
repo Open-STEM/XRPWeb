@@ -1,4 +1,6 @@
+import AppMgr, { EventType } from '@/managers/appmgr';
 import ConnectionMgr from '@/managers/connectionmgr';
+import i18n from '@/utils/i18n';
 import { ConnectionType } from '@/utils/types';
 import Connection, { ConnectionState } from '@connections/connection';
 
@@ -169,6 +171,7 @@ export class USBConnection extends Connection {
                     return true;
                 } else if (err.name == 'NetworkError') {
                     //alert("Opening port failed, is another application accessing this device/port?");
+                    AppMgr.getInstance().emit(EventType.EVENT_ALERT, i18n.t('alertOpenPortFailed'));
                     this.connLogger.debug(
                         'Port openning failed, is there another application accessing this device and port?',
                     );
