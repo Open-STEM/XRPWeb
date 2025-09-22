@@ -142,6 +142,7 @@
     "driver-install-yes": "Yes",
     "driver-install-no": "No",
     "progress-item": "Processing item: ",
+    "alertOpenPortFailed": "Opening port failed, is another application accessing this device/port?",
     "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
     "individualMotors": "Individual Motors"
 }
