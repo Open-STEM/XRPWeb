@@ -15,7 +15,7 @@ interface ChatMessageProps {
 }
 
 const md = new MarkdownIt({
-  html: true,
+  html: false, // Disables raw HTML in source markdown for XSS protection
   linkify: true,
   typographer: true,
   breaks: true,
