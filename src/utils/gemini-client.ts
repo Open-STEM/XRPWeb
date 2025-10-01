@@ -12,6 +12,43 @@ export class GeminiClient {
     }
 
     /**
+     * Check if combined documentation has been loaded on the backend
+     */
+    async getDocsStatus(): Promise<{ loaded: boolean; uri?: string }> {
+        try {
+            const response = await fetch(`${this.backendUrl}/docs/status`);
+            if (!response.ok) {
+                throw new Error(`Failed to get docs status: ${response.statusText}`);
+            }
+            const data = await response.json();
+            return { loaded: !!data.loaded, uri: data.uri };
+        } catch (error) {
+            console.warn('Failed to fetch docs status from backend:', error);
+            return { loaded: false };
+        }
+    }
+
+    /**
+     * Request backend to load combined documentation into model context
+     */
+    async loadDocs(): Promise<{ success: boolean; status: string; uri?: string }> {
+        try {
+            const response = await fetch(`${this.backendUrl}/docs/load`, {
+                method: 'POST'
+            });
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.detail || response.statusText);
+            }
+            const data = await response.json();
+            return { success: !!data.success, status: data.status, uri: data.uri };
+        } catch (error) {
+            console.error('Failed to load docs on backend:', error);
+            return { success: false, status: 'error' };
+        }
+    }
+
+    /**
      * Get the model name for display purposes
      * Note: This now fetches from backend to maintain single source of truth
      */

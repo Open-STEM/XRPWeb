@@ -25,8 +25,19 @@ export default function AIChat() {
         geminiClient.current = new GeminiClient();
         contextLoader.current = createContextLoader();
         
-        // Documentation is now loaded at backend startup, so we can mark as loaded immediately
-        setContextStatus('loaded');
+        // Ensure documentation is loaded via backend when chat opens
+        const initDocs = async () => {
+            if (!geminiClient.current) return;
+            setContextStatus('loading');
+            const status = await geminiClient.current.getDocsStatus();
+            if (!status.loaded) {
+                const res = await geminiClient.current.loadDocs();
+                setContextStatus(res.success ? 'loaded' : 'error');
+            } else {
+                setContextStatus('loaded');
+            }
+        };
+        initDocs();
     }, []);
 
     // Scroll to bottom when messages change
@@ -102,7 +113,7 @@ export default function AIChat() {
         setStreamingMessage(assistantMessage);
 
         try {
-            // Get current editor and terminal contexts (documentation is now loaded at backend startup)
+            // Get current editor and terminal contexts (documentation now loaded via backend)
             const editorContext = contextLoader.current?.getCurrentEditorContext() || '';
             const terminalContext = contextLoader.current?.getCurrentTerminalContext() || '';
             
