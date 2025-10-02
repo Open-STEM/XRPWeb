@@ -31,7 +31,6 @@ dist-ssr
 .env.local
 .env.*.local
 backend/.env
-package-lock.json
 
 # Python
 __pycache__/
