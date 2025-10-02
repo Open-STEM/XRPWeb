@@ -575,6 +575,21 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
+     * openAIChat - open the AI chat
+     */
+    function openAIChat() {
+        console.log('Opening AI Chat');
+        const tabInfo: IJsonTabNode = {
+            component: 'aichat',
+            name: 'AI Chat',
+            id: Constants.AI_CHAT_TAB_ID,
+            helpText: 'Chat with AI models from Hugging Face',
+        };
+        layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
+        setActiveTab('AI Chat');
+    }
+
+    /**
      * onConnectionSelected - process seected connection
      * @param connType
      */
@@ -617,8 +632,8 @@ function NavBar({ layoutref }: NavBarProps) {
                 return;
             }
 
-            // make sure this is not the dashboard tab
-            if (activeTab === 'Dashboard') {
+            // make sure this is not the dashboard tab or AI chat tab
+            if (activeTab === 'Dashboard' || activeTab === 'AI Chat') {
                 setDialogContent(
                     <AlertDialog
                         alertMessage={i18n.t('dashboard-no-run')}
@@ -691,7 +706,8 @@ function NavBar({ layoutref }: NavBarProps) {
      * onAiClicked - handle the AI button click event
      */
     function onAiClicked() {
-        // put the AI chat bot lanuch here
+        setMoreMenuOpen(false);
+        openAIChat();
     }
 
     /**

@@ -288,6 +288,46 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                 setTimeout(loadEditor, 100, name, editorSession.content);
             }
         }
+
+        
+        // Set up workspace change listener for live content tracking
+        const setupWorkspaceListener = () => {
+            const ws = Blockly.getMainWorkspace();
+            if (ws) {
+                // Initial live content update
+                try {
+                    const json = JSON.stringify(Blockly.serialization.workspaces.save(ws));
+                    EditorMgr.updateLiveContent(name, json);
+                } catch (e) {
+                    EditorMgr.updateLiveContent(name, '');
+                }
+
+                // Listen for workspace changes
+                const changeListener = (event: any) => {
+                    if (event.isUiEvent) return; // Skip UI events
+                    try {
+                        const json = JSON.stringify(Blockly.serialization.workspaces.save(ws));
+                        EditorMgr.updateLiveContent(name, json);
+                    } catch (e) {
+                        console.warn('Failed to serialize Blockly workspace:', e);
+                    }
+                };
+                
+                ws.addChangeListener(changeListener);
+                
+                // Store the listener for cleanup
+                return changeListener;
+            }
+            return null;
+        };
+
+        // Setup listener after a brief delay to ensure workspace is fully initialized
+        const timeoutId = setTimeout(setupWorkspaceListener, 100);
+
+        return () => {
+            clearTimeout(timeoutId);
+            EditorMgr.removeLiveContent(name);
+        };
     });
 
     return (

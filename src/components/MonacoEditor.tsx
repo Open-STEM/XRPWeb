@@ -183,6 +183,8 @@ const MonacoEditor = ({
                 if (containerRef.current && editor.current) {
                     const model = monaco.editor.createModel(loadContent.content, languageId);
                     editor.current.setModel(model);
+                    // Update live content when loading new content
+                    EditorMgr.updateLiveContent(name, loadContent.content);
                 }
                 const session: EditorSession | undefined =
                     EditorMgr.getInstance().getEditorSession(loadContent.name);
@@ -230,6 +232,15 @@ const MonacoEditor = ({
                     language: language,
                 });
 
+                // Update live content immediately with initial value
+                EditorMgr.updateLiveContent(name, value || '');
+
+                // Listen for content changes and update live content
+                editor.current.onDidChangeModelContent(() => {
+                    const currentContent = editor.current?.getValue() || '';
+                    EditorMgr.updateLiveContent(name, currentContent);
+                });
+
                 monaco.editor.onDidCreateEditor((codeEditor) => {
                     console.log('Editor created', codeEditor.getId());
                 });
@@ -238,6 +249,8 @@ const MonacoEditor = ({
                 if (editorSession && editorSession.content) {
                     const model = monaco.editor.createModel(editorSession.content, languageId);
                     editor.current?.setModel(model);
+                    // Update live content with session content
+                    EditorMgr.updateLiveContent(name, editorSession.content);
                 }
     
                 editor.current.onDidChangeModelContent(() => {
@@ -274,6 +287,11 @@ const MonacoEditor = ({
                 }
             }
         }
+
+        // Cleanup function to remove live content when component unmounts
+        return () => {
+            EditorMgr.removeLiveContent(name);
+        };
     }, [name, language, value]);
 
     return <div ref={containerRef} style={style} className={className} />;

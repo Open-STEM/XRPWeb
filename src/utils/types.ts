@@ -1,4 +1,3 @@
-
 export enum ConnectionType {
     USB,
     BLUETOOTH,
@@ -69,6 +68,30 @@ export type FileData = {
 export type Versions = {
     currentVersion: string;
     newVersion: string;
+}
+
+// AI Chat Types
+export interface ChatMessage {
+    id: string;
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    timestamp: Date;
+    model?: string;
+}
+
+export enum ChatStatus {
+    IDLE = 'idle',
+    LOADING = 'loading',
+    STREAMING = 'streaming',
+    ERROR = 'error'
+}
+
+export interface ChatSession {
+    id: string;
+    title: string;
+    messages: ChatMessage[];
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 export type AdminData = {
