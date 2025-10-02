@@ -184,6 +184,11 @@ export default class PluginMgr {
      * Load plugin blocks from a JSON file
      */
     private async loadPluginBlocks(blocksUrl: string): Promise<PluginBlock[] | null> {
+        
+        if (process.env.NODE_ENV === 'development') {
+                blocksUrl = '/public' + blocksUrl;
+            }
+        
         try {
             const response = await fetch(blocksUrl);
             if (!response.ok) {
@@ -228,7 +233,7 @@ export default class PluginMgr {
         );
 
         if (controlBoardCategory) {
-            const colorLEDBlock = await this.loadPluginBlocks('/public/plugins/2350/nonbeta_blocks.json');
+            const colorLEDBlock = await this.loadPluginBlocks('/plugins/2350/nonbeta_blocks.json');
             controlBoardCategory.contents.push(colorLEDBlock);
         }
 
