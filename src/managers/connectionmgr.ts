@@ -122,7 +122,7 @@ export default class ConnectionMgr {
             const isBLE = connType === ConnectionType.BLUETOOTH;
             const data = {
                 XRPID: this.xrpID.slice(-5),
-                platform: 'XRP',
+                platform: 'XRP-react',
                 BLE: isBLE,
             };
 
