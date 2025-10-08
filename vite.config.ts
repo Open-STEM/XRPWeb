@@ -65,7 +65,7 @@ export default defineConfig({
     server: {
         port: 3000,
         proxy: {
-            '/api': 'https://xrp-code-d-u01.wpi.edu'
+            '/api': 'http://localhost:8000'
         }
     },
     build: {
