@@ -76,6 +76,25 @@ export class GeminiClient {
     }
 
     /**
+     * Clean up a session on the backend
+     */
+    async cleanupSession(sessionId: string): Promise<void> {
+        try {
+            const response = await fetch(`${this.backendUrl}/session/${sessionId}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`Session ${sessionId.substring(0, 8)}... cleaned up:`, data.message);
+            } else {
+                console.warn(`Failed to cleanup session ${sessionId.substring(0, 8)}...`);
+            }
+        } catch (error) {
+            console.warn('Failed to cleanup session on backend:', error);
+        }
+    }
+
+    /**
      * Send a simplified chat request with user message and context
      */
     async chatWithContext(

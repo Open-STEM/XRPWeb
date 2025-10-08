@@ -44,7 +44,33 @@ export default function AIChat() {
             }
         };
         initDocs();
+
+        // Cleanup function when component unmounts (user closes chat or leaves IDE)
+        return () => {
+            if (geminiClient.current && newSessionId) {
+                console.log(`[AIChat] Component unmounting, cleaning up session ${newSessionId.substring(0, 8)}...`);
+                geminiClient.current.cleanupSession(newSessionId);
+            }
+        };
     }, []);
+
+    // Cleanup session when user closes browser tab or navigates away
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (sessionId) {
+                // Use sendBeacon for more reliable cleanup on page unload (uses POST)
+                const url = `/api/session/${sessionId}`;
+                navigator.sendBeacon(url);
+                console.log(`[AIChat] Page unloading, sent cleanup beacon for session ${sessionId.substring(0, 8)}...`);
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [sessionId]);
 
     // Scroll to bottom when messages change
     useEffect(() => {
