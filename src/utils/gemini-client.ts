@@ -12,11 +12,17 @@ export class GeminiClient {
     }
 
     /**
-     * Check if combined documentation has been loaded on the backend
+     * Check if combined documentation has been loaded on the backend for this session
      */
-    async getDocsStatus(): Promise<{ loaded: boolean; uri?: string }> {
+    async getDocsStatus(sessionId: string): Promise<{ loaded: boolean; uri?: string }> {
         try {
-            const response = await fetch(`${this.backendUrl}/docs/status`);
+            const response = await fetch(`${this.backendUrl}/docs/status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ session_id: sessionId })
+            });
             if (!response.ok) {
                 throw new Error(`Failed to get docs status: ${response.statusText}`);
             }
@@ -29,12 +35,16 @@ export class GeminiClient {
     }
 
     /**
-     * Request backend to load combined documentation into model context
+     * Request backend to load combined documentation into model context for this session
      */
-    async loadDocs(): Promise<{ success: boolean; status: string; uri?: string }> {
+    async loadDocs(sessionId: string): Promise<{ success: boolean; status: string; uri?: string }> {
         try {
             const response = await fetch(`${this.backendUrl}/docs/load`, {
-                method: 'POST'
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ session_id: sessionId })
             });
             if (!response.ok) {
                 const err = await response.json().catch(() => ({}));
@@ -66,9 +76,29 @@ export class GeminiClient {
     }
 
     /**
+     * Clean up a session on the backend
+     */
+    async cleanupSession(sessionId: string): Promise<void> {
+        try {
+            const response = await fetch(`${this.backendUrl}/session/${sessionId}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`Session ${sessionId.substring(0, 8)}... cleaned up:`, data.message);
+            } else {
+                console.warn(`Failed to cleanup session ${sessionId.substring(0, 8)}...`);
+            }
+        } catch (error) {
+            console.warn('Failed to cleanup session on backend:', error);
+        }
+    }
+
+    /**
      * Send a simplified chat request with user message and context
      */
     async chatWithContext(
+        sessionId: string,
         userMessage: string,
         conversationHistory: ChatMessage[] = [],
         editorContext: string = '',
@@ -84,6 +114,7 @@ export class GeminiClient {
 
             // Prepare simplified request payload
             const payload = {
+                session_id: sessionId,
                 user_message: userMessage,
                 conversation_history: conversationHistory.map(msg => ({
                     role: msg.role === 'assistant' ? 'model' : msg.role,
@@ -232,15 +263,27 @@ export class GeminiClient {
         signal?: AbortSignal
     ): Promise<string> {
         console.warn('chatCompletion is deprecated, use chatWithContext instead');
-        
+
         if (messages.length === 0) {
             throw new Error('No messages provided');
         }
 
+        // Generate a temporary session ID for legacy calls
+        const randomArray = new Uint32Array(2);
+        (typeof window !== 'undefined' && window.crypto
+            ? window.crypto.getRandomValues(randomArray)
+            : (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function'
+                ? crypto.getRandomValues(randomArray)
+                : (() => { throw new Error('No secure random generator available'); })()
+            )
+        );
+        const randomString = Array.from(randomArray).map(n => n.toString(36)).join('').substr(0, 9);
+        const tempSessionId = `legacy-${Date.now()}-${randomString}`;
         const userMessage = messages[messages.length - 1].content;
         const conversationHistory = messages.slice(0, -1);
 
         return this.chatWithContext(
+            tempSessionId,
             userMessage,
             conversationHistory,
             '', // No editor context in legacy mode

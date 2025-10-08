@@ -13,6 +13,7 @@ export default function AIChat() {
     const [streamingMessage, setStreamingMessage] = useState<ChatMessage | null>(null);
     const [contextStatus, setContextStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
     const [textQueue, setTextQueue] = useState<string>('');
+    const [sessionId, setSessionId] = useState<string>('');
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -20,25 +21,56 @@ export default function AIChat() {
     const contextLoader = useRef<GeminiContextLoader | null>(null);
     const abortController = useRef<AbortController | null>(null);
 
-    // Initialize client and context loader on component mount
+    // Initialize client, context loader, and session on component mount
     useEffect(() => {
         geminiClient.current = new GeminiClient();
         contextLoader.current = createContextLoader();
-        
+
+        // Generate a unique session ID for this chat session
+        const newSessionId = uuidv4();
+        console.log(`[AIChat] Generated new session ID: ${newSessionId}`);
+        setSessionId(newSessionId);
+
         // Ensure documentation is loaded via backend when chat opens
         const initDocs = async () => {
-            if (!geminiClient.current) return;
+            if (!geminiClient.current || !newSessionId) return;
             setContextStatus('loading');
-            const status = await geminiClient.current.getDocsStatus();
+            const status = await geminiClient.current.getDocsStatus(newSessionId);
             if (!status.loaded) {
-                const res = await geminiClient.current.loadDocs();
+                const res = await geminiClient.current.loadDocs(newSessionId);
                 setContextStatus(res.success ? 'loaded' : 'error');
             } else {
                 setContextStatus('loaded');
             }
         };
         initDocs();
+
+        // Cleanup function when component unmounts (user closes chat or leaves IDE)
+        return () => {
+            if (geminiClient.current && newSessionId) {
+                console.log(`[AIChat] Component unmounting, cleaning up session ${newSessionId.substring(0, 8)}...`);
+                geminiClient.current.cleanupSession(newSessionId);
+            }
+        };
     }, []);
+
+    // Cleanup session when user closes browser tab or navigates away
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (sessionId) {
+                // Use sendBeacon for more reliable cleanup on page unload (uses POST)
+                const url = `/api/session/${sessionId}`;
+                navigator.sendBeacon(url);
+                console.log(`[AIChat] Page unloading, sent cleanup beacon for session ${sessionId.substring(0, 8)}...`);
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [sessionId]);
 
     // Scroll to bottom when messages change
     useEffect(() => {
@@ -118,7 +150,9 @@ export default function AIChat() {
             const terminalContext = contextLoader.current?.getCurrentTerminalContext() || '';
             
             // Use the new simplified chat API - all teaching guidelines are now in backend
+            console.log(`[AIChat] Sending message with session ${sessionId.substring(0, 8)}... (history: ${messages.length} messages)`);
             await geminiClient.current.chatWithContext(
+                sessionId,
                 userMessage.content,
                 messages, // Conversation history
                 editorContext,
