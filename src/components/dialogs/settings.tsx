@@ -106,6 +106,7 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
                                 setSettings({
                                     mode: ModeType.SYSTEM,
                                 });
+                                setIsDisabled(false);
                             }
                         });
                 }
@@ -288,16 +289,17 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
         }
         if (isXrpConnected) {
             if (adminData === undefined) {
-                const content = JSON.stringify({
+                const admin : AdminData = ({
                     name: data.name,
                     email: data.email,
+                    isAmin: true,
                     mode: ModeType.GOOUSER,
                 });
-                setAdminData(adminData);
+                setAdminData(admin);
                 setIsDisabled(false);
                 await CommandToXRPMgr.getInstance().uploadFile(
                     adminFilePath,
-                    content?.toString() ?? '',
+                    JSON.stringify(admin) ?? '',
                 );
             } else {
                 if (data.email === adminData.email) {

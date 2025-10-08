@@ -39,6 +39,7 @@ export enum EventType {
     EVENT_MUST_UPDATE_MICROPYTHON = 'must-micropython-update', //If not an XRP version of MicroPython they must update before updating XRPLib
     EVENT_BLOCKLY_TOOLBOX_UPDATED = 'blockly-toolbox-updated', // Blockly toolbox has been updated
     EVENT_GAMEPAD_STATUS = 'gamepad-status', // Gamepad status on/off
+    EVENT_ALERT = 'alert', // Alert dialog event
 }
 
 type Events = {
@@ -69,6 +70,7 @@ type Events = {
     [EventType.EVENT_MUST_UPDATE_MICROPYTHON]: string;
     [EventType.EVENT_BLOCKLY_TOOLBOX_UPDATED]: string;
     [EventType.EVENT_GAMEPAD_STATUS]: string;
+    [EventType.EVENT_ALERT]: string;
 };
 
 /**

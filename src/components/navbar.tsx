@@ -219,6 +219,11 @@ function NavBar({ layoutref }: NavBarProps) {
                 }
             });
 
+            AppMgr.getInstance().on(EventType.EVENT_ALERT, (message) => {
+                setDialogContent(<AlertDialog alertMessage={message} toggleDialog={toggleDialog} />);
+                toggleDialog();
+            });
+
             AppMgr.getInstance().on(EventType.EVENT_GAMEPAD_STATUS, (status: string) => {
                 if (status === Constants.CONNECTED) {
                         setGamepadConnected(true)
