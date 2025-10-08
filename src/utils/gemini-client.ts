@@ -250,7 +250,16 @@ export class GeminiClient {
         }
 
         // Generate a temporary session ID for legacy calls
-        const tempSessionId = `legacy-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const randomArray = new Uint32Array(2);
+        (typeof window !== 'undefined' && window.crypto
+            ? window.crypto.getRandomValues(randomArray)
+            : (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function'
+                ? crypto.getRandomValues(randomArray)
+                : (() => { throw new Error('No secure random generator available'); })()
+            )
+        );
+        const randomString = Array.from(randomArray).map(n => n.toString(36)).join('').substr(0, 9);
+        const tempSessionId = `legacy-${Date.now()}-${randomString}`;
         const userMessage = messages[messages.length - 1].content;
         const conversationHistory = messages.slice(0, -1);
 
