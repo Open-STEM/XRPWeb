@@ -29,8 +29,8 @@ jobs:
             cache: 'npm'
       - name: Install dependencies
         run: npm install
-      #- name: test
-      #  run: npm run test
+      - name: test
+        run: npm run test
       - name: Build
         run: npm run build
         env:
@@ -38,16 +38,7 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           GOOGLE_DEVELOPER_KEY: ${{ secrets.GOOGLE_DEVELOPER_KEY }}
           GOOGLE_REDIRECT_URI: ${{ vars.GOOGLE_REDIRECT_URI }}
-      
-      - name: Verify dist folder contents
-        run: |
-          # Fails the step if the directory doesn't exist
-          test -d ./dist || { echo "::error::./dist directory not found!"; exit 1; }
-          
-          # Lists the contents of the directory to confirm what is present
-          echo "Contents of ./dist:"
-          ls -R ./dist
-      
+    
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
