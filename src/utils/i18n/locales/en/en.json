@@ -143,5 +143,7 @@
     "driver-install-no": "No",
     "progress-item": "Processing item: ",
     "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
-    "individualMotors": "Individual Motors"
+    "individualMotors": "Individual Motors",
+    "language": "Language",
+    "languageSelection": "Language Selection"
 }

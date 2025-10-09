@@ -22,7 +22,7 @@ import { IoPlaySharp } from 'react-icons/io5';
 import { MdMoreVert } from "react-icons/md";
 import { IoStop } from 'react-icons/io5';
 import { useEffect, useRef, useState } from 'react';
-import i18n from '@/utils/i18n';
+import { useTranslation } from 'react-i18next';
 import Dialog from '@components/dialogs/dialog';
 import ConnectionDlg from '@/components/dialogs/connectiondlg';
 import FileSaveAsDialg from '@/components/dialogs/filesaveasdlg';
@@ -42,6 +42,7 @@ import MenuItem from '@/widgets/menu';
 import AppMgr, { EventType } from '@/managers/appmgr';
 import { ConnectionState } from '@/connections/connection';
 import SettingsDlg from '@/components/dialogs/settings';
+import LanguageSelectionDlg from '@/components/dialogs/language-selectiondlg';
 import NewFileDlg from '@/components/dialogs/newfiledlg';
 import { Constants } from '@/utils/constants';
 import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
@@ -78,6 +79,7 @@ let hasSubscribed = false;
  * @returns
  */
 function NavBar({ layoutref }: NavBarProps) {
+    const { t } = useTranslation();
     const [isMoreMenuOpen, setMoreMenuOpen] = useState(false);
     const [isConnected, setConnected] = useState(false);
     const [isRunning, setRunning] = useState(false);
@@ -247,7 +249,7 @@ function NavBar({ layoutref }: NavBarProps) {
             const user = localStorage.getItem(StorageKeys.XRPUSER)?.replace(/"/g, '');
             if (user === undefined || user === "") {
                 // output an alert message and inform the user
-                setDialogContent(<AlertDialog alertMessage={i18n.t('no-user-message')} toggleDialog={toggleDialog} />);
+                setDialogContent(<AlertDialog alertMessage={t('no-user-message')} toggleDialog={toggleDialog} />);
                 toggleDialog();
             }
         }
@@ -259,7 +261,7 @@ function NavBar({ layoutref }: NavBarProps) {
     function handleMPUpdateCallback() {
         // ask the user to confirm the update and provide instructions to the user about the update
         const xrpDrive = CommandToXRPMgr.getInstance().getXRPDrive();
-        setDialogContent(<ConfirmationDlg acceptCallback={handleMPUpdateConfirmed} toggleDialog={toggleDialog} confirmationMessage={i18n.t('update-mp-instructions', { drive: xrpDrive })} />);
+        setDialogContent(<ConfirmationDlg acceptCallback={handleMPUpdateConfirmed} toggleDialog={toggleDialog} confirmationMessage={t('update-mp-instructions', { drive: xrpDrive })} />);
         toggleDialog();
     }
 
@@ -288,10 +290,10 @@ function NavBar({ layoutref }: NavBarProps) {
             await writable.close();
         } catch(err) {
             console.log("Firmware update error: ", err);
-            setDialogContent(<AlertDialog alertMessage={i18n.t('update-mp-error', { error: err})} toggleDialog={toggleDialog} />);
+            setDialogContent(<AlertDialog alertMessage={t('update-mp-error', { error: err})} toggleDialog={toggleDialog} />);
             toggleDialog();
         }
-        setDialogContent(<AlertDialog alertMessage={i18n.t('update-mp-complete')} toggleDialog={toggleDialog} />);
+        setDialogContent(<AlertDialog alertMessage={t('update-mp-complete')} toggleDialog={toggleDialog} />);
         toggleDialog();
     }
 
@@ -301,7 +303,7 @@ function NavBar({ layoutref }: NavBarProps) {
     async function handleXRPLibUpdateCallback() {
         // ask the user to confirm the update and provide instructions to the user about the update
         const xrpDrive = CommandToXRPMgr.getInstance().getXRPDrive();
-        setDialogContent(<ConfirmationDlg acceptCallback={handleXRPLibUpdateConfirmed} toggleDialog={toggleDialog} confirmationMessage={i18n.t('update-lib-instructions', { drive: xrpDrive })} />);
+        setDialogContent(<ConfirmationDlg acceptCallback={handleXRPLibUpdateConfirmed} toggleDialog={toggleDialog} confirmationMessage={t('update-lib-instructions', { drive: xrpDrive })} />);
         toggleDialog();
     }
 
@@ -316,11 +318,11 @@ function NavBar({ layoutref }: NavBarProps) {
             await CommandToXRPMgr.getInstance().updateLibrary();
         } catch (err) {
             console.log("Library update error: ", err);
-            setDialogContent(<AlertDialog alertMessage={i18n.t('update-lib-error', { error: err})} toggleDialog={toggleDialog} />);
+            setDialogContent(<AlertDialog alertMessage={t('update-lib-error', { error: err})} toggleDialog={toggleDialog} />);
             toggleDialog();
         }
         toggleDialog();
-        setDialogContent(<AlertDialog alertMessage={i18n.t('update-lib-complete')} toggleDialog={toggleDialog} />);
+        setDialogContent(<AlertDialog alertMessage={t('update-lib-complete')} toggleDialog={toggleDialog} />);
         toggleDialog();
     }
 
@@ -343,7 +345,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * NewFile - create either a new Python or Blockly file
      */
     function NewFile() {
-        console.log(i18n.t('newFile'), layoutref);
+        console.log(t('newFile'), layoutref);
         setDialogContent(
             <NewFileDlg submitCallback={onNewFileSubmitted} toggleDialog={toggleDialog} />,
         );
@@ -354,7 +356,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * UploadFile - upload a file to XRP
      */
     function UploadFile() {
-        console.log(i18n.t('uploadFile'));
+        console.log(t('uploadFile'));
         openFilePicker();
     }
 
@@ -362,7 +364,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * ExportToPC - export the file to PC
      */
     function ExportToPC() {
-        console.log(i18n.t('exportToPC'));
+        console.log(t('exportToPC'));
         const session = EditorMgr.getInstance().getEditorSession(activeTab);
         if (session) {
             CommandToXRPMgr.getInstance()
@@ -374,7 +376,7 @@ function NavBar({ layoutref }: NavBarProps) {
                 });
         } else {
             setDialogContent(
-                <AlertDialog alertMessage={i18n.t('no-activetab')} toggleDialog={toggleDialog} />,
+                <AlertDialog alertMessage={t('no-activetab')} toggleDialog={toggleDialog} />,
             );
             toggleDialog();
         }
@@ -384,7 +386,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * SaveFile - Save file to XRP
      */
     function SaveFile() {
-        console.log(i18n.t('saveFile'));
+        console.log(t('saveFile'));
         if (EditorMgr.getInstance().hasEditorSession(activeTab)) {
             AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
             setDialogContent(<ProgressDlg title='saveToXRPTitle'/>);
@@ -395,7 +397,7 @@ function NavBar({ layoutref }: NavBarProps) {
             });
         } else {
             setDialogContent(
-                <AlertDialog alertMessage={i18n.t('no-activetab')} toggleDialog={toggleDialog} />,
+                <AlertDialog alertMessage={t('no-activetab')} toggleDialog={toggleDialog} />,
             );
         }
         toggleDialog();
@@ -430,7 +432,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * SaveFileAs - save the current file as to the XRP
      */
     function SaveFileAs() {
-        console.log(i18n.t('saveFileAs'));
+        console.log(t('saveFileAs'));
         if (EditorMgr.getInstance().hasEditorSession(activeTab)) {
             const folderList = AppMgr.getInstance().getFolderList();
             setDialogContent(
@@ -443,7 +445,7 @@ function NavBar({ layoutref }: NavBarProps) {
             toggleDialog();
         } else {
             setDialogContent(
-                <AlertDialog alertMessage={i18n.t('no-activetab')} toggleDialog={toggleDialog} />,
+                <AlertDialog alertMessage={t('no-activetab')} toggleDialog={toggleDialog} />,
             );
             toggleDialog();
         }
@@ -517,7 +519,7 @@ function NavBar({ layoutref }: NavBarProps) {
             <ConfirmationDlg
                 acceptCallback={BlocksToPythonCallback}
                 toggleDialog={toggleDialog}
-                confirmationMessage={i18n.t('convert-to-python-desc')}
+                confirmationMessage={t('convert-to-python-desc')}
             />,
         );
         toggleDialog();
@@ -527,7 +529,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * FontPlusPlus - increase font in the current window
      */
     function FontPlusPlus() {
-        console.log(i18n.t('increaseFont'));
+        console.log(t('increaseFont'));
         AppMgr.getInstance().emit(EventType.EVENT_FONTCHANGE, FontSize.INCREASE);
     }
 
@@ -535,7 +537,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * FontMinus - decrease font in the current window
      */
     function FontMinus() {
-        console.log(i18n.t('decreaseFont'));
+        console.log(t('decreaseFont'));
         AppMgr.getInstance().emit(EventType.EVENT_FONTCHANGE, FontSize.DESCREASE);
     }
 
@@ -543,7 +545,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * viewDashboard - view the dashboard
      */
     function viewDashboard() {
-        console.log(i18n.t('dashboard'));
+        console.log(t('dashboard'));
         // check if the dashboard tab is already open
         if (EditorMgr.getInstance().hasEditorSession('Dashboard')) {
             setActiveTab('Dashboard');
@@ -551,9 +553,9 @@ function NavBar({ layoutref }: NavBarProps) {
         }
         const tabInfo: IJsonTabNode = {
             component: 'dashboard',
-            name: i18n.t('dashboard'),
+            name: t('dashboard'),
             id: 'DashboardId',
-            helpText: i18n.t('dashboard')
+            helpText: t('dashboard')
         };
         layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
         setActiveTab('Dashboard');
@@ -594,7 +596,7 @@ function NavBar({ layoutref }: NavBarProps) {
             if (!isConnected) {
                 setDialogContent(
                     <AlertDialog
-                        alertMessage={i18n.t('XRP-not-connected')}
+                        alertMessage={t('XRP-not-connected')}
                         toggleDialog={toggleDialog}
                     />,
                 );
@@ -606,7 +608,7 @@ function NavBar({ layoutref }: NavBarProps) {
             if (activeTab === 'Dashboard') {
                 setDialogContent(
                     <AlertDialog
-                        alertMessage={i18n.t('dashboard-no-run')}
+                        alertMessage={t('dashboard-no-run')}
                         toggleDialog={toggleDialog}
                     />,
                 );
@@ -673,6 +675,15 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
+     * onLanguageClicked - handle the language selection button click event
+     */
+    function onLanguageClicked() {
+        setMoreMenuOpen(false);
+        setDialogContent(<LanguageSelectionDlg toggleDialog={toggleDialog} />);
+        toggleDialog();
+    }
+
+    /**
      * onAiClicked - handle the AI button click event
      */
     function onAiClicked() {
@@ -695,7 +706,7 @@ function NavBar({ layoutref }: NavBarProps) {
         if (!isConnected) {
             setDialogContent(
                 <AlertDialog
-                    alertMessage={i18n.t('XRP-not-connected')}
+                    alertMessage={t('XRP-not-connected')}
                     toggleDialog={toggleDialog}
                 />,
             );
@@ -736,34 +747,34 @@ function NavBar({ layoutref }: NavBarProps) {
 
     const navItems: MenuDataItem[] = [
         {
-            label: i18n.t('file'),
+            label: t('file'),
             children: [
                 {
-                    label: i18n.t('newFile'),
+                    label: t('newFile'),
                     iconImage: fileadd,
                     clicked: NewFile,
                     isFile: true,
                 },
                 {
-                    label: i18n.t('uploadFiles'),
+                    label: t('uploadFiles'),
                     iconImage: fileupload,
                     clicked: UploadFile,
                     isFile: true,
                 },
                 {
-                    label: i18n.t('exportToPC'),
+                    label: t('exportToPC'),
                     iconImage: fileexport,
                     clicked: ExportToPC,
                     isFile: true,
                 },
                 {
-                    label: i18n.t('saveFile'),
+                    label: t('saveFile'),
                     iconImage: filesave,
                     clicked: SaveFile,
                     isFile: true,
                 },
                 {
-                    label: i18n.t('saveFileAs'),
+                    label: t('saveFileAs'),
                     iconImage: filesaveas,
                     clicked: SaveFileAs,
                     isFile: true,
@@ -771,16 +782,16 @@ function NavBar({ layoutref }: NavBarProps) {
             ],
         },
         {
-            label: i18n.t('view'),
+            label: t('view'),
             children: [
                 {
-                    label: i18n.t('viewPythonFile'),
+                    label: t('viewPythonFile'),
                     iconImage: python,
                     clicked: ViewPythonFile,
                     isView: true,
                 },
                 {
-                    label: i18n.t('convertToPython'),
+                    label: t('convertToPython'),
                     iconImage: convert,
                     clicked: ConvertToPython,
                     isView: true,
@@ -788,13 +799,13 @@ function NavBar({ layoutref }: NavBarProps) {
             ],
             childrenExt: [
                 {
-                    label: i18n.t('increaseFont'),
+                    label: t('increaseFont'),
                     iconImage: fontplus,
                     clicked: FontPlusPlus,
                     isView: true,
                 },
                 {
-                    label: i18n.t('decreaseFont'),
+                    label: t('decreaseFont'),
                     iconImage: fontminus,
                     clicked: FontMinus,
                     isView: true,
@@ -802,30 +813,30 @@ function NavBar({ layoutref }: NavBarProps) {
             ],
         },
         {
-            label: i18n.t('help'),
+            label: t('help'),
             children: [
                 {
-                    label: i18n.t('userGuide'),
+                    label: t('userGuide'),
                     iconImage: userguide,
                     link: 'https://xrpusersguide.readthedocs.io/en/latest/course/introduction.html',
                 },
                 {
-                    label: i18n.t('apiReference'),
+                    label: t('apiReference'),
                     iconImage: apilink,
                     link: 'https://open-stem.github.io/XRP_MicroPython/',
                 },
                 {
-                    label: i18n.t('cirriculum'),
+                    label: t('cirriculum'),
                     iconImage: cirriculum,
                     link: 'https://introtoroboticsv2.readthedocs.io/en/latest/',
                 },
                 {
-                    label: i18n.t('userHelpForum'),
+                    label: t('userHelpForum'),
                     iconImage: forum,
                     link: 'https://xrp.discourse.group/',
                 },
                 {
-                    label: i18n.t('changeLog'),
+                    label: t('changeLog'),
                     iconImage: changelog,
                     clicked: ChangeLog,
                 },
@@ -835,22 +846,27 @@ function NavBar({ layoutref }: NavBarProps) {
 
     const moreMenu: MenuDataItem[] = [
         {
-            label: i18n.t('ai-chat'),
+            label: t('ai-chat'),
             iconImage: chatbot,
             clicked: onAiClicked,
         },
         {
-            label: i18n.t('dashboard'),
+            label: t('dashboard'),
             iconImage: dashboard,
             clicked: onDashboardClicked,
         },
         { 
-            label: i18n.t('drivers'),
+            label: t('drivers'),
             iconImage: drivers,
             clicked: onDriverClicked,
         },
         {
-            label: i18n.t('settings'),
+            label: t('language'),
+            iconImage: settings,
+            clicked: onLanguageClicked,
+        },
+        {
+            label: t('settings'),
             iconImage: settings,
             clicked: onSettingsClicked,
         }
