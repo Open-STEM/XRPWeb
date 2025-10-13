@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import '@/index.css'
 import '@/utils/i18n';
+import '@/utils/blockly-global'; // Expose Blockly globally for external plugins
 import App from '@/App.tsx'
 import { GoogleOAuthProvider } from '@react-oauth/google';
 

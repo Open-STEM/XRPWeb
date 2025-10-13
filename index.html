@@ -9,6 +9,16 @@
     <link vite-ignore id="gridstack-stylesheet" rel="stylesheet" href="./node_modules/gridstack/dist/gridstack.css" />
     <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0" /> -->
     <title>XRP Web App</title>
+    
+    <!-- Import map for external plugin Blockly imports -->
+    <script type="importmap">
+    {
+        "imports": {
+            "blockly/core": "./assets/blockly-core.js",
+            "blockly/python": "./assets/blockly-python.js"
+        }
+    }
+    </script>
 </head>
 
 <body class="debug-screens">
