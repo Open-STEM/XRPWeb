@@ -146,6 +146,9 @@
     "_commentBlockly": "Esto no necesita ser traducido - agregar traducción específica de blockly a continuación",
     "individualMotors": "Motores Individuales",
     "language": "Idioma",
-    "languageSelection": "Selección de Idioma"
+    "languageSelection": "Selección de Idioma",
+    "connectXRP": "CONECTAR XRP",
+    "run": "EJECUTAR",
+    "stop": "DETENER"
 }
 

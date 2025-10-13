@@ -941,7 +941,7 @@ function NavBar({ layoutref }: NavBarProps) {
                         <path fill="none" stroke="#000" strokeWidth="1.1" d="M12,8 L18,2"></path>
                         <path fill="none" stroke="#000" strokeWidth="1.1" d="M2,18 L8,12"></path>
                     </svg>
-                    <span>CONNECT XRP</span>
+                    <span>{t('connectXRP')}</span>
                 </button>
                 <button
                     id="runBtn"
@@ -950,12 +950,12 @@ function NavBar({ layoutref }: NavBarProps) {
                 >
                     {isRunning ? (
                         <>
-                            <span>STOP</span>
+                            <span>{t('stop')}</span>
                             <IoStop />
                         </>
                     ) : (
                         <>
-                            <span>RUN</span>
+                            <span>{t('run')}</span>
                             <IoPlaySharp />
                         </>
                     )}
