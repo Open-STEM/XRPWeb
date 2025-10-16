@@ -209,6 +209,11 @@ export default class PluginMgr {
      * Load a script dynamically (module import with fallback)
      */
     private async loadScript(scriptUrl: string): Promise<void> {
+         if (process.env.NODE_ENV === 'development') {
+                scriptUrl = '/public' + scriptUrl;
+            }
+        
+        
         if (this.loadedScripts.has(scriptUrl)) {
             return; // Already loaded
         }

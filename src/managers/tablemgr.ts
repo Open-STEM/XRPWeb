@@ -179,9 +179,11 @@ private buffer: Uint8Array = new Uint8Array();
                             i += 3;
                         }
                         else if (data[i] == this.TypeFloat) {
-                            const view =  new DataView(data.buffer, i+2, 4);
-                            const val = Math.round(view.getFloat32(0, true) * 1e4) / 1e4;
-                            this.tableArray[data[i+1]] = val;
+                            const buff = data.buffer;
+                            const view =  new DataView(buff, data.byteOffset+i+2, 4);
+                            const val1 = view.getFloat32(0, true);
+                            //const val = Math.round(view.getFloat32(0, true) * 1e4) / 1e4;
+                            this.tableArray[data[i+1]] = val1;
                             i += 6
                         } 
                     }

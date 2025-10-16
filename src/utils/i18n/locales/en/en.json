@@ -144,5 +144,10 @@
     "progress-item": "Processing item: ",
     "alertOpenPortFailed": "Opening port failed, is another application accessing this device/port?",
     "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
-    "individualMotors": "Individual Motors"
+    "individualMotors": "Individual Motors",
+    "language": "Language",
+    "languageSelection": "Language Selection",
+    "connectXRP": "CONNECT XRP",
+    "run": "RUN",
+    "stop": "STOP"
 }
