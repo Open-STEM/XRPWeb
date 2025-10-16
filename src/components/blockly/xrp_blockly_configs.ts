@@ -328,6 +328,11 @@ const ToolboxJson = {
             "contents": [
                 {
                     "kind": "BLOCK",
+                    "blockxml": "<block type=\"controls_whileUntil\">\n  <field name=\"MODE\">UNTIL</field>\n  <value name=\"BOOL\">\n    <block type=\"xrp_button_pressed\"></block>\n  </value>\n</block>",
+                    "type": "controls_whileUntil"
+                },
+                {
+                    "kind": "BLOCK",
                     "blockxml": "<block type=\"controls_repeat_ext\">\n                <value name=\"TIMES\">\n                  <shadow type=\"math_number\">\n                    <field name=\"NUM\">10</field>\n                  </shadow>\n                </value>\n              </block>",
                     "type": "controls_repeat_ext"
                 },
