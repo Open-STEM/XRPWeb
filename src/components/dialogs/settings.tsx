@@ -1,4 +1,3 @@
-import i18n from '@/utils/i18n';
 import { StorageKeys } from '@/utils/localstorage';
 import { ListItem, SettingData, ModeType, AdminData } from '@/utils/types';
 import { useEffect, useState } from 'react';
@@ -12,6 +11,9 @@ import AppMgr, { EventType } from '@/managers/appmgr';
 import Login from '@/widgets/login';
 import { UserProfile } from '@/services/google-auth';
 import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
+import { useTranslation } from 'react-i18next';
+import TabList from '../tab-list';
+import TabItem from '../tab-item';
 
 type SettingsProps = {
     /**
@@ -25,6 +27,7 @@ type SettingsProps = {
 };
 
 function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
+    const { t, i18n } = useTranslation();
     const [xrpUser, setXRPUser] = useState<string>('');
     const [xrpUserList, setXRPUserList] = useState<string[]>([]);
     const [isAddUser, setIsAddUser] = useState<boolean>(false);
@@ -39,6 +42,7 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
     const [isValidUsername, setIsValidUsername] = useState<boolean | null>(null);
     const [, setLSXrpUser] = useLocalStorage(StorageKeys.XRPUSER, '');
     const modeLogger = logger.child({ module: 'modes' });
+    const [language, setLanguage] = useLocalStorage(StorageKeys.LANGUAGE, 'en');
 
     const authService = AppMgr.getInstance().authService;
     const USERS = '/users/';
@@ -46,17 +50,22 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
 
     const modeOptions: ListItem[] = [
         {
-            label: i18n.t('sysmode'),
+            label: t('sysmode'),
             image: '',
         },
         {
-            label: i18n.t('usermode'),
+            label: t('usermode'),
             image: '',
         },
         {
-            label: i18n.t('goousermode'),
+            label: t('goousermode'),
             image: '',
         },
+    ];
+
+    const languageOptions = [
+        { code: 'en', label: 'English', nativeName: 'English' },
+        { code: 'es', label: 'Spanish', nativeName: 'Español' },
     ];
 
     /**
@@ -100,6 +109,8 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
                                     authService.userProfile.email === adminData.email
                                 ) {
                                     setIsDisabled(false);
+                                } else {
+                                    setIsDisabled(true);
                                 }
                             } else {
                                 setModeValue(ModeType.SYSTEM);
@@ -150,6 +161,20 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
     };
 
     /**
+     * handleLanguageChange - handles language selection change
+     */
+    const handleLanguageChange = (event: { target: { value: string } }) => {
+        const newLanguage = event.target.value;
+        setLanguage(newLanguage);
+        i18n.changeLanguage(newLanguage);
+        if (modeValue === ModeType.GOOUSER) {
+            fireGoogleUserTree(username ?? '');            
+        } else if (modeValue === ModeType.SYSTEM || modeValue === ModeType.USER) {
+            CommandToXRPMgr.getInstance().getOnBoardFSTree();
+        }
+    };
+
+    /**
      * handleSave - saving the settings into localstorage
      */
     const handleSave = async () => {
@@ -172,11 +197,11 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
      */
     const selectValue = (optionLabel: string): number => {
         switch (optionLabel) {
-            case i18n.t('sysmode'):
+            case t('sysmode'):
                 return ModeType.SYSTEM;
-            case i18n.t('usermode'):
+            case t('usermode'):
                 return ModeType.USER;
-            case i18n.t('goousermode'):
+            case t('goousermode'):
                 return ModeType.GOOUSER;
             default:
                 return ModeType.SYSTEM;
@@ -191,13 +216,13 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
     const selectLabel = (mode: number): string => {
         switch (mode) {
             case ModeType.SYSTEM:
-                return i18n.t('sysmode');
+                return t('sysmode');
             case ModeType.USER:
-                return i18n.t('usermode');
+                return t('usermode');
             case ModeType.GOOUSER:
-                return i18n.t('goousermode');
+                return t('goousermode');
             default:
-                return i18n.t('sysmode');
+                return t('sysmode');
         }
     };
 
@@ -216,8 +241,8 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
      * and updates the state accordingly.
      */
     const googleSignOut = () => {
-        setIsDisabled(true);
         if (modeValue === ModeType.GOOUSER) {
+            setIsDisabled(true);
             AppMgr.getInstance().emit(EventType.EVENT_FILESYS, '{}');
         }
     };
@@ -319,82 +344,104 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
     return (
         <div className="flex flex-col items-center gap-4 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
             <div className="flex w-[80%] flex-col items-center">
-                <h1 className="text-lg font-bold text-mountain-mist-700">{i18n.t('settings')}</h1>
-                <p className="text-sm text-mountain-mist-700">{i18n.t('settingDescription')}</p>
+                <h1 className="text-lg font-bold text-mountain-mist-700">{t('settings')}</h1>
+                <p className="text-sm text-mountain-mist-700">{t('settingDescription')}</p>
             </div>
             <hr className="w-full border-mountain-mist-600" />
-            <div className="flex w-full flex-col gap-2">
-                <label className="text-mountain-mist-900 dark:text-curious-blue-100">{i18n.t('user-modes')}</label>
-                <select
-                    id="modeSelectedId"
-                    className="dark:text-white block rounded border border-s-2 border-shark-300 border-s-curious-blue-500 bg-mountain-mist-100 p-2.5 text-sm text-mountain-mist-700 focus:border-mountain-mist-500 focus:ring-curious-blue-500 dark:border-shark-600 dark:border-s-shark-500 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-400 dark:focus:border-matisse-500 dark:focus:ring-shark-300"
-                    onChange={handleModeSelection}
-                    disabled={isDisabled}
-                >
-                    <option defaultValue={modeValue}>{selectLabel(modeValue)}</option>
-                    {modeOptions.map((option) => (
-                        <option key={option.label} value={selectValue(option.label)}>
-                            {option.label}
-                        </option>
-                    ))}
-                </select>
-                {settings?.mode === ModeType.USER && isXrpConnected && (
-                    <>
-                        {isAddUser && (
-                            <div className="flex flex-col gap-2">
-                                <label className="text-mountain-mist-900 dark:text-curious-blue-100">
-                                    {i18n.t('addusername')}
-                                </label>
-                                <input
-                                    className="text-md rounded border border-shark-300 p-2 text-mountain-mist-700 dark:border-shark-600 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-400"
-                                    type="username"
-                                    placeholder={i18n.t('username')}
-                                    value={username}
-                                    required
-                                    onChange={handleAddUserInput}
-                                    minLength={12}
-                                />
-                                {isValidUsername == null ? null : isValidUsername ? (
-                                    <label className='text-chateau-green-600 dark:text-green-400'>{i18n.t('valid-username')}</label>
-                                ) : (
-                                    <label className='text-cinnabar-600 dark:text-red-400'>{i18n.t('invalid-username')}</label>
+            <TabList activeTabIndex={0}>
+                {/* Mode Tab */}
+                <TabItem label={t('user-modes')} isActive={false}>
+                    <div className="flex w-full flex-col gap-2 mt-2">
+                        <span className='text-mountain-mist-900 dark:text-curious-blue-100'>{t('user-modes-selections')}</span>
+                        <select
+                            id="modeSelectedId"
+                            className="dark:text-white block rounded border border-s-2 border-shark-300 border-s-curious-blue-500 bg-mountain-mist-100 p-2.5 text-sm text-mountain-mist-700 focus:border-mountain-mist-500 focus:ring-curious-blue-500 dark:border-shark-600 dark:border-s-shark-500 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-400 dark:focus:border-matisse-500 dark:focus:ring-shark-300"
+                            onChange={handleModeSelection}
+                            disabled={isDisabled}
+                        >
+                            <option defaultValue={modeValue}>{selectLabel(modeValue)}</option>
+                            {modeOptions.map((option) => (
+                                <option key={option.label} value={selectValue(option.label)}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                        {settings?.mode === ModeType.USER && isXrpConnected && (
+                            <>
+                                {isAddUser && (
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-mountain-mist-900 dark:text-curious-blue-100">
+                                            {t('addusername')}
+                                        </label>
+                                        <input
+                                            className="text-md rounded border border-shark-300 p-2 text-mountain-mist-700 dark:border-shark-600 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-400"
+                                            type="username"
+                                            placeholder={t('username')}
+                                            value={username}
+                                            required
+                                            onChange={handleAddUserInput}
+                                            minLength={12}
+                                        />
+                                        {isValidUsername == null ? null : isValidUsername ? (
+                                            <label className='text-chateau-green-600 dark:text-green-400'>{t('valid-username')}</label>
+                                        ) : (
+                                            <label className='text-cinnabar-600 dark:text-red-400'>{t('invalid-username')}</label>
+                                        )}
+                                    </div>
                                 )}
-                            </div>
+                                {isSelectUser && (
+                                    <div className="flex flex-col gap-2">
+                                        <label className="text-mountain-mist-900 dark:text-curious-blue-100">{t('users')}</label>
+                                        <select
+                                            id="selectUser"
+                                            className="dark:text-white block rounded border border-s-2 border-shark-300 border-s-curious-blue-500 bg-mountain-mist-100 p-2.5 text-sm text-mountain-mist-700 focus:border-mountain-mist-500 focus:ring-curious-blue-500 dark:border-shark-600 dark:border-s-shark-500 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-400 dark:focus:border-matisse-500 dark:focus:ring-shark-300"
+                                            onChange={handleSelectUserOption}
+                                        >
+                                            <option value="">{t('selectUserOption')}</option>
+                                            {xrpUserList.map((user, index) => (
+                                                <option key={index} value={user}>
+                                                    {user}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                                <div className="flex flex-col items-end">
+                                    <div className="flex flex-row gap-2">
+                                        <Button disabled={isAddButtonDisabled} onClicked={addUser}>
+                                            {t('addUser')}
+                                        </Button>
+                                        <Button disabled={isSelectButtonDisabled} onClicked={selectUser}>
+                                            {t('selectUser')}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </>
                         )}
-                        {isSelectUser && (
-                            <div className="flex flex-col gap-2">
-                                <label className="text-mountain-mist-900 dark:text-curious-blue-100">{i18n.t('users')}</label>
-                                <select
-                                    id="selectUser"
-                                    className="dark:text-white block rounded border border-s-2 border-shark-300 border-s-curious-blue-500 bg-mountain-mist-100 p-2.5 text-sm text-mountain-mist-700 focus:border-mountain-mist-500 focus:ring-curious-blue-500 dark:border-shark-600 dark:border-s-shark-500 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-400 dark:focus:border-matisse-500 dark:focus:ring-shark-300"
-                                    onChange={handleSelectUserOption}
-                                >
-                                    <option value="">{i18n.t('selectUserOption')}</option>
-                                    {xrpUserList.map((user, index) => (
-                                        <option key={index} value={user}>
-                                            {user}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-                        <div className="flex flex-col items-end">
-                            <div className="flex flex-row gap-2">
-                                <Button disabled={isAddButtonDisabled} onClicked={addUser}>
-                                    {i18n.t('addUser')}
-                                </Button>
-                                <Button disabled={isSelectButtonDisabled} onClicked={selectUser}>
-                                    {i18n.t('selectUser')}
-                                </Button>
-                            </div>
-                        </div>
-                    </>
-                )}
-                <Login onSuccess={onLoginSuccess} logoutCallback={googleSignOut} />
-            </div>
+                        <Login onSuccess={onLoginSuccess} logoutCallback={googleSignOut} />
+                    </div>
+                </TabItem>
+                <TabItem label={t('language')} isActive={false}>
+                    <div className="flex w-full flex-col gap-2 mt-2">
+                        <span className='text-mountain-mist-900 dark:text-curious-blue-100'>{t('languageSelection')}</span>
+                        <select
+                            id="languageSelectedId"
+                            className="dark:text-white block rounded border border-s-2 border-shark-300 border-s-curious-blue-500 bg-mountain-mist-100 p-2.5 text-sm text-mountain-mist-700 focus:border-mountain-mist-500 focus:ring-curious-blue-500 dark:border-shark-600 dark:border-s-shark-500 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-400 dark:focus:border-matisse-500 dark:focus:ring-shark-300"
+                            value={language}
+                            onChange={handleLanguageChange}
+                        >
+                            {languageOptions.map((option) => (
+                                <option key={option.code} value={option.code}>
+                                    {option.nativeName} ({option.label})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </TabItem>
+            </TabList>
             <hr className="w-full border-mountain-mist-600" />
             <DialogFooter
-                btnAcceptLabel={i18n.t('save')}
+                btnAcceptLabel={t('save')}
                 btnAcceptCallback={handleSave}
                 btnCancelCallback={toggleDialog}
             />

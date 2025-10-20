@@ -15,11 +15,11 @@ import { ExtensionHostKind, registerExtension } from 'vscode/extensions';
 import 'vscode/localExtensionHost';
 import { initializedAndStartLanguageClient } from '@components/lsp-client';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
-import i18n from '@/utils/i18n';
 import { StorageKeys } from '@/utils/localstorage';
 import EditorMgr, { EditorSession } from '@/managers/editormgr';
 import { FontSize } from '@/utils/types';
 import { Constants } from '@/utils/constants';
+import { useTranslation } from 'react-i18next';
 
 const languageId = 'python';
 let isClientInitalized: boolean = false;
@@ -137,6 +137,7 @@ const MonacoEditor = ({
     value,
     className,
 }: MonacoEditorProps) => {
+    const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement | null>(null);
     const editor = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
@@ -265,7 +266,7 @@ const MonacoEditor = ({
 
                 editor.current.addAction({
                     id: 'save',
-                    label: i18n.t('save'),
+                    label: t('save'),
                     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
                     contextMenuGroupId: 'navigation',
                     contextMenuOrder: 1.5,

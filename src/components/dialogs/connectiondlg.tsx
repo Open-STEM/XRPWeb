@@ -1,7 +1,7 @@
-import i18n from '@/utils/i18n';
 import Bluetooth from '@assets/images/Bluetooth_FM_Black.png';
 import Usb from '@assets/images/USB_icon.svg.png';
 import { ConnectionType, ListItem } from '@/utils/types';
+import { useTranslation } from 'react-i18next';
 
 type ConnProps = {
     callback: (connection: ConnectionType) => void;
@@ -13,14 +13,15 @@ type ConnProps = {
  * @returns
  */
 function ConnectionDlg(connprops: ConnProps) {
+    const { t } = useTranslation();
     // list of items to display
     const items: ListItem[] = [
         {
-            label: i18n.t('bluetoothConnection'),
+            label: t('bluetoothConnection'),
             image: Bluetooth,
         },
         {
-            label: i18n.t('usbConnection'),
+            label: t('usbConnection'),
             image: Usb,
         },
     ];
@@ -32,10 +33,10 @@ function ConnectionDlg(connprops: ConnProps) {
     const handleItemClick = (item: ListItem) => {
         console.log(item);
         switch (item.label) {
-            case i18n.t('bluetoothConnection'):
+            case t('bluetoothConnection'):
                 connprops.callback(ConnectionType.BLUETOOTH);
                 break;
-            case i18n.t('usbConnection'):
+            case t('usbConnection'):
                 connprops.callback(ConnectionType.USB);
                 break;
             default:
@@ -45,8 +46,8 @@ function ConnectionDlg(connprops: ConnProps) {
 
     return (
         <div className="border rounded-md border-mountain-mist-700 dark:border-shark-500 dark:bg-shark-950 flex h-auto w-96 flex-col items-center gap-2 p-4 shadow-md transition-all">
-            <h1 className='text-lg font-bold text-mountain-mist-700'>{i18n.t('connections')}</h1>
-            <p className='text-sm text-mountain-mist-700'>{i18n.t('selectConnection')}</p>
+            <h1 className='text-lg font-bold text-mountain-mist-700'>{t('connections')}</h1>
+            <p className='text-sm text-mountain-mist-700'>{t('selectConnection')}</p>
             <hr className="w-full border-mountain-mist-600" />
             <ul>
                 {items.map((item) => (

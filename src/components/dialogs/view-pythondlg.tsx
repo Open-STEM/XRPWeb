@@ -1,5 +1,5 @@
-import i18n from '@/utils/i18n';
 import MonacoEditor from '../MonacoEditor';
+import { useTranslation } from 'react-i18next';
 
 type ViewPythonDlgProps = {
     code: string;
@@ -7,6 +7,7 @@ type ViewPythonDlgProps = {
 };
 
 export default function ViewPythonDlg({ code, toggleDlg }: ViewPythonDlgProps) {
+    const { t } = useTranslation();
     return (
         <div className="flex h-auto w-auto flex-col gap-2 overflow-hidden rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
             <div className="flex flex-col items-center">
@@ -33,13 +34,13 @@ export default function ViewPythonDlg({ code, toggleDlg }: ViewPythonDlgProps) {
                     <span className="sr-only">Close modal</span>
                 </button>
                 <h1 className="text-lg font-bold text-mountain-mist-700">
-                    {i18n.t('viewPythonFile')}
+                    {t('viewPythonFile')}
                 </h1>
             </div>
             <hr className="w-full border-mountain-mist-600" />
             <MonacoEditor
                 value={code}
-                name={i18n.t('python-untile')}
+                name={t('python-untile')}
                 width={'80vw'}
                 height={'80vw'}
             />

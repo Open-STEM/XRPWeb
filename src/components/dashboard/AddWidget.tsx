@@ -4,12 +4,13 @@ import { Dropdown, DropdownItem } from "flowbite-react";
 import { MdSpeed } from 'react-icons/md';
 import { FaBatteryHalf, FaBolt, FaCog, FaEye, FaGlobe, FaPlus } from 'react-icons/fa';
 import { BsRulers } from 'react-icons/bs';
-import i18n from "@/utils/i18n";
 import { FlowBiteConstants } from "@/utils/constants";
+import { useTranslation } from "react-i18next";
 
 type ActionType = 'accelerometer' | 'current' | 'encoder' | 'gyroscope' | 'rangefinder' | 'reflectance' | 'voltage';
 
 const AddWidgets: React.FC = () => {
+  const { t } = useTranslation();
   const { addWidget } = useGridStackContext();
 
   const handleAction = (action: ActionType) => {
@@ -24,7 +25,7 @@ const AddWidgets: React.FC = () => {
           minW: 2,
           minH: 5,
           content: JSON.stringify({
-            name: i18n.t('accelerometer'),
+            name: 'Accelerometer',
             props: {
               isActive: true
               // Remove widgetId - we'll get it from GridStack
@@ -44,7 +45,7 @@ const AddWidgets: React.FC = () => {
           minW: 1,
           minH: 5,
           content: JSON.stringify({
-            name: i18n.t('current'),
+            name: 'Current',
             props: {
               isActive: true
             },
@@ -63,7 +64,7 @@ const AddWidgets: React.FC = () => {
           minW: 2,
           minH: 5,
           content: JSON.stringify({
-            name: i18n.t('gyroscope'),
+            name: 'Gyroscope',
             props: {
               isActive: true
             },
@@ -82,7 +83,7 @@ const AddWidgets: React.FC = () => {
           minW: 1,
           minH: 4,
           content: JSON.stringify({
-            name: i18n.t('encoder'),
+            name: 'Encoder',
             props: {
               isActive: true
             },
@@ -101,7 +102,7 @@ const AddWidgets: React.FC = () => {
           minW: 2,
           minH: 5,
           content: JSON.stringify({
-            name: i18n.t('reflectance'),
+            name: 'Reflectance',
             props: {
               isActive: true
             },
@@ -120,7 +121,7 @@ const AddWidgets: React.FC = () => {
           minW: 2,
           minH: 6,
           content: JSON.stringify({
-            name: i18n.t('voltage'),
+            name: 'Voltage',
             props: {
               isActive: true
             },
@@ -139,7 +140,7 @@ const AddWidgets: React.FC = () => {
           minW: 2,
           minH: 8,
           content: JSON.stringify({
-            name: i18n.t('rangefinder'),
+            name: 'Rangefinder',
             props: {
               isActive: true
             },
@@ -155,13 +156,13 @@ const AddWidgets: React.FC = () => {
   return (
     <div className="flex items-center mt-4 sm:mt-0">
       <Dropdown label={<FaPlus size={20} />} inline={true} theme={FlowBiteConstants.DropdownTheme} className="flex items-center mt-4 sm:mt-0 ">
-        <DropdownItem icon={MdSpeed} onClick={() => handleAction('accelerometer')}>Accelerometer</DropdownItem>
-        <DropdownItem icon={FaBolt} onClick={() => handleAction('current')}>Current</DropdownItem>
-        <DropdownItem icon={FaGlobe} onClick={() => handleAction('gyroscope')}>Gyroscope</DropdownItem>
-        <DropdownItem icon={FaCog} onClick={() => handleAction('encoder')}>Encoder</DropdownItem>
-        <DropdownItem icon={FaEye} onClick={() => handleAction('reflectance')}>Reflectance</DropdownItem>
-        <DropdownItem icon={BsRulers} onClick={() => handleAction('rangefinder')}>Rangefinder</DropdownItem>
-        <DropdownItem icon={FaBatteryHalf} onClick={() => handleAction('voltage')}>Voltage</DropdownItem>
+        <DropdownItem icon={MdSpeed} onClick={() => handleAction('accelerometer')}>{t('accelerometer')}</DropdownItem>
+        <DropdownItem icon={FaBolt} onClick={() => handleAction('current')}>{t('current')}</DropdownItem>
+        <DropdownItem icon={FaGlobe} onClick={() => handleAction('gyroscope')}>{t('gyroscope')}</DropdownItem>
+        <DropdownItem icon={FaCog} onClick={() => handleAction('encoder')}>{t('encoders')}</DropdownItem>
+        <DropdownItem icon={FaEye} onClick={() => handleAction('reflectance')}>{t('reflectance')}</DropdownItem>
+        <DropdownItem icon={BsRulers} onClick={() => handleAction('rangefinder')}>{t('rangefinder')}</DropdownItem>
+        <DropdownItem icon={FaBatteryHalf} onClick={() => handleAction('voltage')}>{t('voltage')}</DropdownItem>
       </Dropdown>
     </div>
   );

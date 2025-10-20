@@ -11,11 +11,9 @@ interface TabItemPropsAnimated extends TabItemProps {
 }
 
 function TabItem({ label, children, isActive }: TabItemPropsAnimated) {
-    console.log('FolderTabItem: ', children);
     return (
         <div
             className={`${isActive ? 'block' : 'hidden'}`}
-            style={{height: '100vh'}}
             role="tabpanel"
             aria-labelledby={`tab-${sanitizeForId(label)}`}
             id={`pane-${sanitizeForId(label)}`}

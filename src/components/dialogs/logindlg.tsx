@@ -3,16 +3,17 @@ import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
 import { UserProfile } from '@/services/google-auth';
 import { Constants } from '@/utils/constants';
 import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
-import i18n from '@/utils/i18n';
 import { AdminData, ModeType } from '@/utils/types';
 import Login from '@/widgets/login';
 import DialogFooter from '@components/dialogs/dialog-footer';
+import { useTranslation } from 'react-i18next';
 
 type LoginDgProps = {
     toggleDialog: () => void;
 };
 
 function GoogleLoginDlg({ toggleDialog }: LoginDgProps) {
+    const { t } = useTranslation();
     const isConnected = AppMgr.getInstance().getConnection()?.isConnected() ?? false;
     const adminFilePath = '/' + Constants.ADMIN_FILE;
     const authService = AppMgr.getInstance().authService;
@@ -59,15 +60,15 @@ function GoogleLoginDlg({ toggleDialog }: LoginDgProps) {
     return (
         <div className="flex flex-col items-center gap-4 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
             <div className="flex w-[90%] flex-col items-center">
-                <h1 className="text-lg font-bold text-mountain-mist-700">{i18n.t('login')}</h1>
-                <p className="text-sm text-mountain-mist-700">{i18n.t('login-desc')}</p>
+                <h1 className="text-lg font-bold text-mountain-mist-700">{t('login')}</h1>
+                <p className="text-sm text-mountain-mist-700">{t('login-desc')}</p>
             </div>
             <hr className="w-full border-mountain-mist-600" />
             <Login logoutCallback={logoutCallback} onSuccess={onSuccess} />
             <hr className="w-full border-mountain-mist-600" />
             <DialogFooter
                 hideCancelBtn={true}
-                btnAcceptLabel={i18n.t('closeButton')}
+                btnAcceptLabel={t('closeButton')}
                 btnAcceptCallback={toggleDialog}
                 btnCancelCallback={toggleDialog}
             />

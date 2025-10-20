@@ -7,8 +7,8 @@ import { Dropdown, DropdownItem } from "flowbite-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { FaChartLine, FaHashtag, FaCog, FaTrash } from 'react-icons/fa';
 import { useGridStackContext } from '../lib/grid-stack-context';
-import i18n from '@/utils/i18n';
 import { FlowBiteConstants } from '@/utils/constants';
+import { useTranslation } from 'react-i18next';
 
 // Define a type for timestamped accelerometer data
 interface TimestampedAccelData {
@@ -27,6 +27,7 @@ const axisColors = {
 
 const Accelerometer: React.FC = () => {
   // State to store the history of accelerometer readings
+  const { t } = useTranslation();
   const [accelHistory, setAccelHistory] = useState<TimestampedAccelData[]>([]);
   const { getSensorData, requestSensors, stopSensor, sensorData } = useSensorData();
   const { removeWidget } = useGridStackContext();
@@ -48,7 +49,7 @@ const Accelerometer: React.FC = () => {
         const sensorCard = item.querySelector('.sensor-card');
         const titleElement = sensorCard?.querySelector('h3');
 
-        if (titleElement?.textContent === 'Accelerometer') {
+        if (titleElement?.textContent === t('accelerometer')) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const node = (item as any).gridstackNode;
           if (node && node.id) {
@@ -111,7 +112,7 @@ const Accelerometer: React.FC = () => {
   };
 
   const sensorCardProps = {
-    title: "Accelerometer",
+    title: t('accelerometer'),
     icon: <MdSpeed size={20} />,
     onStart: handleStart,
     onStop: handleStop,
@@ -150,13 +151,13 @@ const Accelerometer: React.FC = () => {
           <DropdownItem onClick={() => handleAction('graph')}>
             <div className="flex items-center space-x-2">
               <FaChartLine size={16} />
-              <span>{i18n.t('graph')}</span>
+              <span>{t('graph')}</span>
             </div>
           </DropdownItem>
           <DropdownItem onClick={() => handleAction('number')}>
             <div className="flex items-center space-x-2">
               <FaHashtag size={16} />
-              <span>{i18n.t('number')}</span>
+              <span>{t('number')}</span>
             </div>
           </DropdownItem>
         </Dropdown>
@@ -171,7 +172,7 @@ const Accelerometer: React.FC = () => {
       </div>
       {!accelData ? (
         <div className="flex items-center justify-center w-full h-full">
-          <div className="text-gray-500 dark:text-gray-400">{i18n.t('no-data-available')}</div>
+          <div className="text-gray-500 dark:text-gray-400">{t('no-data-available')}</div>
         </div>
       ) : (
         <div className="flex flex-col w-full h-full relative pt-12">
@@ -183,7 +184,7 @@ const Accelerometer: React.FC = () => {
                     <XAxis
                       dataKey="timestamp"
                       tick={false}
-                      label={i18n.t('time')}
+                      label={t('time')}
                     />
                     <YAxis />
                     <Tooltip
@@ -197,7 +198,7 @@ const Accelerometer: React.FC = () => {
                 </ResponsiveContainer>
 
                 <div className="text-xs text-gray-500 text-center mt-2 dark:text-gray-400">
-                  {accelHistory.length} {i18n.t('readings-stored')}
+                  {accelHistory.length} {t('readings-stored')}
                 </div>
               </div>
             )

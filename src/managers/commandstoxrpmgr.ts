@@ -67,7 +67,7 @@ export class CommandToXRPMgr {
         const response = await fetch("micropython/package.json"); 
         const responseTxt = await response.text();
         const jresp = JSON.parse(responseTxt);
-        const v = jresp.firmwareVersion
+        const v = jresp.version
         this.mpVersion = v.split(".");
         this.mpBuild = jresp.firmwareBuild;
         this.mpFilename = jresp.firmwareFilename;

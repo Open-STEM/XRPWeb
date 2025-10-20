@@ -1,10 +1,10 @@
-import i18n from '@/utils/i18n';
 import { FileType, FolderItem, ListItem, NewFileData } from '@/utils/types';
 import { useEffect, useState } from 'react';
 import AppMgr from '@/managers/appmgr';
 import DialogFooter from './dialog-footer';
 import EditorMgr from '@/managers/editormgr';
 import FolderTree from '../folder-tree';
+import { useTranslation } from 'react-i18next';
 
 type NewFileProps = {
     submitCallback: (formData: NewFileData) => void;
@@ -12,6 +12,7 @@ type NewFileProps = {
 };
 
 function NewFileDlg(newFileProps: NewFileProps) {
+    const { t } = useTranslation();
     const [isFileExists, setIsFileExists] = useState(false);
     const [isOkayToSubmit, setIsOkayToSubmit] = useState(false);
     const [selectedFolder, setSelectedFolder] = useState('');
@@ -21,13 +22,13 @@ function NewFileDlg(newFileProps: NewFileProps) {
 
     const fileOptions: ListItem[] = [
         {
-            label: i18n.t('blocklyfile'),
+            label: t('blocklyfile'),
         },
         {
-            label: i18n.t('pythonfile'),
+            label: t('pythonfile'),
         },
         {
-            label: i18n.t('other'),
+            label: t('other'),
         },
     ];
 
@@ -107,19 +108,19 @@ function NewFileDlg(newFileProps: NewFileProps) {
     return (
         <div className="flex flex-col items-center gap-4 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
             <div className="flex w-[90%] flex-col items-center">
-                <h1 className="text-lg font-bold text-mountain-mist-700">{i18n.t('newFile')}</h1>
-                <p className="text-sm text-mountain-mist-700">{i18n.t('chooseNewFile')}</p>
+                <h1 className="text-lg font-bold text-mountain-mist-700">{t('newFile')}</h1>
+                <p className="text-sm text-mountain-mist-700">{t('chooseNewFile')}</p>
             </div>
             <hr className="w-full border-mountain-mist-600" />
             <form id="fileOptionId" className="flex w-full flex-col gap-2">
-                <label className="text-sm text-mountain-mist-700">{i18n.t('destFolder')}</label>
+                <label className="text-sm text-mountain-mist-700">{t('destFolder')}</label>
                 <FolderTree
                     treeData={JSON.stringify(folderList)}
                     theme=""
                     onSelected={handleFolderSelection}
                 />
                 <label className="text-sm text-mountain-mist-700" htmlFor="filesId">
-                    {i18n.t('fileType')}
+                    {t('fileType')}
                 </label>
                 <select
                     id="filesId"
@@ -129,7 +130,7 @@ function NewFileDlg(newFileProps: NewFileProps) {
                     }}
                     disabled={selectedFolder === ''}
                 >
-                    <option defaultValue={i18n.t('files')}>{i18n.t('files')}</option>
+                    <option defaultValue={t('files')}>{t('files')}</option>
                     {fileOptions.map((option) => (
                         <option
                             key={option.label}
@@ -140,13 +141,13 @@ function NewFileDlg(newFileProps: NewFileProps) {
                         </option>
                     ))}
                 </select>
-                <label className="text-sm text-mountain-mist-700">{i18n.t('filename')}</label>
+                <label className="text-sm text-mountain-mist-700">{t('filename')}</label>
                 <div className="flex flex-col items-center gap-1">
                     <input
                         className={`w-full rounded border ${isFileExists ? 'border-cinnabar-800' : 'border-shark-300 dark:border-shark-600'} p-2 text-sm text-mountain-mist-700 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-400`}
                         id="filenameId"
                         type="text"
-                        placeholder={i18n.t('enterFilename')}
+                        placeholder={t('enterFilename')}
                         required
                         minLength={2}
                         value={filename}
@@ -154,11 +155,11 @@ function NewFileDlg(newFileProps: NewFileProps) {
                         disabled={filetype === null || selectedFolder === ''}
                     />
                     {isFileExists && (
-                        <span className="text-sm text-cinnabar-800">{i18n.t('fileExists')}</span>
+                        <span className="text-sm text-cinnabar-800">{t('fileExists')}</span>
                     )}
                 </div>
                 <label className="text-mountain-mist-700 text-sm">
-                {i18n.t('final-path')}
+                {t('final-path')}
                 {selectedFolder}/{filename}{filetype === 1 ? '.blocks' : '.py'} 
             </label>
 
@@ -166,7 +167,7 @@ function NewFileDlg(newFileProps: NewFileProps) {
             <hr className="w-full border-mountain-mist-600" />
             <DialogFooter
                 disabledAccept={!isOkayToSubmit}
-                btnAcceptLabel={i18n.t('submitBtn')}
+                btnAcceptLabel={t('submitBtn')}
                 btnAcceptCallback={handleSubmit}
                 btnCancelCallback={newFileProps.toggleDialog}
             />
