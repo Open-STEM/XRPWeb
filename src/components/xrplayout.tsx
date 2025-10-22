@@ -4,7 +4,6 @@ import BlocklyEditor from '@components/blockly';
 import MonacoEditor from '@components/MonacoEditor';
 import XRPShell from '@components/xrpshell';
 import FolderIcon from '@assets/images/folder-24.png';
-import i18n from '@/utils/i18n';
 //import treeDaaJson from '@/utils/testdata';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
 import FolderTree from './folder-tree';
@@ -16,99 +15,8 @@ import EditorMgr, { EditorStore } from '@/managers/editormgr';
 import { CreateEditorTab } from '@/utils/editorUtils';
 import XRPDashboard from '@/components/dashboard/xrp-dashboard';
 import AIChat from '@/components/chat/ai-chat';
+import { useTranslation } from 'react-i18next';
 
-/**
- *  Layout-React's layout JSON to specify the XRPWeb's single page application's layout
- */
-const layout_json: IJsonModel = {
-    global: {
-        tabEnablePopout: false,
-        tabSetEnableDeleteWhenEmpty: false,
-        tabSetEnableDrag: false,
-        tabSetEnableDrop: false,
-        tabEnableRename: false
-    },
-    borders: [
-        {
-            type: 'border',
-            location: 'left',
-            enableDrop: false,
-            enableAutoHide: true,
-            size: 300,
-            selected: 0,
-            children: [
-                {
-                    type: 'tab',
-                    id: Constants.FOLDER_TAB_ID,
-                    name: i18n.t('folders'),
-                    component: 'folders',
-                    enableClose: false,
-                    icon: FolderIcon,
-                },
-            ],
-        },
-    ],
-    layout: {
-        type: 'row',
-        id: 'mainRowId',
-        weight: 100,
-        children: [
-            {
-                type: 'row',
-                id: 'combinedRowId',
-                name: 'row-combined',
-                weight: 80,
-                children: [
-                    {
-                        type: 'tabset',
-                        id: Constants.EDITOR_TABSET_ID,
-                        name: 'editorTabset',
-                        weight: 70,
-                        children: [],
-                    },
-                    {
-                        type: 'tabset',
-                        id: Constants.SHELL_TABSET_ID,
-                        name: 'shellTabset',
-                        weight: 30,
-                        children: [
-                            {
-                                type: 'tab',
-                                id: 'shellId',
-                                name: i18n.t('shell'),
-                                component: 'xterm',
-                                enableClose: false,
-                            },
-                        ],
-                    },
-                ],
-            },
-        ],
-    },
-};
-
-const model = Model.fromJson(layout_json);
-EditorMgr.getInstance().setLayoutModel(model);
-let layoutRef: React.RefObject<Layout> = {
-    current: null,
-};
-
-const factory = (node: TabNode) => {
-    const component = node.getComponent();
-    if (component == 'editor') {
-        return <MonacoEditor name={node.getName()} width="100vw" height="100vh" />;
-    } else if (component == 'xterm') {
-        return <XRPShell />;
-    } else if (component == 'folders') {
-        return <FolderTree treeData={null} theme="rct-dark" isHeader={true} />;
-    } else if (component == 'blockly') {
-        return <BlocklyEditor name={node.getName()} />;
-    } else if (component == 'dashboard') {
-        return <XRPDashboard />;
-    } else if (component == 'aichat') {
-        return <AIChat />;
-    }
-};
 
 type XRPLayoutProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -138,7 +46,101 @@ function useOnceCall(cb: () => void, condition = true) {
  * @returns React XRPLayout component
  */
 function XRPLayout({ forwardedref }: XRPLayoutProps) {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useLocalStorage(StorageKeys.ACTIVETAB, '');
+
+        /**
+         *  Layout-React's layout JSON to specify the XRPWeb's single page application's layout
+         */
+        const layout_json: IJsonModel = {
+            global: {
+                tabEnablePopout: false,
+                tabSetEnableDeleteWhenEmpty: false,
+                tabSetEnableDrag: false,
+                tabSetEnableDrop: false,
+                tabEnableRename: false
+            },
+            borders: [
+                {
+                    type: 'border',
+                    location: 'left',
+                    enableDrop: false,
+                    enableAutoHide: true,
+                    size: 300,
+                    selected: 0,
+                    children: [
+                        {
+                            type: 'tab',
+                            id: Constants.FOLDER_TAB_ID,
+                            name: t('folders'),
+                            component: 'folders',
+                            enableClose: false,
+                            icon: FolderIcon,
+                        },
+                    ],
+                },
+            ],
+            layout: {
+                type: 'row',
+                id: 'mainRowId',
+                weight: 100,
+                children: [
+                    {
+                        type: 'row',
+                        id: 'combinedRowId',
+                        name: 'row-combined',
+                        weight: 80,
+                        children: [
+                            {
+                                type: 'tabset',
+                                id: Constants.EDITOR_TABSET_ID,
+                                name: 'editorTabset',
+                                weight: 70,
+                                children: [],
+                            },
+                            {
+                                type: 'tabset',
+                                id: Constants.SHELL_TABSET_ID,
+                                name: 'shellTabset',
+                                weight: 30,
+                                children: [
+                                    {
+                                        type: 'tab',
+                                        id: 'shellId',
+                                        name: t('shell'),
+                                        component: 'xterm',
+                                        enableClose: false,
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+        };
+
+        const model = Model.fromJson(layout_json);
+        EditorMgr.getInstance().setLayoutModel(model);
+        let layoutRef: React.RefObject<Layout> = {
+            current: null,
+        };
+
+        const factory = (node: TabNode) => {
+            const component = node.getComponent();
+            if (component == 'editor') {
+                return <MonacoEditor name={node.getName()} width="100vw" height="100vh" />;
+            } else if (component == 'xterm') {
+                return <XRPShell />;
+            } else if (component == 'folders') {
+                return <FolderTree treeData={null} theme="rct-dark" isHeader={true} />;
+            } else if (component == 'blockly') {
+                return <BlocklyEditor name={node.getName()} />;
+            } else if (component == 'dashboard') {
+                return <XRPDashboard />;
+            } else if (component == 'aichat') {
+                return <AIChat />;
+            }
+        };
 
     /**
      * changeTheme - set the system selected theme

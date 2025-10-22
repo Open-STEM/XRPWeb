@@ -8,8 +8,8 @@ import { Dropdown, DropdownItem } from "flowbite-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { FaChartLine, FaHashtag, FaCog, FaTrash } from 'react-icons/fa';
 import { useGridStackContext } from '../lib/grid-stack-context';
-import i18n from '@utils/i18n';
 import { FlowBiteConstants } from '@/utils/constants';
+import { useTranslation } from 'react-i18next';
 
 // Define a type for timestamped battery data
 interface TimestampedBatteryData {
@@ -22,6 +22,7 @@ const voltageColor = '#f59e0b'; // amber color for battery voltage
 
 const Voltage: React.FC = () => {
   // State to store the history of battery readings
+  const { t } = useTranslation();
   const [batteryHistory, setBatteryHistory] = useState<TimestampedBatteryData[]>([]);
   const { getSensorData, requestSensors, stopSensor, sensorData } = useSensorData();
   const { removeWidget } = useGridStackContext();
@@ -57,7 +58,7 @@ const Voltage: React.FC = () => {
         const sensorCard = item.querySelector('.sensor-card');
         const titleElement = sensorCard?.querySelector('h3');
 
-        if (titleElement?.textContent === 'Battery Voltage') {
+        if (titleElement?.textContent === t('voltage')) {
           const node = (item as any).gridstackNode;
           if (node && node.id) {
             widgetIdRef.current = node.id;
@@ -115,7 +116,7 @@ const Voltage: React.FC = () => {
   };
 
   const sensorCardProps = {
-    title: "Battery Voltage",
+    title: t('voltage'),
     icon: <FaBatteryHalf size={20} />,
     onStart: handleStart,
     onStop: handleStop,
@@ -153,13 +154,13 @@ const Voltage: React.FC = () => {
           <DropdownItem onClick={() => handleAction('graph')}>
             <div className="flex items-center space-x-2">
               <FaChartLine size={16} />
-              <span>{i18n.t('graph')}</span>
+              <span>{t('graph')}</span>
             </div>
           </DropdownItem>
           <DropdownItem onClick={() => handleAction('number')}>
             <div className="flex items-center space-x-2">
               <FaHashtag size={16} />
-              <span>{i18n.t('number')}</span>
+              <span>{t('number')}</span>
             </div>
           </DropdownItem>
         </Dropdown>
@@ -174,7 +175,7 @@ const Voltage: React.FC = () => {
       </div>
       {!batteryData ? (
         <div className="flex items-center justify-center w-full h-full">
-          <div className="text-gray-500 dark:text-gray-400">{i18n.t('no-data-available')}</div>
+          <div className="text-gray-500 dark:text-gray-400">{t('no-data-available')}</div>
         </div>
       ) : (
         <div className="flex flex-col w-full h-full relative pt-12">
@@ -186,7 +187,7 @@ const Voltage: React.FC = () => {
                     <XAxis
                       dataKey="timestamp"
                       tick={false}
-                      label={i18n.t('time')}
+                      label={t('time')}
                     />
                     <YAxis />
                     <Tooltip
@@ -198,12 +199,12 @@ const Voltage: React.FC = () => {
                       dataKey="voltage"
                       stroke={voltageColor}
                       dot={false}
-                      name={i18n.t('voltage')}
+                      name={t('voltage')}
                     />
                   </LineChart>
                 </ResponsiveContainer>
                 <div className="text-xs text-gray-500 text-center mt-2 dark:text-gray-400">
-                  {batteryHistory.length} {i18n.t('readings-stored')}
+                  {batteryHistory.length} {t('readings-stored')}
                 </div>
               </div>
             )

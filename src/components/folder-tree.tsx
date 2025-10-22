@@ -4,7 +4,6 @@ import { RiArrowDownSFill, RiArrowRightSFill } from 'react-icons/ri';
 import { useEffect, useRef, useState } from 'react';
 import AppMgr, { EventType } from '@/managers/appmgr';
 import useResizeObserver from 'use-resize-observer';
-import i18n from '@/utils/i18n';
 import { FaRegFolder } from 'react-icons/fa';
 import { FaFileAlt } from 'react-icons/fa';
 import BlocklyIcon from '@/components/icons/blockly-icon';
@@ -18,6 +17,7 @@ import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
 import logger from '@/utils/logger';
 import { Constants } from '@/utils/constants';
 import { ConnectionState } from '@/connections/connection';
+import { useTranslation } from 'react-i18next';
 
 type TreeProps = {
     treeData: string | null;
@@ -26,14 +26,13 @@ type TreeProps = {
     isHeader?: boolean;
 };
 
-let hasSubscribed = false;
-
 /**
  * Folder component
  * @param treeProps
  * @returns
  */
 function FolderTree(treeProps: TreeProps) {
+    const { t } = useTranslation();
     const [isConnected, setConnected] = useState(false);
     const [capacity, setCapacity] = useState<string>('0/0');
     const [treeData, setTreeData] = useState<FolderItem[] | undefined>(undefined);
@@ -54,68 +53,67 @@ function FolderTree(treeProps: TreeProps) {
     }, [treeProps.treeData]);
 
     useEffect(() => {
-        if (!hasSubscribed) {
-            appMgrRef.current = AppMgr.getInstance();
+        appMgrRef.current = AppMgr.getInstance();
 
-            AppMgr.getInstance().on(EventType.EVENT_CONNECTION_STATUS, (state: string) => {
-                if (state === ConnectionState.Connected.toString()) {
-                    setConnected(true);
-                }
-            });
-            
-            appMgrRef.current.on(EventType.EVENT_FILESYS, (filesysJson: string) => {
-                try {
-                    const filesysData = JSON.parse(filesysJson);
-                    // remove admin.json from the filesysData
-                    if (filesysData && filesysData.length > 0) {
-                        filesysData.forEach((item: FolderItem) => {
-                            if (item.children) {
-                                item.children = item.children.filter(
-                                    (child) => child.name !== Constants.ADMIN_FILE,
-                                );
-                            }
-                        });
-                    }
-                    const mode = parseInt(localStorage.getItem(StorageKeys.MODESETTING) ?? '0');
-                    const selectedUser = localStorage.getItem(StorageKeys.XRPUSER)?.replace(/"/g, '');
-                    setModeType(mode);
-                    if (Object.keys(filesysData).length === 0) {
-                        setTreeData(undefined);
-                    } else {
-                        if (mode === ModeType.USER) {
-                            const root = filesysData.at(0);
-                            for (const child of root.children) {
-                                if (child.name === 'lib') {
-                                    const index = root.children.indexOf(child);
-                                    root.children.splice(index, 1);
-                                    break;
-                                }
-                            }
-                            const node = findNodeByName(filesysData, selectedUser ?? undefined);
-                            const treeData: FolderItem[] = node ? [node] : [];
-                            setTreeData(treeData);
-                        } else if (mode === ModeType.GOOUSER) {
-                            if (filesysData.at(0)?.name !== '/')
-                                setTreeData(filesysData);
-                        } else {
-                            setTreeData(filesysData);
+        setConnected(appMgrRef.current.getConnection()?.isConnected() ?? false);
+
+        AppMgr.getInstance().on(EventType.EVENT_CONNECTION_STATUS, (state: string) => {
+            if (state === ConnectionState.Connected.toString()) {
+                setConnected(true);
+            }
+        });
+        
+        appMgrRef.current.on(EventType.EVENT_FILESYS, (filesysJson: string) => {
+            try {
+                const filesysData = JSON.parse(filesysJson);
+                // remove admin.json from the filesysData
+                if (filesysData && filesysData.length > 0) {
+                    filesysData.forEach((item: FolderItem) => {
+                        if (item.children) {
+                            item.children = item.children.filter(
+                                (child) => child.name !== Constants.ADMIN_FILE,
+                            );
                         }
-                        appMgrRef.current?.setFoderData(filesysData);
-                    }
-                } catch (err) {
-                    setTreeData(undefined);
-                    folderLogger.error('Failed to parse filesys data', err);
+                    });
                 }
-            });
+                const mode = parseInt(localStorage.getItem(StorageKeys.MODESETTING) ?? '0');
+                const selectedUser = localStorage.getItem(StorageKeys.XRPUSER)?.replace(/"/g, '');
+                setModeType(mode);
+                if (Object.keys(filesysData).length === 0) {
+                    setTreeData(undefined);
+                } else {
+                    if (mode === ModeType.USER) {
+                        const root = filesysData.at(0);
+                        for (const child of root.children) {
+                            if (child.name === 'lib') {
+                                const index = root.children.indexOf(child);
+                                root.children.splice(index, 1);
+                                break;
+                            }
+                        }
+                        const node = findNodeByName(filesysData, selectedUser ?? undefined);
+                        const treeData: FolderItem[] = node ? [node] : [];
+                        setTreeData(treeData);
+                    } else if (mode === ModeType.GOOUSER) {
+                        if (filesysData.at(0)?.name !== '/')
+                            setTreeData(filesysData);
+                    } else {
+                        setTreeData(filesysData);
+                    }
+                    appMgrRef.current?.setFoderData(filesysData);
+                }
+            } catch (err) {
+                setTreeData(undefined);
+                folderLogger.error('Failed to parse filesys data', err);
+            }
+        });
 
-            AppMgr.getInstance().on(EventType.EVENT_FILESYS_STORAGE, (storageCapacity: string) => {
-                // Update the storage capacity state here
-                folderLogger.debug(`Storage capacity changed to: ${storageCapacity}`);
-                const storage = JSON.parse(storageCapacity);
-                setCapacity(storage.used + '/' + storage.total);
-            });
-            hasSubscribed = true;
-        }
+        AppMgr.getInstance().on(EventType.EVENT_FILESYS_STORAGE, (storageCapacity: string) => {
+            // Update the storage capacity state here
+            folderLogger.debug(`Storage capacity changed to: ${storageCapacity}`);
+            const storage = JSON.parse(storageCapacity);
+            setCapacity(storage.used + '/' + storage.total);
+        });
     }, [modeType]);
 
     function Input({ node }: { node: NodeApi<FolderItem> }) {
@@ -180,14 +178,14 @@ function FolderTree(treeProps: TreeProps) {
                 </div>
                 {!treeProps.onSelected && (
                     <div className="invisible flex flex-row items-center gap-1 px-2 group-hover:visible">
-                        <button onClick={() => node.edit()} title={i18n.t('rename')}>
+                        <button onClick={() => node.edit()} title={t('rename')}>
                             <MdEdit size={'1.5em'} />
                         </button>
                         <button
                             onClick={() => {
                                 tree.delete(node.id);
                             }}
-                            title={i18n.t('delete')}
+                            title={t('delete')}
                         >
                             <MdDeleteOutline size={'1.5em'} />
                         </button>
@@ -332,7 +330,7 @@ function FolderTree(treeProps: TreeProps) {
         // Create the new node object
         const newNode: FolderItem = {
             id: newId,
-            name: type === 'internal' ? i18n.t('newFolder') : i18n.t('newFile'),
+            name: type === 'internal' ? t('newFolder') : t('newFile'),
             isReadOnly: false,
             children: type === 'internal' ? [] : null,
             path: `${parentNode?.data.path}/${parentNode?.data.name}/`,

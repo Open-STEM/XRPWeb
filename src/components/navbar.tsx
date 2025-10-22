@@ -43,7 +43,6 @@ import MenuItem from '@/widgets/menu';
 import AppMgr, { EventType } from '@/managers/appmgr';
 import { ConnectionState } from '@/connections/connection';
 import SettingsDlg from '@/components/dialogs/settings';
-import LanguageSelectionDlg from '@/components/dialogs/language-selectiondlg';
 import NewFileDlg from '@/components/dialogs/newfiledlg';
 import { Constants } from '@/utils/constants';
 import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
@@ -705,15 +704,6 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
-     * onLanguageClicked - handle the language selection button click event
-     */
-    function onLanguageClicked() {
-        setMoreMenuOpen(false);
-        setDialogContent(<LanguageSelectionDlg toggleDialog={toggleDialog} />);
-        toggleDialog();
-    }
-
-    /**
      * onAiClicked - handle the AI button click event
      */
     function onAiClicked() {
@@ -890,11 +880,6 @@ function NavBar({ layoutref }: NavBarProps) {
             label: t('drivers'),
             iconImage: drivers,
             clicked: onDriverClicked,
-        },
-        {
-            label: t('language'),
-            iconImage: settings,
-            clicked: onLanguageClicked,
         },
         {
             label: t('settings'),

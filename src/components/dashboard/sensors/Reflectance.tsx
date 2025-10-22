@@ -7,8 +7,8 @@ import { Dropdown, DropdownItem } from "flowbite-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { FaChartLine, FaHashtag, FaCog, FaTrash } from 'react-icons/fa';
 import { useGridStackContext } from '../lib/grid-stack-context';
-import i18n from '@utils/i18n';
 import { FlowBiteConstants } from '@/utils/constants';
+import { useTranslation } from 'react-i18next';
 
 
 // Define a type for timestamped reflectance data
@@ -28,6 +28,7 @@ const sideColors: Record<SideType, string> = {
 
 const Reflectance: React.FC = () => {
   // State to store the history of reflectance readings
+  const { t } = useTranslation();
   const [reflectanceHistory, setReflectanceHistory] = useState<TimestampedReflectanceData[]>([]);
   const { getSensorData, requestSensors, stopSensor, sensorData } = useSensorData();
   const { removeWidget } = useGridStackContext();
@@ -58,7 +59,7 @@ const Reflectance: React.FC = () => {
         const sensorCard = item.querySelector('.sensor-card');
         const titleElement = sensorCard?.querySelector('h3');
 
-        if (titleElement?.textContent === 'Reflectance Sensor') {
+        if (titleElement?.textContent === t('reflectance')) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const node = (item as any).gridstackNode;
           if (node && node.id) {
@@ -118,7 +119,7 @@ const Reflectance: React.FC = () => {
   };
 
   const sensorCardProps = {
-    title: "Reflectance Sensor",
+    title: t('reflectance'),
     icon: <FaEye size={20} />,
     onStart: handleStart,
     onStop: handleStop,
@@ -156,13 +157,13 @@ const Reflectance: React.FC = () => {
           <DropdownItem onClick={() => handleAction('graph')}>
             <div className="flex items-center space-x-2">
               <FaChartLine size={16} />
-              <span>{i18n.t('graph')}</span>
+              <span>{t('graph')}</span>
             </div>
           </DropdownItem>
           <DropdownItem onClick={() => handleAction('number')}>
             <div className="flex items-center space-x-2">
               <FaHashtag size={16} />
-              <span>{i18n.t('number')}</span>
+              <span>{t('number')}</span>
             </div>
           </DropdownItem>
         </Dropdown>
@@ -177,7 +178,7 @@ const Reflectance: React.FC = () => {
       </div>
       {!reflectanceData ? (
         <div className="flex items-center justify-center w-full h-full">
-          <div className="text-gray-500 dark:text-gray-400">{i18n.t('no-data-available')}</div>
+          <div className="text-gray-500 dark:text-gray-400">{t('no-data-available')}</div>
         </div>
       ) : (
         <div className="flex flex-col w-full h-full relative pt-12">
@@ -189,19 +190,19 @@ const Reflectance: React.FC = () => {
                     <XAxis
                       dataKey="timestamp"
                       tick={false}
-                      label={i18n.t('time')}
+                      label={t('time')}
                     />
                     <YAxis />
                     <Tooltip
                       labelFormatter={(value) => new Date(value).toLocaleTimeString()}
                       formatter={(value) => typeof value === 'number' ? value.toFixed(0) : value}
                     />
-                    <Line type="monotone" dataKey="reflectanceL" stroke={sideColors.reflectanceL} dot={false} name={i18n.t('left')} />
-                    <Line type="monotone" dataKey="reflectanceR" stroke={sideColors.reflectanceR} dot={false} name={i18n.t('right')} />
+                    <Line type="monotone" dataKey="reflectanceL" stroke={sideColors.reflectanceL} dot={false} name={t('left')} />
+                    <Line type="monotone" dataKey="reflectanceR" stroke={sideColors.reflectanceR} dot={false} name={t('right')} />
                   </LineChart>
                 </ResponsiveContainer>
                 <div className="text-xs text-gray-500 text-center mt-2 dark:text-gray-400">
-                  {reflectanceHistory.length} {i18n.t('readings-stored')}
+                  {reflectanceHistory.length} {t('readings-stored')}
                 </div>
               </div>
             )
@@ -222,7 +223,7 @@ const Reflectance: React.FC = () => {
                       <div className="w-6 h-6 rounded-full bg-white opacity-80"></div>
                     </div>
                     <span className="text-xs font-medium" style={{ color: sideColors.reflectanceL }}>
-                      {i18n.t('left')}
+                      {t('left')}
                     </span>
                   </div>
 
@@ -238,7 +239,7 @@ const Reflectance: React.FC = () => {
                       <div className="w-6 h-6 rounded-full bg-white opacity-80"></div>
                     </div>
                     <span className="text-xs font-medium" style={{ color: sideColors.reflectanceR }}>
-                      {i18n.t('right')}
+                      {t('right')}
                     </span>
                   </div>
                 </div>
@@ -250,7 +251,7 @@ const Reflectance: React.FC = () => {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm font-medium" style={{ color: sideColors.reflectanceL }}>
-                      {i18n.t('left')}
+                      {t('left')}
                     </span>
                     <span className="text-sm font-mono">
                       {reflectanceData.reflectanceL}
@@ -271,7 +272,7 @@ const Reflectance: React.FC = () => {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-sm font-medium" style={{ color: sideColors.reflectanceR }}>
-                      {i18n.t('right')}
+                      {t('right')}
                     </span>
                     <span className="text-sm font-mono">
                       {reflectanceData.reflectanceR}
@@ -293,13 +294,13 @@ const Reflectance: React.FC = () => {
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div className="flex flex-col items-center">
                   <span className="text-xs font-medium" style={{ color: sideColors.reflectanceL }}>
-                    {i18n.t('left-reflectance')}
+                    {t('left-reflectance')}
                   </span>
                   <span className="font-mono text-lg">{reflectanceData.reflectanceL}</span>
                 </div>
                 <div className="flex flex-col items-center">
                   <span className="text-xs font-medium" style={{ color: sideColors.reflectanceR }}>
-                    {i18n.t('right-reflectance')}
+                    {t('right-reflectance')}
                   </span>
                   <span className="font-mono text-lg">{reflectanceData.reflectanceR}</span>
                 </div>
