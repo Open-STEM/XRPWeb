@@ -418,7 +418,9 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
                                 </div>
                             </>
                         )}
-                        <Login onSuccess={onLoginSuccess} logoutCallback={googleSignOut} />
+                        { modeValue === ModeType.GOOUSER && (
+                            <Login onSuccess={onLoginSuccess} logoutCallback={googleSignOut} />
+                        )}
                     </div>
                 </TabItem>
                 <TabItem label={t('language')} isActive={false}>
