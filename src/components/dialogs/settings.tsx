@@ -122,7 +122,10 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
                         });
                 }
             } catch (error) {
-                modeLogger.error('Error fetching admin data:', error);
+                if (error instanceof Error) {
+                    // Pass the Error object's stack or message
+                    modeLogger.error(`Error fetching admin data: ${error.stack ?? error.message}`);
+                }
             }
         } else {
             setModeValue(ModeType.GOOUSER);

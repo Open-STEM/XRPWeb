@@ -90,11 +90,13 @@ class GoogleDriveService {
 
             const folderMetadata: GoogleDriveFile = await response.json();
             this._modeLogger.debug(`Folder '${folderName}' created successfully!`);
-            this._modeLogger.debug('Created Folder Metadata:', folderMetadata);
+            this._modeLogger.debug(`Created Folder Metadata: ${folderMetadata}`);
 
             return folderMetadata;
         } catch (error) {
-            this._modeLogger.error('Error creating Google Drive folder:', error);
+            if (error instanceof Error) {
+                this._modeLogger.error(`Error creating Google Drive folder: ${error.stack ?? error.message}`);
+            }
             return null;
         }
     }
@@ -121,7 +123,9 @@ class GoogleDriveService {
                 return undefined;
             }
         } catch (error) {
-            this._modeLogger.error('Error finding folder:', error);
+            if (error instanceof Error) {
+                this._modeLogger.error(`Error finding folder: ${error.stack ?? error.message}`);
+            }
             return undefined;
         }
 
@@ -319,7 +323,9 @@ class GoogleDriveService {
             const blob = await contentResponse.blob();
             return { blob, fileName, mimeType: metadata.mimeType };
         } catch (error) {
-            this._modeLogger.error('Error downloading Google Drive file:', error);
+            if (error instanceof Error) {
+                this._modeLogger.error(`Error downloading Google Drive file: ${error.stack ?? error.message}`);
+            }
             return null;
         }
     }
@@ -354,7 +360,9 @@ class GoogleDriveService {
 
             return fileContent;
         } catch (error) {
-            this._modeLogger.error('Error in getPythonFileContentInMemory:', error);
+            if (error instanceof Error) {
+                this._modeLogger.error(`Error in getPythonFileContentInMemory: ${error.stack ?? error.message}`);
+            }
             return null;
         }
     }
@@ -404,7 +412,9 @@ class GoogleDriveService {
             }
             return null; // No folder found
         } catch (error) {
-            this._modeLogger.error('Error finding folder:', error);
+            if (error instanceof Error) {
+                this._modeLogger.error(`Error finding folder: ${error.stack ?? error.message}`);
+            }
             throw error; // Re-throw the error for further handling
         }
     }
@@ -477,7 +487,9 @@ class GoogleDriveService {
 
             return uploadedFileMetadata;
         } catch (error) {
-            this._modeLogger.error('Error uploading blob to Google Drive:', error);
+            if (error instanceof Error) {
+                this._modeLogger.error(`Error uploading file to Google Drive: ${error.stack ?? error.message}`);
+            }
             return null;
         }
     }
@@ -557,14 +569,15 @@ class GoogleDriveService {
             this._modeLogger.debug(
                 `File '${fileName}' ${method === 'POST' ? 'created' : 'updated'} successfully.`,
             );
-            this._modeLogger.debug('File Metadata:', fileMetadata);
+            this._modeLogger.debug(`File Metadata: ${fileMetadata}`);
 
             return fileMetadata;
         } catch (error) {
-            this._modeLogger.error(
-                `Error ${method === 'POST' ? 'creating' : 'updating'} file:`,
-                error,
-            );
+            if (error instanceof Error) {
+                this._modeLogger.error(
+                    `Error ${method === 'POST' ? 'creating' : 'updating'} file: ${error.stack ?? error.message}`,
+                );
+            }
             return null;
         }
     }
@@ -598,7 +611,9 @@ class GoogleDriveService {
             const renamedFile = await response.json();
             this._modeLogger.debug(`File renamed successfully to: ${renamedFile.name}`);
         } catch (error) {
-            this._modeLogger.error('Failed to rename file:', error);
+            if (error instanceof Error) {
+                this._modeLogger.error(`Error renaming file: ${error.stack ?? error.message}`);
+            }
         }
     }
     
@@ -625,7 +640,9 @@ class GoogleDriveService {
             }
 
         } catch (error) {
-            this._modeLogger.error('Failed to delete file', error);
+            if (error instanceof Error) {
+                this._modeLogger.error(`Error deleting file: ${error.message}`);
+            }
         }
 
     }

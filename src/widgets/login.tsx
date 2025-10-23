@@ -68,7 +68,11 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
                                 await driveService.createFolder(XRPCODES);
                             }
                         } catch (error) {
-                            loginLogger.error('Error checking or creating XRPCodes folder:', error);
+                            if (error instanceof Error) {
+                                loginLogger.error(`Error checking or creating XRPCodes folder: ${error.stack ?? error.message}`);
+                            } else {
+                                loginLogger.error(`Error checking or creating XRPCodes folder: ${String(error)}`);
+                            }   
                         }
                     });
 
@@ -88,7 +92,11 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
             }
         },
         onError: (error) => {
-            loginLogger.error('Login Failed:', error);
+            if (error instanceof Error) {
+                loginLogger.error(`Login Failed:' ${error.stack ?? error.message}`);
+            } else {
+                loginLogger.error(`Login Failed: ${String(error)}`);
+            }
         },
     });
 

@@ -213,19 +213,13 @@ export default class PluginMgr {
                 scriptUrl = '/public' + scriptUrl;
             }
         
-        
         if (this.loadedScripts.has(scriptUrl)) {
             return; // Already loaded
         }
 
         try {
             // Dynamic import of the plugin script
-            let url;
-            if (process.env.NODE_ENV === 'development') {
-                url = '/public' + scriptUrl;
-            } else {
-                url = scriptUrl;
-            }
+            const url = scriptUrl;
             await import(/* @vite-ignore */ url);
             this.loadedScripts.add(scriptUrl);
         } catch (error) {
