@@ -120,7 +120,7 @@ class GoogleAuthService {
         if (this._refreshToken) {
             this.getAccessToken().then((token) => {
                 this._accessToken = token;
-                this._modeLogger.debug('Access Token refreshed: ', this._accessToken);
+                this._modeLogger.debug(`Access Token refreshed: , ${this._accessToken}`);
             }).catch((error) => {
                 this._modeLogger.error('Error refreshing access token:', error);
             });
@@ -180,7 +180,9 @@ class GoogleAuthService {
             });
         }
         catch (error) {
-            this._modeLogger.error('Error fetching access token:', error);
+            if (error instanceof Error) {
+                this._modeLogger.error(`Error fetching access token: ${error.stack ?? error.message}`);
+            }
             throw error;
         }
     };
@@ -220,7 +222,9 @@ class GoogleAuthService {
             });
         }
         catch (error) {
-            this._modeLogger.error('Error refreshing access token:', error);
+            if (error instanceof Error) {
+                this._modeLogger.error(`Error fetching refresh token: ${error.stack ?? error.message}`);
+            }
             throw error;
         }   
     }

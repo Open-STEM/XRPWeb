@@ -381,7 +381,9 @@ export class BluetoothConnection extends Connection {
                 //return true;
                 // Perform operations after successful connection
             } catch (error) {
-                this.connLogger.debug('timed out: ', error);
+                if (error instanceof Error) {
+                    this.connLogger.debug(`timed out:  ${error.stack ?? error.message}`);
+                }
                 this.bleDevice = undefined;
                 this.onDisconnected();
                 //throw new Error('Failed BLE reconnect' + error); TODO: I don't think we want to throw an error here
@@ -410,7 +412,7 @@ export class BluetoothConnection extends Connection {
                 await this.bleQueue(this.str2ab(str));
             } else {
                 //this.connLogger.debug("writing: " + this.TEXT_DECODER.decode(str));
-                await this.bleQueue(str);
+                await this.bleQueue(str as BufferSource);
             }
         } catch (error) {
             this.connLogger.debug(error);
@@ -426,7 +428,7 @@ export class BluetoothConnection extends Connection {
 
         try {
             //this.connLogger.debug("writing: " + this.TEXT_DECODER.decode(str));
-            await this.bleDataWriter?.writeValue(data);
+            await this.bleDataWriter?.writeValue(data as BufferSource);
             
         } catch (error) {
             this.connLogger.debug(error);

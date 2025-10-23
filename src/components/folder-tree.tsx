@@ -103,8 +103,10 @@ function FolderTree(treeProps: TreeProps) {
                     appMgrRef.current?.setFoderData(filesysData);
                 }
             } catch (err) {
+                if (err instanceof Error) {
+                    folderLogger.error(`Failed to parse filesys data:  ${err.stack ?? err.message}`);
+                }
                 setTreeData(undefined);
-                folderLogger.error('Failed to parse filesys data', err);
             }
         });
 
@@ -323,7 +325,7 @@ function FolderTree(treeProps: TreeProps) {
         index: number;
         type: 'internal' | 'leaf';
     }) => {
-        folderLogger.debug('Create node:', { parentId, parentNode, index, type });
+        folderLogger.debug(`Create node: ${parentId}, ${parentNode}, ${index}, ${type}`);
         // Generate a unique ID for the new node
         const newId = uniqueId(parentNode?.data.name || `node`);
 
