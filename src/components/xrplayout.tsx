@@ -1,10 +1,10 @@
-import { Layout, Model, IJsonModel, TabNode, Action, Actions } from 'flexlayout-react';
+import { Layout, Model, IJsonModel, TabNode, Action, Actions, ITabRenderValues } from 'flexlayout-react';
 import React, { useEffect } from 'react';
 import BlocklyEditor from '@components/blockly';
 import MonacoEditor from '@components/MonacoEditor';
 import XRPShell from '@components/xrpshell';
 import FolderIcon from '@assets/images/folder-24.png';
-import i18n from '@/utils/i18n';
+import ShellIcon from '@assets/images/shell.svg';
 //import treeDaaJson from '@/utils/testdata';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
 import FolderTree from './folder-tree';
@@ -16,6 +16,7 @@ import EditorMgr, { EditorStore } from '@/managers/editormgr';
 import { CreateEditorTab } from '@/utils/editorUtils';
 import XRPDashboard from '@/components/dashboard/xrp-dashboard';
 import AIChat from '@/components/chat/ai-chat';
+import { useTranslation } from 'react-i18next';
 
 /**
  *  Layout-React's layout JSON to specify the XRPWeb's single page application's layout
@@ -40,7 +41,7 @@ const layout_json: IJsonModel = {
                 {
                     type: 'tab',
                     id: Constants.FOLDER_TAB_ID,
-                    name: i18n.t('folders'),
+                    name: 'folders',
                     component: 'folders',
                     enableClose: false,
                     icon: FolderIcon,
@@ -74,8 +75,8 @@ const layout_json: IJsonModel = {
                         children: [
                             {
                                 type: 'tab',
-                                id: 'shellId',
-                                name: i18n.t('shell'),
+                                id: Constants.SHELL_TAB_ID,
+                                name: 'shell',
                                 component: 'xterm',
                                 enableClose: false,
                             },
@@ -139,6 +140,7 @@ function useOnceCall(cb: () => void, condition = true) {
  */
 function XRPLayout({ forwardedref }: XRPLayoutProps) {
     const [activeTab, setActiveTab] = useLocalStorage(StorageKeys.ACTIVETAB, '');
+    const { t } = useTranslation();
 
     /**
      * changeTheme - set the system selected theme
@@ -268,7 +270,24 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
         return action;
     }
 
-    return <Layout ref={forwardedref} model={model} factory={factory} onAction={handleActions} />;
+    /**
+     * onRenderTab - render the tab with custom functionality
+     * @param node 
+     * @param renderValues
+     * @returns 
+     */
+    const onRenderTab = (node: TabNode, renderValues: ITabRenderValues) => {
+        // Override the content to use the translated tab names
+        if (node.getId() === Constants.FOLDER_TAB_ID) {
+            renderValues.leading = <img src={FolderIcon} alt="icon" style={{ width: '16px', height: '16px', marginRight: '16px' }} />;
+        } else if (node.getId() === Constants.SHELL_TAB_ID) {
+            renderValues.leading = <img src={ShellIcon} alt="icon" style={{ width: '16px', height: '16px', marginRight: '0px' }} />;
+        }
+        renderValues.content = t(node.getName());
+        return renderValues;
+    };
+
+    return <Layout ref={forwardedref} model={model} factory={factory} onAction={handleActions} onRenderTab={onRenderTab}/>;
 }
 
 export default XRPLayout;

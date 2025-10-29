@@ -42,7 +42,6 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
     const [isValidUsername, setIsValidUsername] = useState<boolean | null>(null);
     const [, setLSXrpUser] = useLocalStorage(StorageKeys.XRPUSER, '');
     const modeLogger = logger.child({ module: 'modes' });
-    const [language, setLanguage] = useLocalStorage(StorageKeys.LANGUAGE, 'en');
 
     const authService = AppMgr.getInstance().authService;
     const USERS = '/users/';
@@ -168,9 +167,8 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
      */
     const handleLanguageChange = (event: { target: { value: string } }) => {
         const newLanguage = event.target.value;
-        setLanguage(newLanguage);
         i18n.changeLanguage(newLanguage);
-        if (modeValue === ModeType.GOOUSER) {
+        if (modeValue === ModeType.GOOUSER && authService.isLogin) {
             fireGoogleUserTree(username ?? '');            
         } else if (modeValue === ModeType.SYSTEM || modeValue === ModeType.USER) {
             CommandToXRPMgr.getInstance().getOnBoardFSTree();
@@ -432,7 +430,7 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
                         <select
                             id="languageSelectedId"
                             className="dark:text-white block rounded border border-s-2 border-shark-300 border-s-curious-blue-500 bg-mountain-mist-100 p-2.5 text-sm text-mountain-mist-700 focus:border-mountain-mist-500 focus:ring-curious-blue-500 dark:border-shark-600 dark:border-s-shark-500 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-400 dark:focus:border-matisse-500 dark:focus:ring-shark-300"
-                            value={language}
+                            value={i18n.language}
                             onChange={handleLanguageChange}
                         >
                             {languageOptions.map((option) => (
