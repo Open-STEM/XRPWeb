@@ -31,12 +31,12 @@ const transformGDriveTreeToFolderTree = (username: string, driveItem: GoogleDriv
 };
 
 /**
- * fireGoogleUserTree - get a list of Google files in XRPCodes folder and generate a folder tree
+ * fireGoogleUserTree - get a list of Google files in XRPCode folder and generate a folder tree
  */
 export const fireGoogleUserTree = async (username: string) => {
     const driveService = AppMgr.getInstance().driveService;
 
-    await driveService.buildTree(Constants.XRPCODES).then((tree) => {
+    await driveService.buildTree(Constants.XRPCODE).then((tree) => {
         if (tree) {
             const folderTree = transformGDriveTreeToFolderTree(username, tree);
             AppMgr.getInstance().emit(EventType.EVENT_FILESYS, JSON.stringify([folderTree]));

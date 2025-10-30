@@ -5,6 +5,7 @@ import AppMgr from '@/managers/appmgr';
 import logger from '@/utils/logger';
 import { UserProfile } from '@/services/google-auth';
 import { useTranslation } from 'react-i18next';
+import { Constants } from '@/utils/constants';
 
 type LoginProps = {
     logoutCallback: () => void;
@@ -40,7 +41,6 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
     const authService = AppMgr.getInstance().authService;
     const driveService = AppMgr.getInstance().driveService;
     const loginLogger = logger.child({ module: 'login' });
-    const XRPCODES = 'XRPCodes';
 
     const SCOPE = 'https://mail.google.com https://www.googleapis.com/auth/drive';
 
@@ -61,17 +61,17 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
                             expire_in: token.expires_in,
                         }));
                         driveService.setAccessToken(token.access_token);
-                        // check if XRPCodes folder exists, if not create it
+                        // check if XRPCode folder exists, if not create it
                         try {
-                            const folder = await driveService.findFolderByName(XRPCODES);
+                            const folder = await driveService.findFolderByName(Constants.XRPCODE);
                             if (!folder) {
-                                await driveService.createFolder(XRPCODES);
+                                await driveService.createFolder(Constants.XRPCODE);
                             }
                         } catch (error) {
                             if (error instanceof Error) {
-                                loginLogger.error(`Error checking or creating XRPCodes folder: ${error.stack ?? error.message}`);
+                                loginLogger.error(`Error checking or creating XRPCode folder: ${error.stack ?? error.message}`);
                             } else {
-                                loginLogger.error(`Error checking or creating XRPCodes folder: ${String(error)}`);
+                                loginLogger.error(`Error checking or creating XRPCode folder: ${String(error)}`);
                             }   
                         }
                     });
