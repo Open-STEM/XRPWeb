@@ -40,6 +40,7 @@ export enum EventType {
     EVENT_BLOCKLY_TOOLBOX_UPDATED = 'blockly-toolbox-updated', // Blockly toolbox has been updated
     EVENT_GAMEPAD_STATUS = 'gamepad-status', // Gamepad status on/off
     EVENT_ALERT = 'alert', // Alert dialog event
+    EVENT_ISRUNNING = 'is-running', // XRP is running user code
 }
 
 type Events = {
@@ -71,6 +72,7 @@ type Events = {
     [EventType.EVENT_BLOCKLY_TOOLBOX_UPDATED]: string;
     [EventType.EVENT_GAMEPAD_STATUS]: string;
     [EventType.EVENT_ALERT]: string;
+    [EventType.EVENT_ISRUNNING]: string;
 };
 
 /**
@@ -184,10 +186,14 @@ export default class AppMgr {
     }
 
     /**
-     * Remove all listeners for a given event
+     * Remove listeners for a given event or all listeners if no event is provided
      */
-    public off(): void {
-        this._emitter.all.clear();
+    public off(eventName?: EventType): void {
+        if (eventName) {
+            this._emitter.off(eventName);
+        } else {
+            this._emitter.all.clear();
+        }
     }
 
     /**
