@@ -17,7 +17,8 @@ export enum ModeType {
 
 export enum EditorType {
     BLOCKLY = 'blockly',
-    PYTHON = 'python'
+    PYTHON = 'python',
+    OTHER = 'other'
 }
 
 export enum ConnectionCMD {

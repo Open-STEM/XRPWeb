@@ -179,6 +179,7 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
      * handleSave - saving the settings into localstorage
      */
     const handleSave = async () => {
+        toggleDialog();
         if (adminData !== undefined) {
             adminData.mode = settings?.mode ?? ModeType.SYSTEM;
             await CommandToXRPMgr.getInstance().uploadFile(
@@ -188,7 +189,6 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
         }
         setModeValue(settings?.mode ?? -1);
         setLSXrpUser(xrpUser);
-        toggleDialog();
     };
 
     /**

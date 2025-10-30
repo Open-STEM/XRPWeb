@@ -84,6 +84,7 @@ function NavBar({ layoutref }: NavBarProps) {
     const [isConnected, setConnected] = useState(false);
     const [isRunning, setRunning] = useState(false);
     const [isBlockly, setBlockly] = useState(false);
+    const [isOtherTab, setIsOtherTab] = useState(false);
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [isDlgOpen, setDlgOpen] = useState(false);
     const [isGamepadConnected, setGamepadConnected] = useState<boolean>(false);
@@ -131,8 +132,12 @@ function NavBar({ layoutref }: NavBarProps) {
             AppMgr.getInstance().on(EventType.EVENT_EDITOR, (type: EditorType) => {
                 if (type === EditorType.BLOCKLY) {
                     setBlockly(true);
+                    setIsOtherTab(false);
                 } else if (type === EditorType.PYTHON) {
                     setBlockly(false);
+                    setIsOtherTab(false);
+                } else {
+                    setIsOtherTab(true);
                 }
             });
 
@@ -572,6 +577,7 @@ function NavBar({ layoutref }: NavBarProps) {
             helpText: t('dashboard')
         };
         layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
+        setIsOtherTab(true);
         setActiveTab('Dashboard');
     }
 
@@ -587,6 +593,7 @@ function NavBar({ layoutref }: NavBarProps) {
             helpText: 'Chat with AI models from Hugging Face',
         };
         layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
+        setIsOtherTab(true);
         setActiveTab('AI Chat');
     }
 
@@ -907,7 +914,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                     {item.children.map((child, ci) => (
                                         <li
                                             key={ci}
-                                            className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500 ${child.isFile && !isConnected ? 'pointer-events-none' : 'pointer-events-auto'} ${child.isView && !isBlockly ? 'hidden' : 'visible'}`}
+                                            className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500 ${child.isFile && !isConnected ? 'pointer-events-none' : 'pointer-events-auto'} ${child.isView && !isBlockly || isOtherTab ? 'hidden' : 'visible'}`}
                                             onClick={child.clicked}
                                         >
                                             <MenuItem
@@ -920,7 +927,8 @@ function NavBar({ layoutref }: NavBarProps) {
                                 {item.childrenExt && (
                                     <ul
                                         id="blockId"
-                                        className={`${isBlockly ? 'hidden' : 'visible'} cursor-pointer flex-col`}
+                                        className={`${isBlockly || isOtherTab ? 'hidden' : 'visible'} cursor-pointer flex-col`}
+                                        
                                     >
                                         {item.childrenExt?.map((child, ci) => (
                                             <li

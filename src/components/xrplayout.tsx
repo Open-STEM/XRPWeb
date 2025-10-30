@@ -244,13 +244,12 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
             case Actions.SELECT_TAB: {
                 console.log('Selected Tab:', action.data.tabNode);
                 const blockly = action.data.tabNode.includes('.blocks');
+                let editorEventType = EditorType.OTHER;
                 if (EditorMgr.getInstance().hasEditorSession(action.data.tabNode)) {
-                    AppMgr.getInstance().emit(
-                        EventType.EVENT_EDITOR,
-                        blockly ? EditorType.BLOCKLY : EditorType.PYTHON,
-                    );
-                    setActiveTab(action.data.tabNode);
+                    editorEventType = blockly ? EditorType.BLOCKLY : EditorType.PYTHON;
                 }
+                AppMgr.getInstance().emit(EventType.EVENT_EDITOR, editorEventType);
+                setActiveTab(action.data.tabNode);
             }
             break;
             case Actions.DELETE_TAB: {        

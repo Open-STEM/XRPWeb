@@ -11,7 +11,7 @@ export class Constants {
     static SHOW_PROGRESS = 'show-progress';
     static readonly ADMIN_FILE = 'admin.json';
     static readonly GUSERS_FOLDER = '/gusers/';
-    static readonly XRPCODES = 'XRPCodes';
+    static readonly XRPCODE = 'XRPCode';
     static readonly LIBDIR = '/lib/';
     static readonly CONNECTED = "Connected";
     static readonly DISCONNECTED = "Disconnected";
