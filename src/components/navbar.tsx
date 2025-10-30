@@ -622,6 +622,14 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
+     * boadcastRunningState - broadcast the running state to the app manager
+     * @param running
+     */
+    function broadcastRunningState(running: boolean) {
+        AppMgr.getInstance().emit(EventType.EVENT_ISRUNNING, running ? 'running' : 'stopped');
+    }
+
+    /**
      * onRunBtnClicked
      */
     async function onRunBtnClicked() {
@@ -653,6 +661,7 @@ function NavBar({ layoutref }: NavBarProps) {
             }
 
             setRunning(true);
+            broadcastRunningState(true);
 
             // Check battery voltage && version
             await CommandToXRPMgr.getInstance()
@@ -694,9 +703,11 @@ function NavBar({ layoutref }: NavBarProps) {
                         });
                 }
                 setRunning(false);
+                broadcastRunningState(false);
             }
         } else {
             setRunning(false);
+            broadcastRunningState(false);
             CommandToXRPMgr.getInstance().stopProgram();
         }
     }

@@ -37,6 +37,7 @@ function FolderTree(treeProps: TreeProps) {
     const [capacity, setCapacity] = useState<string>('0/0');
     const [treeData, setTreeData] = useState<FolderItem[] | undefined>(undefined);
     const [selectedItems, setSelectedItems] = useState<FolderItem[] | undefined>(undefined);
+    const [isRunning, setIsRunning] = useState<boolean>(false);
     const appMgrRef = useRef<AppMgr>();
     const treeRef = useRef(null);
     const { ref, width, height } = useResizeObserver();
@@ -57,9 +58,17 @@ function FolderTree(treeProps: TreeProps) {
 
         setConnected(appMgrRef.current.getConnection()?.isConnected() ?? false);
 
-        AppMgr.getInstance().on(EventType.EVENT_CONNECTION_STATUS, (state: string) => {
+        appMgrRef.current.on(EventType.EVENT_CONNECTION_STATUS, (state: string) => {
             if (state === ConnectionState.Connected.toString()) {
                 setConnected(true);
+            }
+        });
+
+        appMgrRef.current.on(EventType.EVENT_ISRUNNING, (running: string) => {
+            if (running === 'running') {
+                setIsRunning(true);
+            } else if (running === 'stopped') {
+                setIsRunning(false);
             }
         });
         
@@ -150,10 +159,10 @@ function FolderTree(treeProps: TreeProps) {
             <div
                 ref={dragHandle}
                 style={style}
-                className={`group flex flex-row items-center justify-between hover:bg-matisse-400 dark:hover:bg-shark-500 ${node.isSelected ? 'bg-curious-blue-300 dark:bg-shark-400' : ''}`}
+                className={`group flex flex-row items-center justify-between hover:bg-matisse-400 dark:hover:bg-shark-500 ${node.isSelected ? 'bg-curious-blue-300 dark:bg-shark-400' : ''} ${isRunning ? 'opacity-50 pointer-events-none' : 'opacity-100 pointer-events-auto'}}`}
                 onClick={(e) => {
                     if (node.isInternal) node.toggle();
-                    if (!(e.detail % 2)) {
+                    if (!(e.detail % 2) && !isRunning) {
                         if (node.children === null) {
                             const filePath =
                                 node.data.path === '/'
@@ -180,10 +189,10 @@ function FolderTree(treeProps: TreeProps) {
                 </div>
                 {!treeProps.onSelected && (
                     <div className="invisible flex flex-row items-center gap-1 px-2 group-hover:visible">
-                        <button onClick={() => node.edit()} title={t('rename')}>
+                        <button className={`${isRunning ? 'opacity-50 pointer-events-none' : 'opacity-100 pointer-events-auto'}`} onClick={() => node.edit()} title={t('rename')}>
                             <MdEdit size={'1.5em'} />
                         </button>
-                        <button
+                        <button className={`${isRunning ? 'opacity-50 pointer-events-none' : 'opacity-100 pointer-events-auto'}`}
                             onClick={() => {
                                 tree.delete(node.id);
                             }}
