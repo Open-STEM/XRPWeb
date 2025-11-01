@@ -4,17 +4,27 @@ import { useTranslation } from 'react-i18next';
 type ViewPythonDlgProps = {
     code: string;
     toggleDlg: () => void;
+    clearDlg: () => void;
 };
 
-export default function ViewPythonDlg({ code, toggleDlg }: ViewPythonDlgProps) {
+export default function ViewPythonDlg({ code, toggleDlg, clearDlg }: ViewPythonDlgProps) {
     const { t } = useTranslation();
+
+    /**
+     * handleDlgClose - handle dialog close action
+     */
+    const handleDlgClose = () => {
+        clearDlg();
+        toggleDlg();
+    };
+
     return (
         <div className="flex h-auto w-auto flex-col gap-2 overflow-hidden rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
             <div className="flex flex-col items-center">
                 <button
                     type="button"
                     className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-600 dark:hover:text-white ms-auto inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm"
-                    onClick={toggleDlg}
+                    onClick={handleDlgClose}
                 >
                     <svg
                         className="h-3 w-3"

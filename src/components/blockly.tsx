@@ -264,7 +264,6 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                         const ws = session?.workspace;
                         const code = pythonGenerator.workspaceToCode(ws);
                         if (ws && code) {
-                            session.content = code;
                             AppMgr.getInstance().emit(EventType.EVENT_GENPYTHON_DONE, code);
                         }
                     }
@@ -299,10 +298,12 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                     const json = JSON.stringify(Blockly.serialization.workspaces.save(ws));
                     EditorMgr.updateLiveContent(name, json);
                 } catch (e) {
+                    console.warn('Failed to serialize Blockly workspace:', e);
                     EditorMgr.updateLiveContent(name, '');
                 }
 
                 // Listen for workspace changes
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const changeListener = (event: any) => {
                     if (event.isUiEvent) return; // Skip UI events
                     try {
