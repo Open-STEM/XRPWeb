@@ -474,8 +474,9 @@ function NavBar({ layoutref }: NavBarProps) {
      * ViewPythonFile - view the Python file
      */
     function ViewPythonFile() {
+        console.log('View Python File', activeTab);
         const viewPythonHandler = (code: string) => {
-            setDialogContent(<ViewPythonDlg code={code} toggleDlg={toggleDialog} />);
+            setDialogContent(<ViewPythonDlg code={code} toggleDlg={toggleDialog} clearDlg={clearDialogContent}/>);
             toggleDialog();
             appMgr.eventOff(EventType.EVENT_GENPYTHON_DONE);
         };
@@ -770,6 +771,13 @@ function NavBar({ layoutref }: NavBarProps) {
     function toggleMoreDropdown() {
         setMoreMenuOpen(!isMoreMenuOpen);
     }
+
+    /**
+     * clearDialogContent - toggle the dialog open/close state
+     */
+    function clearDialogContent(){
+        setDialogContent(<div />);
+    };
 
     /**
      * toggleDialog - toggle the dialog open and closed
