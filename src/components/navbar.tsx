@@ -535,6 +535,16 @@ function NavBar({ layoutref }: NavBarProps) {
      * ConvertToPython - convert the current blockly file to Python
      */
     function ConvertToPython() {
+        if (!isConnected) {
+            setDialogContent(
+                <AlertDialog
+                    alertMessage={t('XRP-not-connected')}
+                    toggleDialog={toggleDialog}
+                />,
+            );
+            toggleDialog();
+            return;
+        }
         setDialogContent(
             <ConfirmationDlg
                 acceptCallback={BlocksToPythonCallback}
