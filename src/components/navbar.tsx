@@ -61,7 +61,7 @@ import UpdateDlg from '@components/dialogs/updatedlg';
 import React from 'react';
 import { CreateEditorTab } from '@/utils/editorUtils';
 import ChangeLogDlg from '@components/dialogs/changelog';
-import { IJsonTabNode } from 'flexlayout-react';
+import { Actions, IJsonTabNode } from 'flexlayout-react';
 import GoogleLoginDlg from '@components/dialogs/logindlg';
 import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
 import XRPDriverInstallDlg from './dialogs/driver-installs';
@@ -475,6 +475,9 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function ViewPythonFile() {
         console.log('View Python File', activeTab);
+        if (isOtherTab) {
+            return;
+        }
         const viewPythonHandler = (code: string) => {
             setDialogContent(<ViewPythonDlg code={code} toggleDlg={toggleDialog} clearDlg={clearDialogContent}/>);
             toggleDialog();
@@ -535,6 +538,9 @@ function NavBar({ layoutref }: NavBarProps) {
      * ConvertToPython - convert the current blockly file to Python
      */
     function ConvertToPython() {
+        if (isOtherTab) {
+            return;
+        }
         if (!isConnected) {
             setDialogContent(
                 <AlertDialog
@@ -560,6 +566,9 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function FontPlusPlus() {
         console.log(t('increaseFont'));
+        if (isOtherTab) {
+            return;
+        }
         AppMgr.getInstance().emit(EventType.EVENT_FONTCHANGE, FontSize.INCREASE);
     }
 
@@ -568,6 +577,9 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function FontMinus() {
         console.log(t('decreaseFont'));
+        if (isOtherTab) {
+            return;
+        }
         AppMgr.getInstance().emit(EventType.EVENT_FONTCHANGE, FontSize.DESCREASE);
     }
 
@@ -577,17 +589,27 @@ function NavBar({ layoutref }: NavBarProps) {
     function viewDashboard() {
         console.log(t('dashboard'));
         // check if the dashboard tab is already open
-        if (EditorMgr.getInstance().hasEditorSession('Dashboard')) {
-            setActiveTab('Dashboard');
+        if (EditorMgr.getInstance().hasEditorSession(Constants.DASHBOARD_TAB_ID)) {
+            const layoutModel = EditorMgr.getInstance().getLayoutModel();
+            layoutModel?.doAction(Actions.selectTab(Constants.DASHBOARD_TAB_ID));
             return;
         }
         const tabInfo: IJsonTabNode = {
             component: 'dashboard',
             name: t('dashboard'),
-            id: 'DashboardId',
+            id: Constants.DASHBOARD_TAB_ID,
             helpText: t('dashboard')
         };
         layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
+        EditorMgr.getInstance().AddEditor({
+            id: Constants.DASHBOARD_TAB_ID,
+            type: EditorType.OTHER,
+            path: '',
+            gpath: '',
+            isSubscribed: false,
+            fontsize: Constants.DEFAULT_FONTSIZE,
+            content: '',
+        });        
         setIsOtherTab(true);
         setActiveTab('Dashboard');
     }
@@ -597,6 +619,12 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function openAIChat() {
         console.log('Opening AI Chat');
+        if (EditorMgr.getInstance().hasEditorSession(Constants.AI_CHAT_TAB_ID)) {
+            const layoutModel = EditorMgr.getInstance().getLayoutModel();
+            layoutModel?.doAction(Actions.selectTab(Constants.AI_CHAT_TAB_ID));
+            setActiveTab('AI Chat');
+            return;
+        };
         const tabInfo: IJsonTabNode = {
             component: 'aichat',
             name: 'AI Chat',
@@ -604,6 +632,15 @@ function NavBar({ layoutref }: NavBarProps) {
             helpText: 'Chat with AI models from Hugging Face',
         };
         layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
+        EditorMgr.getInstance().AddEditor({
+            id: Constants.AI_CHAT_TAB_ID,
+            type: EditorType.OTHER,
+            path: '',
+            gpath: '',
+            isSubscribed: false,
+            fontsize: Constants.DEFAULT_FONTSIZE,
+            content: '',
+        });
         setIsOtherTab(true);
         setActiveTab('AI Chat');
     }
@@ -943,11 +980,12 @@ function NavBar({ layoutref }: NavBarProps) {
                                     {item.children.map((child, ci) => (
                                         <li
                                             key={ci}
-                                            className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500 ${child.isFile && !isConnected ? 'pointer-events-none' : 'pointer-events-auto'} ${child.isView && !isBlockly || isOtherTab ? 'hidden' : 'visible'}`}
+                                            className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500 ${child.isFile && !isConnected ? 'pointer-events-none' : 'pointer-events-auto'} ${child.isView && !isBlockly ? 'hidden' : 'visible'}`}
                                             onClick={child.clicked}
                                         >
                                             <MenuItem
                                                 isConnected={isConnected && !isRunning}
+                                                isOther={isOtherTab}
                                                 item={child}
                                             />
                                         </li>
@@ -956,7 +994,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                 {item.childrenExt && (
                                     <ul
                                         id="blockId"
-                                        className={`${isBlockly || isOtherTab ? 'hidden' : 'visible'} cursor-pointer flex-col`}
+                                        className={`${isBlockly ? 'hidden' : 'visible'} cursor-pointer flex-col`}
                                         
                                     >
                                         {item.childrenExt?.map((child, ci) => (
@@ -967,6 +1005,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                             >
                                                 <MenuItem
                                                     isConnected={isConnected && !isRunning}
+                                                    isOther={isOtherTab}
                                                     item={child}
                                                 />
                                             </li>
@@ -1030,6 +1069,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                     >
                                         <MenuItem
                                             isConnected={isConnected && !isRunning}
+                                            isOther={false}
                                             item={item}
                                         />
                                     </li>
