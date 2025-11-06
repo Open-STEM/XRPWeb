@@ -5,6 +5,7 @@ export class Constants {
     static readonly SHELL_TAB_ID = 'shellTabId';
     static readonly FOLDER_TAB_ID = 'folderTabId';
     static readonly AI_CHAT_TAB_ID = 'aiChatTabId';
+    static readonly DASHBOARD_TAB_ID = 'dashboardTabId';
     static readonly DEFAULT_FONTSIZE = 14;
     static readonly TRASH_FOLDER = '/trash';
     static readonly SHOW_CHANGELOG = 'show-changelog';

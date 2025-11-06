@@ -9,7 +9,7 @@ import ShellIcon from '@assets/images/shell.svg';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
 import FolderTree from './folder-tree';
 import { Constants } from '@/utils/constants';
-import { EditorType, FileType, NewFileData } from '@/utils/types';
+import { FileType, NewFileData } from '@/utils/types';
 import { useLocalStorage } from 'usehooks-ts';
 import { StorageKeys } from '@/utils/localstorage';
 import EditorMgr, { EditorStore } from '@/managers/editormgr';
@@ -239,25 +239,24 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
      * @returns
      */
     function handleActions(action: Action): Action | undefined {
-        console.log('Action:', activeTab);
+        console.log('Handle Action: Action Type:', action.type, activeTab);
         switch (action.type) {
             case Actions.SELECT_TAB: {
                 console.log('Selected Tab:', action.data.tabNode);
-                const blockly = action.data.tabNode.includes('.blocks');
-                let editorEventType = EditorType.OTHER;
                 if (EditorMgr.getInstance().hasEditorSession(action.data.tabNode)) {
-                    editorEventType = blockly ? EditorType.BLOCKLY : EditorType.PYTHON;
-                }
-                AppMgr.getInstance().emit(EventType.EVENT_EDITOR, editorEventType);
+                    const editorType = EditorMgr.getInstance().getEditorSession(action.data.tabNode)?.type;
+                    if (editorType !== undefined) {
+                        AppMgr.getInstance().emit(EventType.EVENT_EDITOR, editorType);
+                    }
+                } 
                 setActiveTab(action.data.tabNode);
             }
             break;
             case Actions.DELETE_TAB: {        
-                if (action.type === Actions.DELETE_TAB) {
-                    console.log('Moved Node:', action.data);
-                    const id = EditorMgr.getInstance().RemoveEditor(action.data.node);
-                    if (id) 
-                        setActiveTab(id);
+                console.log('Delete Node:', action.data);
+                const id = EditorMgr.getInstance().RemoveEditor(action.data.node);
+                if (id) {
+                    setActiveTab(id);
                 }
             }
             break;
