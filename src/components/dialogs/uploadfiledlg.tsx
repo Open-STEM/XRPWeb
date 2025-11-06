@@ -1,10 +1,11 @@
-import AppMgr from '@/managers/appmgr';
+import AppMgr, { EventType } from '@/managers/appmgr';
 import { FileData, FolderItem } from '@/utils/types';
 import { useEffect, useState } from 'react';
 import FolderTree from '../folder-tree';
 import DialogFooter from './dialog-footer';
 import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
 import { useTranslation } from 'react-i18next';
+import { Constants } from '@/utils/constants';
 
 type UploadFileDlgProps = {
     files: FileData[];
@@ -23,11 +24,14 @@ function UploadFileDlg({ files, toggleDialog }: UploadFileDlgProps) {
     const handleFileUpload = async () => {
         toggleDialog();
         if (!fileList) return;
+        AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
+        
         for (const file of fileList) {
             const path = selectedFolder + '/' + file.name;
-            await CommandToXRPMgr.getInstance().uploadFile(path, file.content);
+            await CommandToXRPMgr.getInstance().uploadFile(path, file.content, true);
         };
         await CommandToXRPMgr.getInstance().getOnBoardFSTree();
+        toggleDialog();
     }
 
     /**
