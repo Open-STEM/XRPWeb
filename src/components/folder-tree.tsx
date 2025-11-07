@@ -113,7 +113,7 @@ function FolderTree(treeProps: TreeProps) {
                     } else {
                         setTreeData(filesysData);
                     }
-                    appMgrRef.current?.setFoderData(filesysData);
+                    appMgrRef.current?.setFoderData(filesysJson);
                 }
             } catch (err) {
                 if (err instanceof Error) {

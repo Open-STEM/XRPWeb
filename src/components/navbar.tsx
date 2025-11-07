@@ -430,6 +430,8 @@ function NavBar({ layoutref }: NavBarProps) {
         // close the save as dialog first
         const editorMgr = EditorMgr.getInstance();
         const session = editorMgr.getEditorSession(activeTab);
+        // close the save as dialog first
+        toggleDialog();
         if (session) {
             session.path = fileData.path + '/' + fileData.name;
             AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
@@ -437,14 +439,25 @@ function NavBar({ layoutref }: NavBarProps) {
             setDialogContent(<ProgressDlg title='saveToXRPTitle'/>);
             toggleDialog();
             // subscribe to the UploadFile complete event
-            AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, () => {
-                toggleDialog();
+            AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, async () => {
                 AppMgr.getInstance().eventOff(EventType.EVENT_UPLOAD_DONE);
+                // close the current tab and re-open a new tab for the new file
+                editorMgr.RemoveEditorTab(activeTab);
+                editorMgr.RemoveEditor(activeTab);
+                const newFileData: NewFileData = {
+                    parentId: '',
+                    path: fileData.path + '/' + fileData.name,
+                    gpath: '',
+                    name: fileData.name || '',
+                    filetype: session.type === EditorType.BLOCKLY ? FileType.BLOCKLY : FileType.PYTHON,
+                };
+                CreateEditorTab(newFileData, layoutref);
+                setActiveTab(fileData.name)
                 setDialogContent(<div />);
+                await CommandToXRPMgr.getInstance().getOnBoardFSTree();
             });
-            editorMgr.RenameEditor(activeTab, fileData.name);
+            toggleDialog();
         }
-        toggleDialog();
     }
 
     /**
@@ -453,10 +466,8 @@ function NavBar({ layoutref }: NavBarProps) {
     function SaveFileAs() {
         console.log(t('saveFileAs'));
         if (EditorMgr.getInstance().hasEditorSession(activeTab)) {
-            const folderList = AppMgr.getInstance().getFolderList();
             setDialogContent(
                 <FileSaveAsDialg
-                    treeData={JSON.stringify(folderList)}
                     saveCallback={handleSaveFileAs}
                     toggleDialog={toggleDialog}
                 />,

@@ -2,9 +2,9 @@ import { FileType, FolderItem, ListItem, NewFileData } from '@/utils/types';
 import { useEffect, useState } from 'react';
 import AppMgr from '@/managers/appmgr';
 import DialogFooter from './dialog-footer';
-import EditorMgr from '@/managers/editormgr';
 import FolderTree from '../folder-tree';
 import { useTranslation } from 'react-i18next';
+import { Constants } from '@/utils/constants';
 
 type NewFileProps = {
     submitCallback: (formData: NewFileData) => void;
@@ -48,7 +48,8 @@ function NewFileDlg(newFileProps: NewFileProps) {
     const handleFilenameInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFilename(e.target.value);
         const filename = e.target.value + (filetype === 1 ? '.blocks' : '.py');
-        if (EditorMgr.getInstance().hasEditorSession(filename)) {
+        const isValid = Constants.REGEX_FILENAME.test(filename);
+        if (!isValid || AppMgr.getInstance().IsFileExists(filename)) {
             setIsFileExists(true);
             setIsOkayToSubmit(false);
             return;

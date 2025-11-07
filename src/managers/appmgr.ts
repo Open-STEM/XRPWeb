@@ -87,6 +87,7 @@ export default class AppMgr {
     private _emitter = mitt<Events>();
     private _connectionMgr: connecionMgr | null = null;
     private _folderData : FolderItem[] | null = null;
+    private _folderDataJson : string | null = null;
     private _authService: GoogleAuthService = new GoogleAuthService();
     private _driveService: GoogleDriveService = new GoogleDriveService();
 
@@ -219,8 +220,9 @@ export default class AppMgr {
      * setFolderData - save a list of folder names for use with New File dialog
      * @param folderData 
      */
-    public setFoderData(folderData: FolderItem[]) {
-        this._folderData = folderData;
+    public setFoderData(folderJson: string) {
+        this._folderData = JSON.parse(folderJson);
+        this._folderDataJson = folderJson;
     }
 
 
@@ -239,6 +241,35 @@ export default class AppMgr {
             }
         }
         return folders;
+    }
+
+    /**
+     * IsFileExists - check if a file exists in the folder data
+     * @param filename 
+     * @returns true if file exists, false otherwise
+     */
+    public IsFileExists(filename: string): boolean {
+        if (!this._folderDataJson) {
+            return false;
+        }
+
+        const checkFileInFolders = (folders: FolderItem[]): boolean => {
+            for (const folder of folders) {
+                if (folder.children) {
+                    for (const item of folder.children) {
+                        if (item.name === filename) {
+                            return true;
+                        }
+                    }
+                    if (checkFileInFolders(folder.children)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+
+        return checkFileInFolders(JSON.parse(this._folderDataJson));
     }
 
     /**
