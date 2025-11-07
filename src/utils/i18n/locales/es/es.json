@@ -144,6 +144,7 @@
     "driver-install-no": "No",
     "progress-item": "Procesando elemento: ",
     "alertOpenPortFailed": "Error al abrir el puerto, ¿hay otra aplicación accediendo a este dispositivo/puerto?",
+    "confirmDeleteFileOrFolder": "¿Está seguro de que desea eliminar '{{ name }}' ? Esta acción no se puede deshacer.",
     "_commentBlockly": "Esto no necesita ser traducido - agregar traducción específica de blockly a continuación",
     "individualMotors": "Motores Individuales",
     "language": "Idioma",
