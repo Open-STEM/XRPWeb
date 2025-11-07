@@ -66,7 +66,7 @@
     "closeFolder": "Close the selected folder",
     "settingDescription": "Application settings can be changed here to your needs!",
     "filesToUpload": "Files to Upload",
-    "fileExists": "Filename is used, please choose a different name!",
+    "fileExists": "Filename is used or invalid, please choose a different name!",
     "power-switch-title": "XRP Power Switch",
     "power-switch-alerts": "The power switch on the XRP is not on. Motors and Servos will not work properly. Please turn on the switch before continuing!",
     "alert": "Notification",

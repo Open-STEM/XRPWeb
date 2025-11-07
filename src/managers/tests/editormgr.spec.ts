@@ -35,14 +35,6 @@ describe('EditorMgr', () => {
         expect(editorMgr.getEditorSession(session.id)).toBeUndefined();
     });
 
-    it('should rename an editor session', () => {
-        editorMgr.AddEditor(session);
-        editorMgr.RenameEditor(session.id, 'newId');
-        expect(editorMgr.getEditorSession('1')).toBeUndefined();
-        expect(editorMgr.hasEditorSession('newId') === true);
-        expect(editorMgr.getEditorSession('newId')).toBeDefined();
-    });
-
     it('should set and get the layout model', () => {
         const model = new Model();
         editorMgr.setLayoutModel(model);

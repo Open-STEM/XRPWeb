@@ -16,6 +16,7 @@ export class Constants {
     static readonly LIBDIR = '/lib/';
     static readonly CONNECTED = "Connected";
     static readonly DISCONNECTED = "Disconnected";
+    static readonly REGEX_FILENAME = /^[a-zA-Z0-9](?:[a-zA-Z0-9 ._-]*[a-zA-Z0-9])?\.[a-zA-Z0-9_-]+$/;
 }
 
 export class FlowBiteConstants {

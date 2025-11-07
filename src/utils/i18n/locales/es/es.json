@@ -66,7 +66,7 @@
     "closeFolder": "Cerrar la carpeta seleccionada",
     "settingDescription": "¡La configuración de la aplicación se puede cambiar aquí según sus necesidades!",
     "filesToUpload": "Archivos para Subir",
-    "fileExists": "¡El nombre de archivo está en uso, por favor elija un nombre diferente!",
+    "fileExists": "¡El nombre del archivo está en uso o es inválido, por favor elija un nombre diferente!",
     "power-switch-title": "Interruptor de Encendido XRP",
     "power-switch-alerts": "¡El interruptor de encendido del XRP no está activado. Los motores y servos no funcionarán correctamente. Por favor encienda el interruptor antes de continuar!",
     "alert": "Notificación",
