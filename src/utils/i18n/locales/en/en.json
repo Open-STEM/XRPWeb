@@ -144,6 +144,7 @@
     "driver-install-no": "No",
     "progress-item": "Processing item: ",
     "alertOpenPortFailed": "Opening port failed, is another application accessing this device/port?",
+    "confirmDeleteFileOrFolder": "Are you sure you want to delete '{{ name }}' ? This action cannot be undone.",
     "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
     "individualMotors": "Individual Motors",
     "language": "Language",

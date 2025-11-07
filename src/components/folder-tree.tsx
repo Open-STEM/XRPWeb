@@ -18,6 +18,8 @@ import logger from '@/utils/logger';
 import { Constants } from '@/utils/constants';
 import { ConnectionState } from '@/connections/connection';
 import { useTranslation } from 'react-i18next';
+import Dialog from './dialogs/dialog';
+import ConfirmationDlg from './dialogs/confirmdlg';
 
 type TreeProps = {
     treeData: string | null;
@@ -44,6 +46,8 @@ function FolderTree(treeProps: TreeProps) {
     const [modeType, setModeType] = useState<number>(0);
     const folderLogger = logger.child({ module: 'folder-tree' });
     const isLogin = AppMgr.getInstance().authService.isLogin;
+    const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
+    const dialogRef = useRef<HTMLDialogElement>(null);
 
     useEffect(() => {
         // If treeData is passed as a prop, build the tree
@@ -127,6 +131,24 @@ function FolderTree(treeProps: TreeProps) {
         });
     }, [modeType]);
 
+    /**
+     * toggleDialog - toggle the dialog open/close state
+     */
+    const toggleDialog = () => {
+        if (!dialogRef.current) {
+            return;
+        }
+        if (dialogRef.current.hasAttribute('open')) {
+            dialogRef.current.close();
+        }
+        else dialogRef.current.showModal();
+    };
+
+    /**
+     * Input component for renaming nodes
+     * @param param0
+     * @returns
+     */
     function Input({ node }: { node: NodeApi<FolderItem> }) {
         return (
             <input
@@ -143,6 +165,11 @@ function FolderTree(treeProps: TreeProps) {
         );
     }
 
+    /**     
+     * Node component for rendering each tree node
+     * @param param0
+     * @returns
+     */
     function Node({ node, style, dragHandle, tree }: NodeRendererProps<FolderItem>) {
         let Icon = null;
         if (node.data.name.includes('.py')) {
@@ -266,23 +293,34 @@ function FolderTree(treeProps: TreeProps) {
         const rootNode = treeData?.at(0);
         const found = findItem(rootNode, nodes[0].data.id);
 
-        if (found) {
-            const index = found.parent?.children?.indexOf(found);
-            if (index !== undefined && index !== -1) {
-                found.parent?.children?.splice(index, 1);
-            }
+        /**
+         * handleOnDeleteConfirmation - handle the delete confirmation
+         */
+        const handleOnDeleteConfirmation = async () => {
+            toggleDialog();
+            if (found) {
+                const index = found.parent?.children?.indexOf(found);
+                if (index !== undefined && index !== -1) {
+                    found.parent?.children?.splice(index, 1);
+                }
 
-            if (isConnected) {
-                // delete the actual file in XRP
-                await CommandToXRPMgr.getInstance().deleteFileOrDir(found.path + '/' + found.name);
-            }
+                if (isConnected) {
+                    // delete the actual file in XRP
+                    await CommandToXRPMgr.getInstance().deleteFileOrDir(found.path + '/' + found.name);
+                }
 
-            if (modeType === ModeType.GOOUSER && isLogin) {
-                // delete the actual file in Google Drive
-                if (found.fileId) {
-                    await AppMgr.getInstance().driveService?.DeleteFile(found.fileId);
+                if (modeType === ModeType.GOOUSER && isLogin) {
+                    // delete the actual file in Google Drive
+                    if (found.fileId) {
+                        await AppMgr.getInstance().driveService?.DeleteFile(found.fileId);
+                    }
                 }
             }
+        };
+
+        if (found) {
+            setDialogContent(<ConfirmationDlg acceptCallback={handleOnDeleteConfirmation} toggleDialog={toggleDialog} confirmationMessage={t('confirmDeleteFileOrFolder', { name: found.name })} />);
+            toggleDialog();
         }
     };
 
@@ -500,6 +538,9 @@ function FolderTree(treeProps: TreeProps) {
                     {Node}
                 </Tree>
             </div>
+            <Dialog isOpen={false} toggleDialog={toggleDialog} ref={dialogRef}>
+                {dialogContent}
+            </Dialog>
         </div>
     );
 }
