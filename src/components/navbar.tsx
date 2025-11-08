@@ -144,7 +144,10 @@ function NavBar({ layoutref }: NavBarProps) {
             AppMgr.getInstance().on(EventType.EVENT_OPEN_FILE, async (filePathDataJson: string) => {
                 const filePathData = JSON.parse(filePathDataJson);
                 const filename = filePathData.xrpPath.split('/').pop();
-                if (filename && EditorMgr.getInstance().hasEditorSession(filename)) return;
+                if (filename && EditorMgr.getInstance().hasEditorSession(filename)) {
+                    EditorMgr.getInstance().SelectEditorTab(filename);
+                    return;
+                }
                 const fileType = filename?.includes('.blocks') ? FileType.BLOCKLY : FileType.PYTHON;
                 const fileData: NewFileData = {
                     parentId: '',
