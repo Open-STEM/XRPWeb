@@ -109,6 +109,7 @@ function NavBar({ layoutref }: NavBarProps) {
     const [activeTab, setActiveTab] = useLocalStorage(StorageKeys.ACTIVETAB, '');
     const authService = AppMgr.getInstance().authService;
     const driveService = AppMgr.getInstance().driveService;
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!hasSubscribed) {
@@ -244,6 +245,26 @@ function NavBar({ layoutref }: NavBarProps) {
             hasSubscribed = true;
         }
     });
+
+    /**
+     * toggleMoreDropdown - toggle the more dropdown menu when the mouse click outside the menu
+     */
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            // Check if the click is outside the dropdown menu
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setMoreMenuOpen(false);
+            }
+        }
+
+        // Add event listener when the component mounts
+        document.addEventListener('mousedown', handleClickOutside);
+
+        // Clean up the event listener when the component unmounts
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [dropdownRef]);
 
     if (loading) {
         return <div>Loading...</div>;
@@ -1068,7 +1089,7 @@ function NavBar({ layoutref }: NavBarProps) {
                         </>
                     )}
                 </button>
-                <div className='group relative transition-all'>
+                <div ref={dropdownRef} className='group relative transition-all'>
                     <button id="settingsId" onClick={toggleMoreDropdown} className={`flex flex-row rounded-3xl p-1 ${isMoreMenuOpen ? 'bg-curious-blue-400 dark:bg-mountain-mist-800' : 'bg-curious-blue-700 dark:bg-mountain-mist-950'}`}>
                         <MdMoreVert size={'1.5em'} />
                     </button>
