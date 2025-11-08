@@ -137,6 +137,14 @@ export default class EditorMgr {
     }
 
     /**
+     * SelectEditorTab - select the editor tab in the layout
+     * @param id
+     */
+    public SelectEditorTab(id: string) {
+        this.layoutModel?.doAction(Actions.selectTab(id));
+    }
+
+    /**
      * RemoveEditorTab - remove specified editor id from the Editor layout
      * @param id 
      */
