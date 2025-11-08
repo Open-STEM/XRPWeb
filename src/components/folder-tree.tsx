@@ -20,6 +20,7 @@ import { ConnectionState } from '@/connections/connection';
 import { useTranslation } from 'react-i18next';
 import Dialog from './dialogs/dialog';
 import ConfirmationDlg from './dialogs/confirmdlg';
+import AlertDialog from './dialogs/alertdlg';
 
 type TreeProps = {
     treeData: string | null;
@@ -373,6 +374,14 @@ function FolderTree(treeProps: TreeProps) {
         type: 'internal' | 'leaf';
     }) => {
         folderLogger.debug(`Create node: ${parentId}, ${parentNode}, ${index}, ${type}`);
+
+        if (parentId === null && parentNode === null) {
+            folderLogger.error('Cannot create node: parentId and parentNode are both null');
+            setDialogContent(<AlertDialog toggleDialog={toggleDialog} alertMessage={t('select-parent-node')} />);
+            toggleDialog();
+            return null;
+        }
+
         // Generate a unique ID for the new node
         const newId = uniqueId(parentNode?.data.name || `node`);
 
