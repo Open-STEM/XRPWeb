@@ -5,8 +5,10 @@ import { GeminiContextLoader, createContextLoader } from '@/utils/gemini-context
 import ChatMessageComponent from './chat-message';
 import { IoSend, IoRefresh, IoSparkles, IoDocument, IoStop } from 'react-icons/io5';
 import { v4 as uuidv4 } from 'uuid';
+import { useTranslation } from 'react-i18next';
 
 export default function AIChat() {
+    const { i18n } = useTranslation();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [status, setStatus] = useState<ChatStatus>(ChatStatus.IDLE);
@@ -150,13 +152,15 @@ export default function AIChat() {
             const terminalContext = contextLoader.current?.getCurrentTerminalContext() || '';
             
             // Use the new simplified chat API - all teaching guidelines are now in backend
-            console.log(`[AIChat] Sending message with session ${sessionId.substring(0, 8)}... (history: ${messages.length} messages)`);
+            const currentLanguage = i18n.language || 'en';
+            console.log(`[AIChat] Sending message with session ${sessionId.substring(0, 8)}... (history: ${messages.length} messages, language: ${currentLanguage})`);
             await geminiClient.current.chatWithContext(
                 sessionId,
                 userMessage.content,
                 messages, // Conversation history
                 editorContext,
                 terminalContext,
+                currentLanguage, // User's selected language
                 (content: string) => {
                     // Check if generation was aborted
                     if (abortController.current?.signal.aborted) {

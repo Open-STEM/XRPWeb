@@ -103,6 +103,7 @@ export class GeminiClient {
         conversationHistory: ChatMessage[] = [],
         editorContext: string = '',
         terminalContext: string = '',
+        language: string = 'en',
         onStream?: (content: string) => void,
         signal?: AbortSignal
     ): Promise<string> {
@@ -121,7 +122,8 @@ export class GeminiClient {
                     content: msg.content
                 })),
                 editor_context: editorContext,
-                terminal_context: terminalContext
+                terminal_context: terminalContext,
+                language: language
             };
 
             console.log('Sending simplified chat request to backend');
@@ -288,6 +290,7 @@ export class GeminiClient {
             conversationHistory,
             '', // No editor context in legacy mode
             '', // No terminal context in legacy mode
+            'en', // Default language for legacy mode
             onStream,
             signal
         );
