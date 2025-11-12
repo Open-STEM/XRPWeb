@@ -64,14 +64,15 @@ export default function XRPDashboard() {
   return (
     <div className="mx-auto px-4 pb-10 bg-slate-100 min-h-screen dark:bg-mountain-mist-950">
       <GridStackProvider initialOptions={gridOptions}>
-        <div className="flex flex-col sm:flex-row justify-start items-start sm:items-center gap-8 mb-6 pt-4">
+        <div className="flex justify-between items-center mb-2 pt-2">
           <div>
-            <h1 className="text-4xl font-bold text-gray-600 dark:text-gray-300">{t('sensors')}</h1>
+            <h1 className="text-2xl font-bold text-gray-600 dark:text-gray-300">{t('sensors')}</h1>
           </div>
           <AddWidgets />
         </div>
 
         <div className="relative top-35 border-t-4 border-gray-300">
+
           <GridStackRenderProvider>
             <GridStackRender componentMap={COMPONENT_MAP} />
           </GridStackRenderProvider>
