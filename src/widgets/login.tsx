@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import i18n from '@/utils/i18n';
 import Button from './button';
 import AppMgr from '@/managers/appmgr';
 import logger from '@/utils/logger';
 import { UserProfile } from '@/services/google-auth';
+import { useTranslation } from 'react-i18next';
+import { Constants } from '@/utils/constants';
 
 type LoginProps = {
     logoutCallback: () => void;
@@ -12,6 +13,7 @@ type LoginProps = {
 };
 
 function Login({ logoutCallback, onSuccess }: LoginProps) {
+    const { t } = useTranslation();
     const initUserProperties = {
         access_token: '',
         refresh_token: '',
@@ -39,7 +41,6 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
     const authService = AppMgr.getInstance().authService;
     const driveService = AppMgr.getInstance().driveService;
     const loginLogger = logger.child({ module: 'login' });
-    const XRPCODES = 'XRPCodes';
 
     const SCOPE = 'https://mail.google.com https://www.googleapis.com/auth/drive';
 
@@ -60,14 +61,18 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
                             expire_in: token.expires_in,
                         }));
                         driveService.setAccessToken(token.access_token);
-                        // check if XRPCodes folder exists, if not create it
+                        // check if XRPCode folder exists, if not create it
                         try {
-                            const folder = await driveService.findFolderByName(XRPCODES);
+                            const folder = await driveService.findFolderByName(Constants.XRPCODE);
                             if (!folder) {
-                                await driveService.createFolder(XRPCODES);
+                                await driveService.createFolder(Constants.XRPCODE);
                             }
                         } catch (error) {
-                            loginLogger.error('Error checking or creating XRPCodes folder:', error);
+                            if (error instanceof Error) {
+                                loginLogger.error(`Error checking or creating XRPCode folder: ${error.stack ?? error.message}`);
+                            } else {
+                                loginLogger.error(`Error checking or creating XRPCode folder: ${String(error)}`);
+                            }   
                         }
                     });
 
@@ -87,7 +92,11 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
             }
         },
         onError: (error) => {
-            loginLogger.error('Login Failed:', error);
+            if (error instanceof Error) {
+                loginLogger.error(`Login Failed:' ${error.stack ?? error.message}`);
+            } else {
+                loginLogger.error(`Login Failed: ${String(error)}`);
+            }
         },
     });
 
@@ -136,7 +145,7 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
         <>
             {isLogin && (
                 <div className="flex flex-col">
-                    <label className="text-mountain-mist-900 dark:text-curious-blue-100">{i18n.t('userprofile')}</label>
+                    <label className="text-mountain-mist-900 dark:text-curious-blue-100">{t('userprofile')}</label>
                     <div className="border-1 flex flex-row items-center gap-2 rounded-md bg-mountain-mist-100 p-2 dark:bg-shark-500">
                         <img
                             className="h-16 w-16 rounded-full"
@@ -152,7 +161,7 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
             )}
             <div className="flex flex-col items-end gap-2">
                 <Button onClicked={isLogin ? googleLogout : googleSignIn}>
-                    {isLogin ? i18n.t('gooSignOut') : i18n.t('gooSignIn')}
+                    {isLogin ? t('gooSignOut') : t('gooSignIn')}
                 </Button>
             </div>
         </>

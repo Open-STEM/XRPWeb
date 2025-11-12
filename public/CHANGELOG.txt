@@ -1,4 +1,4 @@
-# Version 1.1.0
+# Version 2.2.0
 
 #### Bluetooth support
 <img height="10%" width="10%" src="src/assets/images/Bluetooth_FM_Black.png"/></img>
@@ -16,16 +16,18 @@
     * If the XRP is turned back on / brought closer XRPCode will auto re-connect to the XRP within that 10 seconds
 * If you start the XRP and a program runs keeping the bluetooth from connecting then press reset and it will restart without running the program
 
-#### VSCode editor
+#### editors
 * The Python editor now supports intellisense and Python syntax
 * The Python editor also knows about XRPLib and the XRPLib API
+* The Block editor is now support custom blocks
 
-#### Fixed
-* Input is now accepted in XRP applications
-* The REPL stays live from run to run and has information from the last running program like globals and classes
-    * When STOP is used the REPL is reset.
-
-
-
-
-
+#### New Features
+* The XRPCode website is completely redesigned with latest web technologies
+* A dashboard now supports displaying various sensors from the XRP
+* XRPCode nows supports locales
+    * English
+    * Spanish (pending translation)
+* A new AI Chat feature is now available to help you write code
+* Google Drive integration is now available to save and load files
+* Third-party drivers can now be added to XRPCode
+* Theming support for light and dark modes

@@ -346,20 +346,18 @@ pythonGenerator.forBlock['xrp_ws_start_server'] = function (block) {
 // Gamepad
 
 pythonGenerator.forBlock['xrp_gp_get_value'] = function (block) {
-  pythonGenerator.definitions_['import_gamepad'] = 'from XRPLib.joystick import *';
-  pythonGenerator.definitions_[`gamepad_setup`] = `joy = Joystick.get_default_joystick()`;
-  pythonGenerator.definitions_['gamepad_init'] = `joy.startBluetoothJoystick()`;
+  pythonGenerator.definitions_['import_gamepad'] = 'from XRPLib.gamepad import *';
+  pythonGenerator.definitions_[`gamepad_setup`] = `gp = Gamepad.get_default_gamepad()`;
   var value = block.getFieldValue("GPVALUE");
-  var code = `joy.getJoystickValue(joy.${value})`;
+  var code = `gp.get_value(gp.${value})`;
   return [code , pythonGenerator.ORDER_NONE];
 };
 
 pythonGenerator.forBlock['xrp_gp_button_pressed'] = function (block) {
-  pythonGenerator.definitions_['import_gamepad'] = 'from XRPLib.joystick import *';
-  pythonGenerator.definitions_[`gamepad_setup`] = `joy = Joystick.get_default_joystick()`;
-  pythonGenerator.definitions_['gamepad_init'] = `joy.startBluetoothJoystick()`;
+  pythonGenerator.definitions_['import_gamepad'] = 'from XRPLib.gamepad import *';
+  pythonGenerator.definitions_[`gamepad_setup`] = `gp = Gamepad.get_default_gamepad()`;
   var value = block.getFieldValue("GPBUTTON");
-  var code = `joy.isJoystickButtonPressed(joy.${value})`;
+  var code = `gp.is_button_pressed(gp.${value})`;
   return [code , pythonGenerator.ORDER_NONE];
 };
 

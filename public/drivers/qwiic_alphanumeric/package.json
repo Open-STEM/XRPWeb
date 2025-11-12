@@ -1,6 +1,6 @@
 {
     "urls": [
-      ["qwiic_alphanumeric.py", "g/drivers/qwiic_alphanumeric/qwiic_alphanumeric.py"]
+      ["qwiic_alphanumeric.py", "/drivers/qwiic_alphanumeric/qwiic_alphanumeric.py"]
     ],
     "deps": [
       ["qwiic_i2c", "/drivers/qwiic_i2c/package.json"]

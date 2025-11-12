@@ -1,10 +1,10 @@
 import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
 import { Constants } from '@/utils/constants';
-import i18n from '@/utils/i18n';
 import { useEffect, useState } from 'react';
 import DialogFooter from './dialog-footer';
 import AppMgr, { EventType } from '@/managers/appmgr';
 import PluginMgr, { Plugin, PluginConfig } from '@/managers/pluginmgr';
+import { useTranslation } from 'react-i18next';
 
 interface Driver {
     friendlyName: string;
@@ -28,6 +28,7 @@ interface XRPDriverInstallsProps {
  * Users can select drivers to install, and the installation process handles dependencies as well.
  */
 function XRPDriverInstallDlg({toggleDialog}: XRPDriverInstallsProps) {
+    const { t } = useTranslation();
     const [drivers, setDrivers] = useState<Driver[]>([]);    
 
     useEffect(() => {
@@ -242,11 +243,11 @@ function XRPDriverInstallDlg({toggleDialog}: XRPDriverInstallsProps) {
             <div className="flex flex-col border border-mountain-mist-700 rounded-md shadow-md h-auto gap-2 p-8 border-b dark:border-gray-600 dark:bg-shark-950 overflow-hidden transition-all">
                 <div className='flex flex-col items-center'>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-shark-200">
-                        {i18n.t('driver-install-title')}
+                        {t('driver-install-title')}
                     </h3>
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {i18n.t('driver-install-desc')}
+                    {t('driver-install-desc')}
                 </p>
                 <hr className="w-full border-mountain-mist-600" />
                 <div className="flex flex-col overflow-x-auto shadow-md sm:rounded-lg h-[calc(100vh-300px)] mb-4">
@@ -260,19 +261,19 @@ function XRPDriverInstallDlg({toggleDialog}: XRPDriverInstallsProps) {
                                     </div>
                                 </th>
                                 <th scope="col" className="px-6 py-3">
-                                    {i18n.t('driver-name')}
+                                    {t('driver-name')}
                                 </th>
                                 <th scope="col" className="px-6 py-3">
-                                    {i18n.t('driver-manufacturer')}
+                                    {t('driver-manufacturer')}
                                 </th>
                                 <th scope="col" className="px-6 py-3">
-                                    {i18n.t('driver-version')}
+                                    {t('driver-version')}
                                 </th>
                                 <th scope="col" className="px-6 py-3">
-                                    {i18n.t('driver-install-doc')}
+                                    {t('driver-install-doc')}
                                 </th>
                                 <th scope="col" className="px-6 py-3">
-                                    {i18n.t('driver-has-installed')}
+                                    {t('driver-has-installed')}
                                 </th>
                             </tr>
                         </thead>
@@ -298,7 +299,7 @@ function XRPDriverInstallDlg({toggleDialog}: XRPDriverInstallsProps) {
                                         <a href={driver.docUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 dark:text-blue-500 hover:underline">{driver.docUrl}</a>
                                     </td>
                                     <td className="px-6 py-4">
-                                        {driver.hasInstalled ? i18n.t('driver-install-yes') : i18n.t('driver-install-no')}
+                                        {driver.hasInstalled ? t('driver-install-yes') : t('driver-install-no')}
                                     </td>
                                 </tr>
                             ))}
@@ -308,7 +309,7 @@ function XRPDriverInstallDlg({toggleDialog}: XRPDriverInstallsProps) {
                 <DialogFooter
                     btnAcceptCallback={handleInstallDriver}
                     btnCancelCallback={toggleDialog}
-                    btnAcceptLabel={i18n.t('driver-install')}
+                    btnAcceptLabel={t('driver-install')}
                 />  
             </div>
         </>

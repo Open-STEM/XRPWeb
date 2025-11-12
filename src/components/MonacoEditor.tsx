@@ -15,11 +15,11 @@ import { ExtensionHostKind, registerExtension } from 'vscode/extensions';
 import 'vscode/localExtensionHost';
 import { initializedAndStartLanguageClient } from '@components/lsp-client';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
-import i18n from '@/utils/i18n';
 import { StorageKeys } from '@/utils/localstorage';
 import EditorMgr, { EditorSession } from '@/managers/editormgr';
 import { FontSize } from '@/utils/types';
 import { Constants } from '@/utils/constants';
+import { useTranslation } from 'react-i18next';
 
 const languageId = 'python';
 let isClientInitalized: boolean = false;
@@ -137,6 +137,7 @@ const MonacoEditor = ({
     value,
     className,
 }: MonacoEditorProps) => {
+    const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement | null>(null);
     const editor = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
 
@@ -183,6 +184,8 @@ const MonacoEditor = ({
                 if (containerRef.current && editor.current) {
                     const model = monaco.editor.createModel(loadContent.content, languageId);
                     editor.current.setModel(model);
+                    // Update live content when loading new content
+                    EditorMgr.updateLiveContent(name, loadContent.content);
                 }
                 const session: EditorSession | undefined =
                     EditorMgr.getInstance().getEditorSession(loadContent.name);
@@ -230,6 +233,15 @@ const MonacoEditor = ({
                     language: language,
                 });
 
+                // Update live content immediately with initial value
+                EditorMgr.updateLiveContent(name, value || '');
+
+                // Listen for content changes and update live content
+                editor.current.onDidChangeModelContent(() => {
+                    const currentContent = editor.current?.getValue() || '';
+                    EditorMgr.updateLiveContent(name, currentContent);
+                });
+
                 monaco.editor.onDidCreateEditor((codeEditor) => {
                     console.log('Editor created', codeEditor.getId());
                 });
@@ -238,6 +250,8 @@ const MonacoEditor = ({
                 if (editorSession && editorSession.content) {
                     const model = monaco.editor.createModel(editorSession.content, languageId);
                     editor.current?.setModel(model);
+                    // Update live content with session content
+                    EditorMgr.updateLiveContent(name, editorSession.content);
                 }
     
                 editor.current.onDidChangeModelContent(() => {
@@ -252,7 +266,7 @@ const MonacoEditor = ({
 
                 editor.current.addAction({
                     id: 'save',
-                    label: i18n.t('save'),
+                    label: t('save'),
                     keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS],
                     contextMenuGroupId: 'navigation',
                     contextMenuOrder: 1.5,
@@ -274,6 +288,11 @@ const MonacoEditor = ({
                 }
             }
         }
+
+        // Cleanup function to remove live content when component unmounts
+        return () => {
+            EditorMgr.removeLiveContent(name);
+        };
     }, [name, language, value]);
 
     return <div ref={containerRef} style={style} className={className} />;

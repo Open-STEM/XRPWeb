@@ -187,6 +187,11 @@ export default class PluginMgr {
      * Load plugin blocks from a JSON file
      */
     private async loadPluginBlocks(blocksUrl: string): Promise<PluginBlock[] | null> {
+        
+        if (process.env.NODE_ENV === 'development') {
+                blocksUrl = '/public' + blocksUrl;
+            }
+        
         try {
             const response = await fetch(blocksUrl);
             if (!response.ok) {
@@ -204,18 +209,17 @@ export default class PluginMgr {
      * Load a script dynamically (module import with fallback)
      */
     private async loadScript(scriptUrl: string): Promise<void> {
+         if (process.env.NODE_ENV === 'development') {
+                scriptUrl = '/public' + scriptUrl;
+            }
+        
         if (this.loadedScripts.has(scriptUrl)) {
             return; // Already loaded
         }
 
         try {
             // Dynamic import of the plugin script
-            let url;
-            if (process.env.NODE_ENV === 'development') {
-                url = '/public' + scriptUrl;
-            } else {
-                url = scriptUrl;
-            }
+            const url = scriptUrl;
             await import(/* @vite-ignore */ url);
             this.loadedScripts.add(scriptUrl);
         } catch (error) {
@@ -238,7 +242,7 @@ export default class PluginMgr {
         );
 
         if (controlBoardCategory) {
-            const colorLEDBlock = await this.loadPluginBlocks('/public/plugins/2350/nonbeta_blocks.json');
+            const colorLEDBlock = await this.loadPluginBlocks('/plugins/2350/nonbeta_blocks.json');
             controlBoardCategory.contents.push(colorLEDBlock);
         }
 

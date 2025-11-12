@@ -23,7 +23,7 @@ import { IoPlaySharp } from 'react-icons/io5';
 import { MdMoreVert } from "react-icons/md";
 import { IoStop } from 'react-icons/io5';
 import { useEffect, useRef, useState } from 'react';
-import i18n from '@/utils/i18n';
+import { useTranslation } from 'react-i18next';
 import Dialog from '@components/dialogs/dialog';
 import ConnectionDlg from '@/components/dialogs/connectiondlg';
 import FileSaveAsDialg from '@/components/dialogs/filesaveasdlg';
@@ -61,7 +61,7 @@ import UpdateDlg from '@components/dialogs/updatedlg';
 import React from 'react';
 import { CreateEditorTab } from '@/utils/editorUtils';
 import ChangeLogDlg from '@components/dialogs/changelog';
-import { IJsonTabNode } from 'flexlayout-react';
+import { Actions, IJsonTabNode } from 'flexlayout-react';
 import GoogleLoginDlg from '@components/dialogs/logindlg';
 import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
 import XRPDriverInstallDlg from './dialogs/driver-installs';
@@ -79,10 +79,12 @@ let hasSubscribed = false;
  * @returns
  */
 function NavBar({ layoutref }: NavBarProps) {
+    const { t } = useTranslation();
     const [isMoreMenuOpen, setMoreMenuOpen] = useState(false);
     const [isConnected, setConnected] = useState(false);
     const [isRunning, setRunning] = useState(false);
     const [isBlockly, setBlockly] = useState(false);
+    const [isOtherTab, setIsOtherTab] = useState(false);
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [isDlgOpen, setDlgOpen] = useState(false);
     const [isGamepadConnected, setGamepadConnected] = useState<boolean>(false);
@@ -107,6 +109,7 @@ function NavBar({ layoutref }: NavBarProps) {
     const [activeTab, setActiveTab] = useLocalStorage(StorageKeys.ACTIVETAB, '');
     const authService = AppMgr.getInstance().authService;
     const driveService = AppMgr.getInstance().driveService;
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!hasSubscribed) {
@@ -130,15 +133,22 @@ function NavBar({ layoutref }: NavBarProps) {
             AppMgr.getInstance().on(EventType.EVENT_EDITOR, (type: EditorType) => {
                 if (type === EditorType.BLOCKLY) {
                     setBlockly(true);
+                    setIsOtherTab(false);
                 } else if (type === EditorType.PYTHON) {
                     setBlockly(false);
+                    setIsOtherTab(false);
+                } else {
+                    setIsOtherTab(true);
                 }
             });
 
             AppMgr.getInstance().on(EventType.EVENT_OPEN_FILE, async (filePathDataJson: string) => {
                 const filePathData = JSON.parse(filePathDataJson);
                 const filename = filePathData.xrpPath.split('/').pop();
-                if (filename && EditorMgr.getInstance().hasEditorSession(filename)) return;
+                if (filename && EditorMgr.getInstance().hasEditorSession(filename)) {
+                    EditorMgr.getInstance().SelectEditorTab(filename);
+                    return;
+                }
                 const fileType = filename?.includes('.blocks') ? FileType.BLOCKLY : FileType.PYTHON;
                 const fileData: NewFileData = {
                     parentId: '',
@@ -219,6 +229,11 @@ function NavBar({ layoutref }: NavBarProps) {
                 }
             });
 
+            AppMgr.getInstance().on(EventType.EVENT_ALERT, (message) => {
+                setDialogContent(<AlertDialog alertMessage={message} toggleDialog={toggleDialog} />);
+                toggleDialog();
+            });
+
             AppMgr.getInstance().on(EventType.EVENT_GAMEPAD_STATUS, (status: string) => {
                 if (status === Constants.CONNECTED) {
                         setGamepadConnected(true)
@@ -230,6 +245,26 @@ function NavBar({ layoutref }: NavBarProps) {
             hasSubscribed = true;
         }
     });
+
+    /**
+     * toggleMoreDropdown - toggle the more dropdown menu when the mouse click outside the menu
+     */
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            // Check if the click is outside the dropdown menu
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setMoreMenuOpen(false);
+            }
+        }
+
+        // Add event listener when the component mounts
+        document.addEventListener('mousedown', handleClickOutside);
+
+        // Clean up the event listener when the component unmounts
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [dropdownRef]);
 
     if (loading) {
         return <div>Loading...</div>;
@@ -257,7 +292,7 @@ function NavBar({ layoutref }: NavBarProps) {
             const user = localStorage.getItem(StorageKeys.XRPUSER)?.replace(/"/g, '');
             if (user === undefined || user === "") {
                 // output an alert message and inform the user
-                setDialogContent(<AlertDialog alertMessage={i18n.t('no-user-message')} toggleDialog={toggleDialog} />);
+                setDialogContent(<AlertDialog alertMessage={t('no-user-message')} toggleDialog={toggleDialog} />);
                 toggleDialog();
             }
         }
@@ -269,7 +304,7 @@ function NavBar({ layoutref }: NavBarProps) {
     function handleMPUpdateCallback() {
         // ask the user to confirm the update and provide instructions to the user about the update
         const xrpDrive = CommandToXRPMgr.getInstance().getXRPDrive();
-        setDialogContent(<ConfirmationDlg acceptCallback={handleMPUpdateConfirmed} toggleDialog={toggleDialog} confirmationMessage={i18n.t('update-mp-instructions', { drive: xrpDrive })} />);
+        setDialogContent(<ConfirmationDlg acceptCallback={handleMPUpdateConfirmed} toggleDialog={toggleDialog} confirmationMessage={t('update-mp-instructions', { drive: xrpDrive })} />);
         toggleDialog();
     }
 
@@ -298,10 +333,10 @@ function NavBar({ layoutref }: NavBarProps) {
             await writable.close();
         } catch(err) {
             console.log("Firmware update error: ", err);
-            setDialogContent(<AlertDialog alertMessage={i18n.t('update-mp-error', { error: err})} toggleDialog={toggleDialog} />);
+            setDialogContent(<AlertDialog alertMessage={t('update-mp-error', { error: err})} toggleDialog={toggleDialog} />);
             toggleDialog();
         }
-        setDialogContent(<AlertDialog alertMessage={i18n.t('update-mp-complete')} toggleDialog={toggleDialog} />);
+        setDialogContent(<AlertDialog alertMessage={t('update-mp-complete')} toggleDialog={toggleDialog} />);
         toggleDialog();
     }
 
@@ -311,7 +346,7 @@ function NavBar({ layoutref }: NavBarProps) {
     async function handleXRPLibUpdateCallback() {
         // ask the user to confirm the update and provide instructions to the user about the update
         const xrpDrive = CommandToXRPMgr.getInstance().getXRPDrive();
-        setDialogContent(<ConfirmationDlg acceptCallback={handleXRPLibUpdateConfirmed} toggleDialog={toggleDialog} confirmationMessage={i18n.t('update-lib-instructions', { drive: xrpDrive })} />);
+        setDialogContent(<ConfirmationDlg acceptCallback={handleXRPLibUpdateConfirmed} toggleDialog={toggleDialog} confirmationMessage={t('update-lib-instructions', { drive: xrpDrive })} />);
         toggleDialog();
     }
 
@@ -326,11 +361,11 @@ function NavBar({ layoutref }: NavBarProps) {
             await CommandToXRPMgr.getInstance().updateLibrary();
         } catch (err) {
             console.log("Library update error: ", err);
-            setDialogContent(<AlertDialog alertMessage={i18n.t('update-lib-error', { error: err})} toggleDialog={toggleDialog} />);
+            setDialogContent(<AlertDialog alertMessage={t('update-lib-error', { error: err})} toggleDialog={toggleDialog} />);
             toggleDialog();
         }
         toggleDialog();
-        setDialogContent(<AlertDialog alertMessage={i18n.t('update-lib-complete')} toggleDialog={toggleDialog} />);
+        setDialogContent(<AlertDialog alertMessage={t('update-lib-complete')} toggleDialog={toggleDialog} />);
         toggleDialog();
     }
 
@@ -353,7 +388,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * NewFile - create either a new Python or Blockly file
      */
     function NewFile() {
-        console.log(i18n.t('newFile'), layoutref);
+        console.log(t('newFile'), layoutref);
         setDialogContent(
             <NewFileDlg submitCallback={onNewFileSubmitted} toggleDialog={toggleDialog} />,
         );
@@ -364,7 +399,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * UploadFile - upload a file to XRP
      */
     function UploadFile() {
-        console.log(i18n.t('uploadFile'));
+        console.log(t('uploadFile'));
         openFilePicker();
     }
 
@@ -372,7 +407,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * ExportToPC - export the file to PC
      */
     function ExportToPC() {
-        console.log(i18n.t('exportToPC'));
+        console.log(t('exportToPC'));
         const session = EditorMgr.getInstance().getEditorSession(activeTab);
         if (session) {
             CommandToXRPMgr.getInstance()
@@ -384,7 +419,7 @@ function NavBar({ layoutref }: NavBarProps) {
                 });
         } else {
             setDialogContent(
-                <AlertDialog alertMessage={i18n.t('no-activetab')} toggleDialog={toggleDialog} />,
+                <AlertDialog alertMessage={t('no-activetab')} toggleDialog={toggleDialog} />,
             );
             toggleDialog();
         }
@@ -394,7 +429,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * SaveFile - Save file to XRP
      */
     function SaveFile() {
-        console.log(i18n.t('saveFile'));
+        console.log(t('saveFile'));
         if (EditorMgr.getInstance().hasEditorSession(activeTab)) {
             AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
             setDialogContent(<ProgressDlg title='saveToXRPTitle'/>);
@@ -405,7 +440,7 @@ function NavBar({ layoutref }: NavBarProps) {
             });
         } else {
             setDialogContent(
-                <AlertDialog alertMessage={i18n.t('no-activetab')} toggleDialog={toggleDialog} />,
+                <AlertDialog alertMessage={t('no-activetab')} toggleDialog={toggleDialog} />,
             );
         }
         toggleDialog();
@@ -419,6 +454,8 @@ function NavBar({ layoutref }: NavBarProps) {
         // close the save as dialog first
         const editorMgr = EditorMgr.getInstance();
         const session = editorMgr.getEditorSession(activeTab);
+        // close the save as dialog first
+        toggleDialog();
         if (session) {
             session.path = fileData.path + '/' + fileData.name;
             AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
@@ -426,26 +463,35 @@ function NavBar({ layoutref }: NavBarProps) {
             setDialogContent(<ProgressDlg title='saveToXRPTitle'/>);
             toggleDialog();
             // subscribe to the UploadFile complete event
-            AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, () => {
-                toggleDialog();
+            AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, async () => {
                 AppMgr.getInstance().eventOff(EventType.EVENT_UPLOAD_DONE);
+                // close the current tab and re-open a new tab for the new file
+                editorMgr.RemoveEditorTab(activeTab);
+                editorMgr.RemoveEditor(activeTab);
+                const newFileData: NewFileData = {
+                    parentId: '',
+                    path: fileData.path + '/' + fileData.name,
+                    gpath: '',
+                    name: fileData.name || '',
+                    filetype: session.type === EditorType.BLOCKLY ? FileType.BLOCKLY : FileType.PYTHON,
+                };
+                CreateEditorTab(newFileData, layoutref);
+                setActiveTab(fileData.name)
                 setDialogContent(<div />);
+                await CommandToXRPMgr.getInstance().getOnBoardFSTree();
             });
-            editorMgr.RenameEditor(activeTab, fileData.name);
+            toggleDialog();
         }
-        toggleDialog();
     }
 
     /**
      * SaveFileAs - save the current file as to the XRP
      */
     function SaveFileAs() {
-        console.log(i18n.t('saveFileAs'));
+        console.log(t('saveFileAs'));
         if (EditorMgr.getInstance().hasEditorSession(activeTab)) {
-            const folderList = AppMgr.getInstance().getFolderList();
             setDialogContent(
                 <FileSaveAsDialg
-                    treeData={JSON.stringify(folderList)}
                     saveCallback={handleSaveFileAs}
                     toggleDialog={toggleDialog}
                 />,
@@ -453,7 +499,7 @@ function NavBar({ layoutref }: NavBarProps) {
             toggleDialog();
         } else {
             setDialogContent(
-                <AlertDialog alertMessage={i18n.t('no-activetab')} toggleDialog={toggleDialog} />,
+                <AlertDialog alertMessage={t('no-activetab')} toggleDialog={toggleDialog} />,
             );
             toggleDialog();
         }
@@ -463,8 +509,12 @@ function NavBar({ layoutref }: NavBarProps) {
      * ViewPythonFile - view the Python file
      */
     function ViewPythonFile() {
+        console.log('View Python File', activeTab);
+        if (isOtherTab) {
+            return;
+        }
         const viewPythonHandler = (code: string) => {
-            setDialogContent(<ViewPythonDlg code={code} toggleDlg={toggleDialog} />);
+            setDialogContent(<ViewPythonDlg code={code} toggleDlg={toggleDialog} clearDlg={clearDialogContent}/>);
             toggleDialog();
             appMgr.eventOff(EventType.EVENT_GENPYTHON_DONE);
         };
@@ -523,11 +573,24 @@ function NavBar({ layoutref }: NavBarProps) {
      * ConvertToPython - convert the current blockly file to Python
      */
     function ConvertToPython() {
+        if (isOtherTab) {
+            return;
+        }
+        if (!isConnected) {
+            setDialogContent(
+                <AlertDialog
+                    alertMessage={t('XRP-not-connected')}
+                    toggleDialog={toggleDialog}
+                />,
+            );
+            toggleDialog();
+            return;
+        }
         setDialogContent(
             <ConfirmationDlg
                 acceptCallback={BlocksToPythonCallback}
                 toggleDialog={toggleDialog}
-                confirmationMessage={i18n.t('convert-to-python-desc')}
+                confirmationMessage={t('convert-to-python-desc')}
             />,
         );
         toggleDialog();
@@ -537,7 +600,10 @@ function NavBar({ layoutref }: NavBarProps) {
      * FontPlusPlus - increase font in the current window
      */
     function FontPlusPlus() {
-        console.log(i18n.t('increaseFont'));
+        console.log(t('increaseFont'));
+        if (isOtherTab) {
+            return;
+        }
         AppMgr.getInstance().emit(EventType.EVENT_FONTCHANGE, FontSize.INCREASE);
     }
 
@@ -545,7 +611,10 @@ function NavBar({ layoutref }: NavBarProps) {
      * FontMinus - decrease font in the current window
      */
     function FontMinus() {
-        console.log(i18n.t('decreaseFont'));
+        console.log(t('decreaseFont'));
+        if (isOtherTab) {
+            return;
+        }
         AppMgr.getInstance().emit(EventType.EVENT_FONTCHANGE, FontSize.DESCREASE);
     }
 
@@ -553,20 +622,62 @@ function NavBar({ layoutref }: NavBarProps) {
      * viewDashboard - view the dashboard
      */
     function viewDashboard() {
-        console.log(i18n.t('dashboard'));
+        console.log(t('dashboard'));
         // check if the dashboard tab is already open
-        if (EditorMgr.getInstance().hasEditorSession('Dashboard')) {
-            setActiveTab('Dashboard');
+        if (EditorMgr.getInstance().hasEditorSession(Constants.DASHBOARD_TAB_ID)) {
+            const layoutModel = EditorMgr.getInstance().getLayoutModel();
+            layoutModel?.doAction(Actions.selectTab(Constants.DASHBOARD_TAB_ID));
             return;
         }
         const tabInfo: IJsonTabNode = {
             component: 'dashboard',
-            name: i18n.t('dashboard'),
-            id: 'DashboardId',
-            helpText: i18n.t('dashboard')
+            name: t('dashboard'),
+            id: Constants.DASHBOARD_TAB_ID,
+            helpText: t('dashboard')
         };
         layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
+        EditorMgr.getInstance().AddEditor({
+            id: Constants.DASHBOARD_TAB_ID,
+            type: EditorType.OTHER,
+            path: '',
+            gpath: '',
+            isSubscribed: false,
+            fontsize: Constants.DEFAULT_FONTSIZE,
+            content: '',
+        });        
+        setIsOtherTab(true);
         setActiveTab('Dashboard');
+    }
+
+    /**
+     * openAIChat - open the AI chat
+     */
+    function openAIChat() {
+        console.log('Opening AI Chat');
+        if (EditorMgr.getInstance().hasEditorSession(Constants.AI_CHAT_TAB_ID)) {
+            const layoutModel = EditorMgr.getInstance().getLayoutModel();
+            layoutModel?.doAction(Actions.selectTab(Constants.AI_CHAT_TAB_ID));
+            setActiveTab('AI Chat');
+            return;
+        };
+        const tabInfo: IJsonTabNode = {
+            component: 'aichat',
+            name: 'AI Chat',
+            id: Constants.AI_CHAT_TAB_ID,
+            helpText: 'Chat with AI models from Hugging Face',
+        };
+        layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
+        EditorMgr.getInstance().AddEditor({
+            id: Constants.AI_CHAT_TAB_ID,
+            type: EditorType.OTHER,
+            path: '',
+            gpath: '',
+            isSubscribed: false,
+            fontsize: Constants.DEFAULT_FONTSIZE,
+            content: '',
+        });
+        setIsOtherTab(true);
+        setActiveTab('AI Chat');
     }
 
     /**
@@ -594,6 +705,14 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
+     * boadcastRunningState - broadcast the running state to the app manager
+     * @param running
+     */
+    function broadcastRunningState(running: boolean) {
+        AppMgr.getInstance().emit(EventType.EVENT_ISRUNNING, running ? 'running' : 'stopped');
+    }
+
+    /**
      * onRunBtnClicked
      */
     async function onRunBtnClicked() {
@@ -604,7 +723,7 @@ function NavBar({ layoutref }: NavBarProps) {
             if (!isConnected) {
                 setDialogContent(
                     <AlertDialog
-                        alertMessage={i18n.t('XRP-not-connected')}
+                        alertMessage={t('XRP-not-connected')}
                         toggleDialog={toggleDialog}
                     />,
                 );
@@ -612,11 +731,11 @@ function NavBar({ layoutref }: NavBarProps) {
                 return;
             }
 
-            // make sure this is not the dashboard tab
-            if (activeTab === 'Dashboard') {
+            // make sure this is not the dashboard tab or AI chat tab
+            if (activeTab === 'Dashboard' || activeTab === 'AI Chat') {
                 setDialogContent(
                     <AlertDialog
-                        alertMessage={i18n.t('dashboard-no-run')}
+                        alertMessage={t('dashboard-no-run')}
                         toggleDialog={toggleDialog}
                     />,
                 );
@@ -625,6 +744,7 @@ function NavBar({ layoutref }: NavBarProps) {
             }
 
             setRunning(true);
+            broadcastRunningState(true);
 
             // Check battery voltage && version
             await CommandToXRPMgr.getInstance()
@@ -666,9 +786,11 @@ function NavBar({ layoutref }: NavBarProps) {
                         });
                 }
                 setRunning(false);
+                broadcastRunningState(false);
             }
         } else {
             setRunning(false);
+            broadcastRunningState(false);
             CommandToXRPMgr.getInstance().stopProgram();
         }
     }
@@ -686,7 +808,8 @@ function NavBar({ layoutref }: NavBarProps) {
      * onAiClicked - handle the AI button click event
      */
     function onAiClicked() {
-        // put the AI chat bot lanuch here
+        setMoreMenuOpen(false);
+        openAIChat();
     }
 
     /**
@@ -705,7 +828,7 @@ function NavBar({ layoutref }: NavBarProps) {
         if (!isConnected) {
             setDialogContent(
                 <AlertDialog
-                    alertMessage={i18n.t('XRP-not-connected')}
+                    alertMessage={t('XRP-not-connected')}
                     toggleDialog={toggleDialog}
                 />,
             );
@@ -732,6 +855,13 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
+     * clearDialogContent - toggle the dialog open/close state
+     */
+    function clearDialogContent(){
+        setDialogContent(<div />);
+    };
+
+    /**
      * toggleDialog - toggle the dialog open and closed
      */
     function toggleDialog() {
@@ -746,34 +876,34 @@ function NavBar({ layoutref }: NavBarProps) {
 
     const navItems: MenuDataItem[] = [
         {
-            label: i18n.t('file'),
+            label: t('file'),
             children: [
                 {
-                    label: i18n.t('newFile'),
+                    label: t('newFile'),
                     iconImage: fileadd,
                     clicked: NewFile,
                     isFile: true,
                 },
                 {
-                    label: i18n.t('uploadFiles'),
+                    label: t('uploadFiles'),
                     iconImage: fileupload,
                     clicked: UploadFile,
                     isFile: true,
                 },
                 {
-                    label: i18n.t('exportToPC'),
+                    label: t('exportToPC'),
                     iconImage: fileexport,
                     clicked: ExportToPC,
                     isFile: true,
                 },
                 {
-                    label: i18n.t('saveFile'),
+                    label: t('saveFile'),
                     iconImage: filesave,
                     clicked: SaveFile,
                     isFile: true,
                 },
                 {
-                    label: i18n.t('saveFileAs'),
+                    label: t('saveFileAs'),
                     iconImage: filesaveas,
                     clicked: SaveFileAs,
                     isFile: true,
@@ -781,16 +911,16 @@ function NavBar({ layoutref }: NavBarProps) {
             ],
         },
         {
-            label: i18n.t('view'),
+            label: t('view'),
             children: [
                 {
-                    label: i18n.t('viewPythonFile'),
+                    label: t('viewPythonFile'),
                     iconImage: python,
                     clicked: ViewPythonFile,
                     isView: true,
                 },
                 {
-                    label: i18n.t('convertToPython'),
+                    label: t('convertToPython'),
                     iconImage: convert,
                     clicked: ConvertToPython,
                     isView: true,
@@ -798,13 +928,13 @@ function NavBar({ layoutref }: NavBarProps) {
             ],
             childrenExt: [
                 {
-                    label: i18n.t('increaseFont'),
+                    label: t('increaseFont'),
                     iconImage: fontplus,
                     clicked: FontPlusPlus,
                     isView: true,
                 },
                 {
-                    label: i18n.t('decreaseFont'),
+                    label: t('decreaseFont'),
                     iconImage: fontminus,
                     clicked: FontMinus,
                     isView: true,
@@ -812,30 +942,30 @@ function NavBar({ layoutref }: NavBarProps) {
             ],
         },
         {
-            label: i18n.t('help'),
+            label: t('help'),
             children: [
                 {
-                    label: i18n.t('userGuide'),
+                    label: t('userGuide'),
                     iconImage: userguide,
                     link: 'https://xrpusersguide.readthedocs.io/en/latest/course/introduction.html',
                 },
                 {
-                    label: i18n.t('apiReference'),
+                    label: t('apiReference'),
                     iconImage: apilink,
                     link: 'https://open-stem.github.io/XRP_MicroPython/',
                 },
                 {
-                    label: i18n.t('cirriculum'),
+                    label: t('cirriculum'),
                     iconImage: cirriculum,
                     link: 'https://introtoroboticsv2.readthedocs.io/en/latest/',
                 },
                 {
-                    label: i18n.t('userHelpForum'),
+                    label: t('userHelpForum'),
                     iconImage: forum,
                     link: 'https://xrp.discourse.group/',
                 },
                 {
-                    label: i18n.t('changeLog'),
+                    label: t('changeLog'),
                     iconImage: changelog,
                     clicked: ChangeLog,
                 },
@@ -845,22 +975,22 @@ function NavBar({ layoutref }: NavBarProps) {
 
     const moreMenu: MenuDataItem[] = [
         {
-            label: i18n.t('ai-chat'),
+            label: t('ai-chat'),
             iconImage: chatbot,
             clicked: onAiClicked,
         },
         {
-            label: i18n.t('dashboard'),
+            label: t('dashboard'),
             iconImage: dashboard,
             clicked: onDashboardClicked,
         },
         { 
-            label: i18n.t('drivers'),
+            label: t('drivers'),
             iconImage: drivers,
             clicked: onDriverClicked,
         },
         {
-            label: i18n.t('settings'),
+            label: t('settings'),
             iconImage: settings,
             clicked: onSettingsClicked,
         }
@@ -890,6 +1020,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                         >
                                             <MenuItem
                                                 isConnected={isConnected && !isRunning}
+                                                isOther={isOtherTab}
                                                 item={child}
                                             />
                                         </li>
@@ -899,6 +1030,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                     <ul
                                         id="blockId"
                                         className={`${isBlockly ? 'hidden' : 'visible'} cursor-pointer flex-col`}
+                                        
                                     >
                                         {item.childrenExt?.map((child, ci) => (
                                             <li
@@ -908,6 +1040,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                             >
                                                 <MenuItem
                                                     isConnected={isConnected && !isRunning}
+                                                    isOther={isOtherTab}
                                                     item={child}
                                                 />
                                             </li>
@@ -937,7 +1070,7 @@ function NavBar({ layoutref }: NavBarProps) {
                         <path fill="none" stroke="#000" strokeWidth="1.1" d="M12,8 L18,2"></path>
                         <path fill="none" stroke="#000" strokeWidth="1.1" d="M2,18 L8,12"></path>
                     </svg>
-                    <span>CONNECT XRP</span>
+                    <span>{t('connectXRP')}</span>
                 </button>
                 <button
                     id="runBtn"
@@ -946,17 +1079,17 @@ function NavBar({ layoutref }: NavBarProps) {
                 >
                     {isRunning ? (
                         <>
-                            <span>STOP</span>
+                            <span>{t('stop')}</span>
                             <IoStop />
                         </>
                     ) : (
                         <>
-                            <span>RUN</span>
+                            <span>{t('run')}</span>
                             <IoPlaySharp />
                         </>
                     )}
                 </button>
-                <div className='group relative transition-all'>
+                <div ref={dropdownRef} className='group relative transition-all'>
                     <button id="settingsId" onClick={toggleMoreDropdown} className={`flex flex-row rounded-3xl p-1 ${isMoreMenuOpen ? 'bg-curious-blue-400 dark:bg-mountain-mist-800' : 'bg-curious-blue-700 dark:bg-mountain-mist-950'}`}>
                         <MdMoreVert size={'1.5em'} />
                     </button>
@@ -971,6 +1104,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                     >
                                         <MenuItem
                                             isConnected={isConnected && !isRunning}
+                                            isOther={false}
                                             item={item}
                                         />
                                     </li>

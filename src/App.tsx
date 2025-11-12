@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import './App.css';
-import Navbar from './components/navbar';
-import XRPLayout from './components/xrplayout';
-import AppMgr from './managers/appmgr';
+import Navbar from '@components/navbar';
+import XRPLayout from '@components/xrplayout';
+import AppMgr from '@/managers/appmgr';
 
 function App() {
     const xrpLayoutRef = useRef();

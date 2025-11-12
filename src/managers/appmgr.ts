@@ -39,6 +39,8 @@ export enum EventType {
     EVENT_MUST_UPDATE_MICROPYTHON = 'must-micropython-update', //If not an XRP version of MicroPython they must update before updating XRPLib
     EVENT_BLOCKLY_TOOLBOX_UPDATED = 'blockly-toolbox-updated', // Blockly toolbox has been updated
     EVENT_GAMEPAD_STATUS = 'gamepad-status', // Gamepad status on/off
+    EVENT_ALERT = 'alert', // Alert dialog event
+    EVENT_ISRUNNING = 'is-running', // XRP is running user code
 }
 
 type Events = {
@@ -69,6 +71,8 @@ type Events = {
     [EventType.EVENT_MUST_UPDATE_MICROPYTHON]: string;
     [EventType.EVENT_BLOCKLY_TOOLBOX_UPDATED]: string;
     [EventType.EVENT_GAMEPAD_STATUS]: string;
+    [EventType.EVENT_ALERT]: string;
+    [EventType.EVENT_ISRUNNING]: string;
 };
 
 /**
@@ -83,6 +87,7 @@ export default class AppMgr {
     private _emitter = mitt<Events>();
     private _connectionMgr: connecionMgr | null = null;
     private _folderData : FolderItem[] | null = null;
+    private _folderDataJson : string | null = null;
     private _authService: GoogleAuthService = new GoogleAuthService();
     private _driveService: GoogleDriveService = new GoogleDriveService();
 
@@ -182,10 +187,14 @@ export default class AppMgr {
     }
 
     /**
-     * Remove all listeners for a given event
+     * Remove listeners for a given event or all listeners if no event is provided
      */
-    public off(): void {
-        this._emitter.all.clear();
+    public off(eventName?: EventType): void {
+        if (eventName) {
+            this._emitter.off(eventName);
+        } else {
+            this._emitter.all.clear();
+        }
     }
 
     /**
@@ -211,8 +220,9 @@ export default class AppMgr {
      * setFolderData - save a list of folder names for use with New File dialog
      * @param folderData 
      */
-    public setFoderData(folderData: FolderItem[]) {
-        this._folderData = folderData;
+    public setFoderData(folderJson: string) {
+        this._folderData = JSON.parse(folderJson);
+        this._folderDataJson = folderJson;
     }
 
 
@@ -231,6 +241,35 @@ export default class AppMgr {
             }
         }
         return folders;
+    }
+
+    /**
+     * IsFileExists - check if a file exists in the folder data
+     * @param filename 
+     * @returns true if file exists, false otherwise
+     */
+    public IsFileExists(filename: string): boolean {
+        if (!this._folderDataJson) {
+            return false;
+        }
+
+        const checkFileInFolders = (folders: FolderItem[]): boolean => {
+            for (const folder of folders) {
+                if (folder.children) {
+                    for (const item of folder.children) {
+                        if (item.name === filename) {
+                            return true;
+                        }
+                    }
+                    if (checkFileInFolders(folder.children)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+
+        return checkFileInFolders(JSON.parse(this._folderDataJson));
     }
 
     /**

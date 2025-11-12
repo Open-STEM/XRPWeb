@@ -2,17 +2,21 @@ export class Constants {
     static readonly APP_VERSION = '2.0.1';
     static readonly EDITOR_TABSET_ID = 'editorTabSetId';
     static readonly SHELL_TABSET_ID = 'shellTabSetId';
+    static readonly SHELL_TAB_ID = 'shellTabId';
     static readonly FOLDER_TAB_ID = 'folderTabId';
+    static readonly AI_CHAT_TAB_ID = 'aiChatTabId';
+    static readonly DASHBOARD_TAB_ID = 'dashboardTabId';
     static readonly DEFAULT_FONTSIZE = 14;
     static readonly TRASH_FOLDER = '/trash';
     static readonly SHOW_CHANGELOG = 'show-changelog';
-    static SHOW_PROGRESS = 'show-progress';
+    static readonly SHOW_PROGRESS = 'show-progress';
     static readonly ADMIN_FILE = 'admin.json';
     static readonly GUSERS_FOLDER = '/gusers/';
-    static readonly XRPCODES = 'XRPCodes';
+    static readonly XRPCODE = 'XRPCode';
     static readonly LIBDIR = '/lib/';
     static readonly CONNECTED = "Connected";
     static readonly DISCONNECTED = "Disconnected";
+    static readonly REGEX_FILENAME = /^[a-zA-Z0-9](?:[a-zA-Z0-9 ._-]*[a-zA-Z0-9])?\.[a-zA-Z0-9_-]+$/;
 }
 
 export class FlowBiteConstants {

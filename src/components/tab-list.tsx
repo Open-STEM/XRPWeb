@@ -21,7 +21,7 @@ function TabList({ children, activeTabIndex }: TabListProps) {
     };
 
     return (
-        <div className="">
+        <div className="w-full">
             <ul
                 className="flex flex-row items-center justify-start gap-1"
                 role="tablist"
@@ -30,7 +30,7 @@ function TabList({ children, activeTabIndex }: TabListProps) {
                 {tabs.map((tab, index) => (
                     <li
                         key={index}
-                        className={`rounded-sm border px-2 border-shark-400 text-sm text-shark-800 hover:bg-curious-blue-300 dark:text-mountain-mist-100 dark:bg-mountain-mist-800 dark:hover:bg-shark-400 ${activeTab === index ? 'bg-mountain-mist-300 dark:bg-mountain-mist-800' : 'bg-mountain-mist-100 dark:bg-mountain-mist-400'}`}
+                        className={`rounded-md border-0 px-2 border-shark-400 dark:border-shark-200 text-xl hover:bg-curious-blue-400 dark:hover:bg-shark-400 ${activeTab === index ? 'text-curious-blue-600 dark:text-curious-blue-800 border-b-2 bg-mountain-mist-100 dark:bg-mountain-mist-800' : 'text-shark-300 dark:text-shark-600 bg-mountain-mist-50 dark:bg-mountain-mist-400'}`}
                     >
                         <button
                             key={`tab-btn-${index}`}

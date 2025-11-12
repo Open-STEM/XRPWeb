@@ -1,9 +1,5 @@
 import { useEffect, useState } from 'react';
-import { remark } from 'remark'
-import rehype from "remark-rehype"
-import rehypeRaw from 'rehype-raw';  // Import rehype-raw for HTML processing
-import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';  // For sanitization
-import stringify from "rehype-stringify"
+import MarkdownIt from 'markdown-it';
 
 type changelogProps = {
     /**
@@ -11,6 +7,13 @@ type changelogProps = {
      */
     closeDialog: () => void;
 }
+
+const md = new MarkdownIt({
+    html: true,
+    linkify: true,
+    typographer: true,
+    breaks: true,
+});
 
 /**
  * ChangeLogDlg - A component that displays the changelog of the application.
@@ -27,23 +30,9 @@ function ChangeLogDlg({closeDialog}: changelogProps) {
                 return;
             }
             const text = await response.text();
-            // Convert the text to HTML using a markdown parser
-            const customSchema = {
-                ...defaultSchema,
-                tagNames: [...(defaultSchema.tagNames || []), "img", "dev" ],
-                attributes: {
-                    ...defaultSchema.attributes,
-                    img: ["src", "alt", "width", "height", "style"], // Allow img attributes
-                    div: ["style"], // Allow div attributes
-                },
-            };
-            const html = await remark()
-                .use(rehype, { allowDangerousHtml: true }) // Allow dangerous HTML
-                .use(rehypeRaw) // Allow raw HTML
-                .use(rehypeSanitize, customSchema) // Sanitize the HTML
-                .use(stringify)
-                .process(text);
-            setMarkdown(html.toString());
+            // Convert the text to HTML using markdown-it
+            const html = md.render(text);
+            setMarkdown(html);
         };
         fetchMarkdown();
     }, []);
@@ -67,7 +56,15 @@ function ChangeLogDlg({closeDialog}: changelogProps) {
             {/* <hr className="w-full border-mountain-mist-600" /> */}
             {/* Modal body */}
             <div className="p-4 prose">
-                <div className="prose prose-lg max-[767px]:prose">
+                <div className="prose prose-lg max-[767px]:prose dark:prose-invert
+                    prose-headings:font-semibold
+                    prose-h1:text-curious-blue-600 prose-h2:text-curious-blue-700 prose-h3:text-curious-blue-800
+                    prose-p:text-mountain-mist-800 prose-p:leading-relaxed
+                    prose-a:text-curious-blue-600 hover:prose-a:text-curious-blue-700
+                    prose-strong:text-mountain-mist-900
+                    prose-code:text-curious-blue-700 prose-code:bg-curious-blue-50
+                    prose-ul:my-4 prose-ol:my-4
+                    prose-li:text-mountain-mist-800">
                     <div dangerouslySetInnerHTML={{ __html: markdown }} />
                 </div>
             </div>
