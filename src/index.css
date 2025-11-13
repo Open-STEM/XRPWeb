@@ -28,3 +28,10 @@ body {
 svg[display="none"] {
   display: none;
 }
+
+/* This is used to hide the tab moveable overflow which scrolls the folder 
+ * header in the folder tree that we don't want 
+*/
+.flexlayout__tab_moveable {
+  overflow: hidden;
+}
