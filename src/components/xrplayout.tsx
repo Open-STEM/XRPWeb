@@ -24,7 +24,6 @@ import { useTranslation } from 'react-i18next';
 const layout_json: IJsonModel = {
     global: {
         tabEnablePopout: false,
-        tabSetEnableDeleteWhenEmpty: false,
         tabSetEnableDrag: false,
         tabSetEnableDrop: false,
         tabEnableRename: false
@@ -44,6 +43,8 @@ const layout_json: IJsonModel = {
                     name: 'folders',
                     component: 'folders',
                     enableClose: false,
+                    enableDrag: false,
+                    enablePopout: false,
                     icon: FolderIcon,
                 },
             ],
@@ -65,6 +66,7 @@ const layout_json: IJsonModel = {
                         id: Constants.EDITOR_TABSET_ID,
                         name: 'editorTabset',
                         weight: 70,
+                        enableDeleteWhenEmpty: false,
                         children: [],
                     },
                     {
@@ -72,6 +74,7 @@ const layout_json: IJsonModel = {
                         id: Constants.SHELL_TABSET_ID,
                         name: 'shellTabset',
                         weight: 30,
+                        enableDrop: false,
                         children: [
                             {
                                 type: 'tab',
@@ -79,6 +82,8 @@ const layout_json: IJsonModel = {
                                 name: 'shell',
                                 component: 'xterm',
                                 enableClose: false,
+                                enableDrag: false,
+                                enablePopout: false
                             },
                         ],
                     },
