@@ -44,7 +44,7 @@ export class GeminiContextLoader {
      * This provides real-time content that includes any unsaved changes
      */
     getCurrentEditorContext(): string {
-        const liveEditors = EditorMgr.getLiveEditorContents();
+        const liveEditors = EditorMgr.getInstance().getLiveEditorContents();
         const activeEditorId = EditorMgr.getInstance().getActiveEditorId();
         
         if (liveEditors.length === 0) {
@@ -73,7 +73,9 @@ export class GeminiContextLoader {
                     // Pretty print the JSON for better readability
                     const blocklyJson = JSON.parse(editor.content);
                     contextSections.push(JSON.stringify(blocklyJson, null, 2));
-                } catch (e) {
+                } 
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                catch (_) {
                     // If parsing fails, use raw content
                     contextSections.push(editor.content);
                 }
