@@ -3,12 +3,12 @@ import { ChatMessage, ChatStatus } from '@/utils/types';
 import { GeminiClient } from '@/utils/gemini-client';
 import { GeminiContextLoader, createContextLoader } from '@/utils/gemini-context-loader';
 import ChatMessageComponent from './chat-message';
-import { IoSend, IoRefresh, IoSparkles, IoDocument, IoStop } from 'react-icons/io5';
+import { IoSend, IoSparkles, IoDocument, IoStop } from 'react-icons/io5';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from 'react-i18next';
 
 export default function AIChat() {
-    const { i18n } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [status, setStatus] = useState<ChatStatus>(ChatStatus.IDLE);
@@ -16,6 +16,7 @@ export default function AIChat() {
     const [contextStatus, setContextStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
     const [textQueue, setTextQueue] = useState<string>('');
     const [sessionId, setSessionId] = useState<string>('');
+    const [showHeader, setShowHeader] = useState<boolean>(true);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -117,6 +118,11 @@ export default function AIChat() {
             return;
         }
 
+        // If this is the first message, hide the header
+        if (messages.length === 0) {
+            setShowHeader(false);
+        }
+
         const userMessage: ChatMessage = {
             id: uuidv4(),
             role: 'user',
@@ -211,11 +217,7 @@ export default function AIChat() {
         }
     };
 
-    const clearMessages = () => {
-        setMessages([]);
-        setStreamingMessage(null);
-        setStatus(ChatStatus.IDLE);
-    };
+
 
     const stopGeneration = () => {
         if (abortController.current) {
@@ -241,15 +243,15 @@ export default function AIChat() {
     return (
         <div className="flex flex-col h-full bg-white dark:bg-mountain-mist-950">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-mountain-mist-200 dark:border-mountain-mist-700">
+            <div className={`flex items-center justify-between p-4 border-b border-mountain-mist-200 dark:border-mountain-mist-700 transition-opacity duration-500 ease-in-out ${showHeader ? 'opacity-100' : 'opacity-0 pointer-events-none absolute'}`}>
                 <div className="flex items-center gap-3">
                     {/* Model Display */}
                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-mountain-mist-900 border border-mountain-mist-300 dark:border-mountain-mist-600">
                         <IoSparkles size={16} className="text-curious-blue-600" />
                         <div className="flex flex-col items-start min-w-0">
-                            <span className="text-sm font-medium text-mountain-mist-700 dark:text-mountain-mist-300">XRPCode Buddy</span>
+                            <span className="text-sm font-medium text-mountain-mist-700 dark:text-mountain-mist-300">{t('aiChat.buddyName')}</span>
                             <span className="text-xs text-mountain-mist-500 dark:text-mountain-mist-400">
-                                Powered by Gemini
+                                {t('aiChat.poweredBy')}
                             </span>
                         </div>
                     </div>
@@ -263,23 +265,15 @@ export default function AIChat() {
                             'text-mountain-mist-400'
                         } />
                         <span className="text-mountain-mist-600 dark:text-mountain-mist-300">
-                            {contextStatus === 'loaded' ? 'Documentation loaded' :
-                            contextStatus === 'loading' ? 'Loading docs...' :
-                            contextStatus === 'error' ? 'Failed to load docs' :
-                            'No context'}
+                            {contextStatus === 'loaded' ? t('aiChat.docsLoaded') :
+                            contextStatus === 'loading' ? t('aiChat.loadingDocs') :
+                            contextStatus === 'error' ? t('aiChat.failedToLoadDocs') :
+                            t('aiChat.noContext')}
                         </span>
                     </div>
                 </div>
                 
                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={clearMessages}
-                        disabled={messages.length === 0 || status === ChatStatus.STREAMING}
-                        className="p-2 text-mountain-mist-500 hover:text-mountain-mist-700 dark:text-mountain-mist-400 dark:hover:text-mountain-mist-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        title="Clear messages"
-                    >
-                        <IoRefresh size={16} />
-                    </button>
                 </div>
             </div>
 
@@ -290,10 +284,10 @@ export default function AIChat() {
                         <div className="max-w-md">
                             <IoSparkles size={48} className="mx-auto text-mountain-mist-400 mb-4" />
                             <h3 className="text-lg font-semibold text-mountain-mist-700 dark:text-mountain-mist-300 mb-2">
-                                Start a conversation
+                                {t('aiChat.startConversation')}
                             </h3>
                             <p className="text-mountain-mist-500 dark:text-mountain-mist-400">
-                                Ask questions, get help with code, or learn XRP robotics with XRPCode Buddy.
+                                {t('aiChat.startConversationHelper')}
                             </p>
                         </div>
                     </div>
@@ -321,7 +315,7 @@ export default function AIChat() {
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
                             onKeyPress={handleKeyPress}
-                            placeholder="Message XRPCode Buddy..."
+                            placeholder={t('aiChat.placeholder')}
                             disabled={status === ChatStatus.STREAMING}
                             className="w-full px-4 py-3 border border-mountain-mist-300 dark:border-mountain-mist-600 rounded-xl bg-white dark:bg-mountain-mist-900 text-mountain-mist-900 dark:text-mountain-mist-100 placeholder-mountain-mist-500 dark:placeholder-mountain-mist-400 focus:ring-2 focus:ring-curious-blue-500 focus:border-curious-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-[52px] max-h-32"
                             rows={1}
@@ -332,7 +326,7 @@ export default function AIChat() {
                         onClick={status === ChatStatus.STREAMING ? stopGeneration : sendMessage}
                         disabled={status === ChatStatus.STREAMING ? false : !inputValue.trim()}
                         className="p-3 bg-curious-blue-600 hover:bg-curious-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-colors flex-shrink-0"
-                        title={status === ChatStatus.STREAMING ? "Stop generation" : "Send message"}
+                        title={status === ChatStatus.STREAMING ? t('aiChat.stopGeneration') : t('aiChat.sendMessage')}
                     >
                         {status === ChatStatus.STREAMING ? (
                             <IoStop size={16} />
@@ -344,7 +338,7 @@ export default function AIChat() {
 
                 {status === ChatStatus.STREAMING && (
                     <div className="mt-2 text-xs text-mountain-mist-500 dark:text-mountain-mist-400 text-center">
-                        XRPCode Buddy is typing...
+                        {t('aiChat.buddyTyping')}
                     </div>
                 )}
             </div>

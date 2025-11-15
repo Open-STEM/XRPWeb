@@ -152,6 +152,19 @@
     "languageSelection": "Seleccionar idioma",
     "connectXRP": "CONECTAR XRP",
     "run": "EJECUTAR",
-    "stop": "DETENER"
+    "stop": "DETENER",
+    "aiChat": {
+        "buddyName": "Compañero de Código XRP",
+        "poweredBy": "Impulsado por Gemini",
+        "docsLoaded": "Documentación cargada",
+        "loadingDocs": "Cargando documentos...",
+        "failedToLoadDocs": "Fallo al cargar documentos",
+        "noContext": "Sin contexto",
+        "startConversation": "Iniciar una conversación",
+        "startConversationHelper": "Haz preguntas, obtén ayuda con el código o aprende robótica XRP con el Compañero de Código XRP.",
+        "placeholder": "Mensaje para el Compañero de Código XRP...",
+        "stopGeneration": "Detener generación",
+        "sendMessage": "Enviar mensaje",
+        "buddyTyping": "El Compañero de Código XRP está escribiendo..."
+    }
 }
-

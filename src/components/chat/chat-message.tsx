@@ -3,11 +3,11 @@ import { ChatMessage } from '../../utils/types';
 import MarkdownIt from 'markdown-it';
 
 // You need to ts ignore these plugins because they don't have built-in type definitions
-// @ts-ignore 
+// @ts-expect-error: markdown-it-footnote does not have built-in type definitions
 import markdownItFootnote from 'markdown-it-footnote';
-// @ts-ignore 
+// @ts-expect-error: markdown-it-deflist does not have built-in type definitions
 import markdownItDeflist from 'markdown-it-deflist';
-// @ts-ignore 
+// @ts-expect-error: markdown-it-abbr does not have built-in type definitions
 import markdownItAbbr from 'markdown-it-abbr';
 
 interface ChatMessageProps {

@@ -261,7 +261,7 @@ export class GeminiClient {
     async chatCompletion(
         messages: ChatMessage[],
         onStream?: (content: string) => void,
-        _contextFile?: any, // Ignored - context now handled by backend
+        _contextFile?: unknown, // Ignored - context now handled by backend
         signal?: AbortSignal
     ): Promise<string> {
         console.warn('chatCompletion is deprecated, use chatWithContext instead');
@@ -272,7 +272,7 @@ export class GeminiClient {
 
         // Generate a temporary session ID for legacy calls
         const randomArray = new Uint32Array(2);
-        (typeof window !== 'undefined' && window.crypto
+        void (typeof window !== 'undefined' && window.crypto
             ? window.crypto.getRandomValues(randomArray)
             : (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function'
                 ? crypto.getRandomValues(randomArray)
