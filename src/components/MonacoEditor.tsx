@@ -257,6 +257,7 @@ const MonacoEditor = ({
                 editor.current.onDidChangeModelContent(() => {
                     const code = editor.current?.getValue();
                     if (code) {
+                        EditorMgr.getInstance().updateEditorSessionChange(name, true);
                         EditorMgr.getInstance().SaveToLocalStorage(
                             EditorMgr.getInstance().getEditorSession(name) as EditorSession,
                             code,
@@ -277,6 +278,7 @@ const MonacoEditor = ({
                         const code = editor.current?.getValue();
                         if (code !== undefined) {
                             SaveEditor(code);
+                            EditorMgr.getInstance().updateEditorSessionChange(name, false);
                         }
                     },
                 });

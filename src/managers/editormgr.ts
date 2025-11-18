@@ -16,6 +16,7 @@ export type EditorSession = {
     gpath?: string,
     type: EditorType;
     isSubscribed: boolean;
+    isModified: boolean;
     fontsize: number;
     content?: string;
     workspace?: Workspace;
@@ -171,6 +172,14 @@ export default class EditorMgr {
     }
 
     /**
+     * hasSessionChange - check if an editor session has change
+     */
+    public hasSessionChanged(id: string): boolean {
+        const session = this.editorSessions.get(id);
+        return session?.isModified === true;
+    }
+
+    /**
      * hasSubscription - check if subscription has been established
      * @param id 
      * @returns - true / false
@@ -307,6 +316,17 @@ export default class EditorMgr {
     public getActiveEditorId(): string | null {
         const activeTab = localStorage.getItem(StorageKeys.ACTIVETAB);
         return activeTab ? activeTab.replace(/^"|"$/g, '') : null;
+    }
+
+    /**
+     * updateEditorSessionChange - set the isModified value of the session
+     */
+    updateEditorSessionChange(id: string, hasChanged: boolean) {
+        const session = this.editorSessions.get(id);
+        if (session) {
+            session.isModified = hasChanged;
+            this.SelectEditorTab(id);
+        }
     }
 
     /**

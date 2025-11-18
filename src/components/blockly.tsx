@@ -171,16 +171,8 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
     useHotkeys('ctrl+s, meta+s', (event) => {
         event.preventDefault();
         saveEditor();
+        EditorMgr.getInstance().updateEditorSessionChange(name, false);
     });
-
-    function onWorkspaceDidChange(ws: Workspace | undefined) {
-        if (ws) {
-            const blocklyCode = JSON.stringify(Blockly.serialization.workspaces.save(ws));
-            EditorMgr.getInstance().SaveToLocalStorage(
-                EditorMgr.getInstance().getEditorSession(name) as EditorSession,
-                blocklyCode);
-        }
-    }
 
     useEffect(() => {
         if (
@@ -302,12 +294,21 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                     EditorMgr.updateLiveContent(name, '');
                 }
 
+                let isLoading = true;
                 // Listen for workspace changes
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const changeListener = (event: any) => {
-                    if (event.isUiEvent) return; // Skip UI events
+                    if (event.type === Blockly.Events.FINISHED_LOADING) {
+                        isLoading = false;
+                        return;
+                    }
+                    if (isLoading) { return; }
+                    if (event.type === Blockly.Events.VIEWPORT_CHANGE || event.isUiEvent) { return; }
+                    console.log("Event type: ", event.type);
                     try {
+                        EditorMgr.getInstance().updateEditorSessionChange(name, true);
                         const json = JSON.stringify(Blockly.serialization.workspaces.save(ws));
+                        EditorMgr.getInstance().SaveToLocalStorage(EditorMgr.getInstance().getEditorSession(name) as EditorSession, json);
                         EditorMgr.updateLiveContent(name, json);
                     } catch (e) {
                         console.warn('Failed to serialize Blockly workspace:', e);
@@ -358,7 +359,6 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                         : blocklyMpdernTheme,
             }}
             initialJson={BlocklyConfigs.InitialJson}
-            onWorkspaceChange={onWorkspaceDidChange}
             onInject={handleOnInject}
         />
     );
