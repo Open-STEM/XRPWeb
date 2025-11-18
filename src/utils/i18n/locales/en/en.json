@@ -152,5 +152,19 @@
     "languageSelection": "Select Language",
     "connectXRP": "CONNECT XRP",
     "run": "RUN",
-    "stop": "STOP"
+    "stop": "STOP",
+    "aiChat": {
+        "buddyName": "XRPCode Buddy",
+        "poweredBy": "Powered by Gemini",
+        "docsLoaded": "Documentation loaded",
+        "loadingDocs": "Loading docs...",
+        "failedToLoadDocs": "Failed to load docs",
+        "noContext": "No context",
+        "startConversation": "Start a conversation",
+        "startConversationHelper": "Ask questions, get help with code, or learn XRP robotics with XRPCode Buddy.",
+        "placeholder": "Message XRPCode Buddy...",
+        "stopGeneration": "Stop generation",
+        "sendMessage": "Send message",
+        "buddyTyping": "XRPCode Buddy is typing..."
+    }
 }
