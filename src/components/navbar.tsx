@@ -645,7 +645,9 @@ function NavBar({ layoutref }: NavBarProps) {
             gpath: '',
             isSubscribed: false,
             fontsize: Constants.DEFAULT_FONTSIZE,
-            content: '',
+            content: undefined,
+            lastUpdated: undefined,
+            isModified: false,
         });        
         setIsOtherTab(true);
         setActiveTab('Dashboard');
@@ -676,7 +678,9 @@ function NavBar({ layoutref }: NavBarProps) {
             gpath: '',
             isSubscribed: false,
             fontsize: Constants.DEFAULT_FONTSIZE,
-            content: '',
+            content: undefined,
+            lastUpdated: undefined,
+            isModified: false,
         });
         setIsOtherTab(true);
         setActiveTab('AI Chat');

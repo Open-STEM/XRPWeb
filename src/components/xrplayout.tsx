@@ -287,6 +287,9 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
             renderValues.leading = <img src={ShellIcon} alt="icon" style={{ width: '16px', height: '16px', marginRight: '0px' }} />;
         }
         renderValues.content = t(node.getName());
+        if (EditorMgr.getInstance().hasSessionChanged(node.getName())) {
+            renderValues.buttons.push(<div className='w-2 h-2 bg-shark-800 dark:bg-shark-200 rounded-full' />)
+        }
         return renderValues;
     };
 

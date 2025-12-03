@@ -29,6 +29,8 @@ export function CreateEditorTab(data: NewFileData, layoutref: React.RefObject<La
                     isSubscribed: false,
                     fontsize: Constants.DEFAULT_FONTSIZE,
                     content: data.content,
+                    lastUpdated: new Date(),
+                    isModified: false,
                 });
             }
             break;
@@ -51,6 +53,8 @@ export function CreateEditorTab(data: NewFileData, layoutref: React.RefObject<La
                     isSubscribed: false,
                     fontsize: Constants.DEFAULT_FONTSIZE,
                     content: data.content,
+                    lastUpdated: new Date(),
+                    isModified: false,
                 });
             }
             break;

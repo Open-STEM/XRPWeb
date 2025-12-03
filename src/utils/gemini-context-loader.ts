@@ -44,7 +44,7 @@ export class GeminiContextLoader {
      * This provides real-time content that includes any unsaved changes
      */
     getCurrentEditorContext(): string {
-        const liveEditors = EditorMgr.getLiveEditorContents();
+        const liveEditors = EditorMgr.getInstance().getLiveEditorContents();
         const activeEditorId = EditorMgr.getInstance().getActiveEditorId();
         
         if (liveEditors.length === 0) {

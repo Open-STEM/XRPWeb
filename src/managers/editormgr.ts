@@ -16,9 +16,11 @@ export type EditorSession = {
     gpath?: string,
     type: EditorType;
     isSubscribed: boolean;
+    isModified: boolean;
     fontsize: number;
     content?: string;
     workspace?: Workspace;
+    lastUpdated?: Date;
 };
 
 /**
@@ -57,7 +59,6 @@ export default class EditorMgr {
     private static instance: EditorMgr;
     private editorSessions = new Map<string, EditorSession>();
     private layoutModel?: Model;
-    private static liveContent = new Map<string, LiveEditorContent>();
 
     /**
      * Constructor
@@ -118,9 +119,6 @@ export default class EditorMgr {
             appMgr.eventOff(EventType.EVENT_SAVE_EDITOR); 
             this.editorSessions.delete(id);
             this.RemoveFromLocalStorage(id);
-            
-            // Remove live content
-            EditorMgr.removeLiveContent(id);
         }
         if (this.editorSessions.size > 0) {
             const session = Array.from(this.editorSessions.values()).pop();
@@ -168,6 +166,14 @@ export default class EditorMgr {
      */
     public hasEditorSession(id: string): boolean {
         return this.editorSessions.has(id);
+    }
+
+    /**
+     * hasSessionChange - check if an editor session has change
+     */
+    public hasSessionChanged(id: string): boolean {
+        const session = this.editorSessions.get(id);
+        return session?.isModified === true;
     }
 
     /**
@@ -257,6 +263,9 @@ export default class EditorMgr {
             isSavedToXRP: true,
             content: code,
         };
+        // Update the session content with the new code
+        session.content = code;
+        session.lastUpdated = new Date();
         let editorStoreJson = localStorage.getItem(StorageKeys.EDITORSTORE);
         let editorStores: EditorStore[];
         if (editorStoreJson) {
@@ -310,32 +319,32 @@ export default class EditorMgr {
     }
 
     /**
-     * Update live content for an editor
+     * updateEditorSessionChange - set the isModified value of the session
      */
-    public static updateLiveContent(id: string, content: string): void {
-        const session = EditorMgr.getInstance().getEditorSession(id);
+    updateEditorSessionChange(id: string, hasChanged: boolean) {
+        const session = this.editorSessions.get(id);
         if (session) {
-            EditorMgr.liveContent.set(id, {
-                id,
-                type: session.type,
-                path: session.path,
-                content,
-                lastUpdated: new Date()
-            });
+            session.isModified = hasChanged;
+            this.SelectEditorTab(id);
         }
     }
 
     /**
      * Get live content for all open editors
      */
-    public static getLiveEditorContents(): LiveEditorContent[] {
-        return Array.from(EditorMgr.liveContent.values());
-    }
-
-    /**
-     * Remove live content when editor is closed
-     */
-    public static removeLiveContent(id: string): void {
-        EditorMgr.liveContent.delete(id);
+    public getLiveEditorContents(): LiveEditorContent[] {
+        const contents: LiveEditorContent[] = [];
+        this.editorSessions.forEach((session, id) => {
+            if (session.content !== undefined) {
+                contents.push({
+                    id,
+                    type: session.type,
+                    path: session.path,
+                    content: session.content || '',
+                    lastUpdated: session.lastUpdated || new Date(0)
+                });
+            }
+        });
+        return contents;
     }
 }

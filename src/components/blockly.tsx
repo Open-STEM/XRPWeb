@@ -130,6 +130,8 @@ interface BlocklyEditorProps {
  */
 function BlocklyEditor({ name }: BlocklyEditorProps) {
     const [toolboxKey, setToolboxKey] = useState(0); // Force re-render when toolbox updates
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isListenerSet, setIsListenerSet] = useState(false);
 
     /**
      * handleOnInject
@@ -171,16 +173,8 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
     useHotkeys('ctrl+s, meta+s', (event) => {
         event.preventDefault();
         saveEditor();
+        EditorMgr.getInstance().updateEditorSessionChange(name, false);
     });
-
-    function onWorkspaceDidChange(ws: Workspace | undefined) {
-        if (ws) {
-            const blocklyCode = JSON.stringify(Blockly.serialization.workspaces.save(ws));
-            EditorMgr.getInstance().SaveToLocalStorage(
-                EditorMgr.getInstance().getEditorSession(name) as EditorSession,
-                blocklyCode);
-        }
-    }
 
     useEffect(() => {
         if (
@@ -275,6 +269,7 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
             });
 
             EditorMgr.getInstance().setSubscription(name);
+
         } else {
             const editorSession = EditorMgr.getInstance().getEditorSession(name);
             if (editorSession && editorSession.content) {
@@ -288,27 +283,28 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
             }
         }
 
-        
         // Set up workspace change listener for live content tracking
         const setupWorkspaceListener = () => {
             const ws = Blockly.getMainWorkspace();
             if (ws) {
-                // Initial live content update
-                try {
-                    const json = JSON.stringify(Blockly.serialization.workspaces.save(ws));
-                    EditorMgr.updateLiveContent(name, json);
-                } catch (e) {
-                    console.warn('Failed to serialize Blockly workspace:', e);
-                    EditorMgr.updateLiveContent(name, '');
-                }
-
                 // Listen for workspace changes
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const changeListener = (event: any) => {
-                    if (event.isUiEvent) return; // Skip UI events
+                    if (event.type === Blockly.Events.FINISHED_LOADING) {
+                        setIsLoading(false);
+                        return;
+                    }
+                    if (isLoading && 
+                        event.type === Blockly.Events.BLOCK_CREATE ||
+                        event.type === Blockly.Events.BLOCK_DELETE ||
+                        event.type === Blockly.Events.BLOCK_CHANGE
+                    ) { return; }
+                    if (event.type === Blockly.Events.VIEWPORT_CHANGE || event.isUiEvent) { return; }
                     try {
+                        console.log('Workspace changed, saving session:', name);
+                        EditorMgr.getInstance().updateEditorSessionChange(name, true);
                         const json = JSON.stringify(Blockly.serialization.workspaces.save(ws));
-                        EditorMgr.updateLiveContent(name, json);
+                        EditorMgr.getInstance().SaveToLocalStorage(EditorMgr.getInstance().getEditorSession(name) as EditorSession, json);
                     } catch (e) {
                         console.warn('Failed to serialize Blockly workspace:', e);
                     }
@@ -322,13 +318,20 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
             return null;
         };
 
-        // Setup listener after a brief delay to ensure workspace is fully initialized
-        const timeoutId = setTimeout(setupWorkspaceListener, 100);
+        let listener = null;
+        if (!isListenerSet) {
+            listener = setupWorkspaceListener();
+            setIsListenerSet(true);
+        }
 
         return () => {
-            clearTimeout(timeoutId);
-            EditorMgr.removeLiveContent(name);
-        };
+            // Cleanup listener on unmount
+            const ws = Blockly.getMainWorkspace();
+            if (ws && isListenerSet) {
+                // @ts-expect-error - listener may be null
+                ws.removeChangeListener(listener);
+            }
+        }
     });
 
     return (
@@ -358,7 +361,6 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                         : blocklyMpdernTheme,
             }}
             initialJson={BlocklyConfigs.InitialJson}
-            onWorkspaceChange={onWorkspaceDidChange}
             onInject={handleOnInject}
         />
     );
