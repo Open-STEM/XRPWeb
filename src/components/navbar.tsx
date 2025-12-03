@@ -186,9 +186,11 @@ function NavBar({ layoutref }: NavBarProps) {
                     driveService.getFileContents(filePathData.gPath).then((fileContent) => {
                         let content;
                         if (fileType === FileType.BLOCKLY) {
-                            content = fileContent?.split('##XRPBLOCKS ');
+                            content = fileContent?.split('##XRPBLOCKS ').at(1);
+                        } else {
+                            content = fileContent;
                         }
-                        const loadContent = { name: filename, content: content?.at(1)};
+                        const loadContent = { name: filename, content: content };
                         AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
                     });
                 }
