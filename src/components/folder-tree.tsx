@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import Dialog from './dialogs/dialog';
 import ConfirmationDlg from './dialogs/confirmdlg';
 import AlertDialog from './dialogs/alertdlg';
+import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
 
 type TreeProps = {
     treeData: string | null;
@@ -78,9 +79,13 @@ function FolderTree(treeProps: TreeProps) {
         });
         
         appMgrRef.current.on(EventType.EVENT_FILESYS, (filesysJson: string) => {
+            if (AppMgr.getInstance().authService.isLogin && (filesysJson === '{}')) {
+                return;
+            }
+
             try {
                 const filesysData = JSON.parse(filesysJson);
-                // remove admin.json from the filesysData
+                // remove admin.json from the filesysDat
                 if (filesysData && filesysData.length > 0) {
                     filesysData.forEach((item: FolderItem) => {
                         if (item.children) {
@@ -300,11 +305,6 @@ function FolderTree(treeProps: TreeProps) {
         const handleOnDeleteConfirmation = async () => {
             toggleDialog();
             if (found) {
-                const index = found.parent?.children?.indexOf(found);
-                if (index !== undefined && index !== -1) {
-                    found.parent?.children?.splice(index, 1);
-                }
-
                 if (isConnected) {
                     // delete the actual file in XRP
                     await CommandToXRPMgr.getInstance().deleteFileOrDir(found.path + '/' + found.name);
@@ -314,6 +314,11 @@ function FolderTree(treeProps: TreeProps) {
                     // delete the actual file in Google Drive
                     if (found.fileId) {
                         await AppMgr.getInstance().driveService?.DeleteFile(found.fileId);
+                        const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
+                        if (username) {
+                            // refresh the Google Drive tree
+                            fireGoogleUserTree(username);
+                        }
                     }
                 }
             }
