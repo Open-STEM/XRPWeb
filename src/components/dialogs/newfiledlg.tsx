@@ -89,7 +89,7 @@ function NewFileDlg(newFileProps: NewFileProps) {
         const parentId = findItemInFolderList(folderList || [], folder)?.id || '';
         const fileExt = filetype === 1 ? '.blocks' : '.py';
         const formData: NewFileData = {
-            name: filename,
+            name: `${filename}${fileExt}`,
             path: `${selectedFolder}/${filename}${fileExt}`,
             filetype: filetype === 1 ? FileType.BLOCKLY : FileType.PYTHON,
             parentId: parentId || '',

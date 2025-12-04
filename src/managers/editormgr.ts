@@ -5,6 +5,7 @@ import AppMgr, { EventType } from "@/managers/appmgr";
 import { StorageKeys } from "@/utils/localstorage";
 import { Constants } from "@/utils/constants";
 import { Workspace } from "react-blockly";
+import i18n from "@/utils/i18n";
 
 /**
  * EditorSession - Editor session object
@@ -229,6 +230,12 @@ export default class EditorMgr {
         const session = this.editorSessions.get(id);
         if (session) {
             const isConnected = AppMgr.getInstance().getConnection()?.isConnected() ?? false;
+            if (!isConnected && !AppMgr.getInstance().authService.isLogin) {
+                // show a dialog to inform user to connect to XRP or login to Google Drive
+                AppMgr.getInstance().emit(EventType.EVENT_ALERT, i18n.t('editor.saveconnect'));
+                return;
+            }
+
             if (isConnected) {
                 // save the session to XRP
                 AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);

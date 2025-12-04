@@ -146,8 +146,6 @@
     "alertOpenPortFailed": "Opening port failed, is another application accessing this device/port?",
     "confirmDeleteFileOrFolder": "Are you sure you want to delete '{{ name }}' ? This action cannot be undone.",
     "select-parent-node": "Please select a parent node to create the new folder or file under.",
-    "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
-    "individualMotors": "Individual Motors",
     "language": "Language",
     "languageSelection": "Select Language",
     "connectXRP": "CONNECT XRP",
@@ -166,5 +164,10 @@
         "stopGeneration": "Stop generation",
         "sendMessage": "Send message",
         "buddyTyping": "XRPCode Buddy is typing..."
-    }
+    },
+    "editor": {
+        "saveconnect": "To save your file, please connect to your XRP or login to your Google Drive account."
+    },
+    "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
+    "individualMotors": "Individual Motors"
 }
