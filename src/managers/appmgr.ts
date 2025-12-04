@@ -11,6 +11,11 @@ export enum Themes {
     LIGHT = 'light'
 }
 
+export enum LoginStatus {
+    LOGGED_IN = 'logged-in',
+    LOGGED_OUT = 'logged-out'
+}
+
 export enum EventType {
     EVENT_FILESYS = 'filesys', // directoy tree from filesystem of the XRP
     EVENT_SHELL = 'shell', // shell updates from XRP
@@ -41,6 +46,7 @@ export enum EventType {
     EVENT_GAMEPAD_STATUS = 'gamepad-status', // Gamepad status on/off
     EVENT_ALERT = 'alert', // Alert dialog event
     EVENT_ISRUNNING = 'is-running', // XRP is running user code
+    EVENT_LOGIN_STATUS = 'login-status' // Google login status
 }
 
 type Events = {
@@ -73,6 +79,7 @@ type Events = {
     [EventType.EVENT_GAMEPAD_STATUS]: string;
     [EventType.EVENT_ALERT]: string;
     [EventType.EVENT_ISRUNNING]: string;
+    [EventType.EVENT_LOGIN_STATUS]: string;
 };
 
 /**
@@ -225,7 +232,11 @@ export default class AppMgr {
         this._folderDataJson = folderJson;
     }
 
-
+    /**
+     * Fileter out folders that do not have children, but including the root folder
+     * @param folders 
+     * @returns 
+     */
     private filterFolders(folders: FolderItem[]): FolderItem[] | null {
         for (let i=0; i < folders.length; i++) {
             const children = folders[i].children;
@@ -234,7 +245,7 @@ export default class AppMgr {
                     name: folder.name,
                     id: folder.id,
                     isReadOnly: folder.isReadOnly,
-                    path: folder.path,
+                    path: folder.path.endsWith('/') ? folder.path + folder.name + '/' : folder.path + '/' + folder.name + '/',
                     children: folder.children        
                 }))
                 this.filterFolders(children);
@@ -289,11 +300,20 @@ export default class AppMgr {
             name: folder.name,
             id: folder.id,
             isReadOnly: folder.isReadOnly,
-            path: folder.path,
+            path: folder.path + folder.name + '/',
             children: folder.children
         })) ?? null;
 
-        return folders ? this.filterFolders(folders) : null;
+        const filteredFolders = this.filterFolders(folders || []);
+        const returnfolders = {
+            name: this._folderData.at(0)?.name || '',
+            id: this._folderData.at(0)?.id || '',
+            isReadOnly: this._folderData.at(0)?.isReadOnly || false,
+            path: this._folderData.at(0)?.path || '',
+            children: filteredFolders
+        }
+        
+        return returnfolders ? [returnfolders] : null;
     }
 
     /**

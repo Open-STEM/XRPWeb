@@ -40,7 +40,7 @@ import {
 import { useFilePicker } from 'use-file-picker';
 import { MenuDataItem } from '@/widgets/menutypes';
 import MenuItem from '@/widgets/menu';
-import AppMgr, { EventType } from '@/managers/appmgr';
+import AppMgr, { EventType, LoginStatus } from '@/managers/appmgr';
 import { ConnectionState } from '@/connections/connection';
 import SettingsDlg from '@/components/dialogs/settings';
 import NewFileDlg from '@/components/dialogs/newfiledlg';
@@ -84,6 +84,7 @@ function NavBar({ layoutref }: NavBarProps) {
     const { t } = useTranslation();
     const [isMoreMenuOpen, setMoreMenuOpen] = useState(false);
     const [isConnected, setConnected] = useState(false);
+    const [isLogin, setLogin] = useState(false);
     const [isRunning, setRunning] = useState(false);
     const [isBlockly, setBlockly] = useState(false);
     const [isOtherTab, setIsOtherTab] = useState(false);
@@ -120,8 +121,7 @@ function NavBar({ layoutref }: NavBarProps) {
                 if (state === ConnectionState.Connected.toString()) {
                     setConnected(true);
                     setRunning(false);
-                    const mode = parseInt(localStorage.getItem(StorageKeys.MODESETTING) ?? '0');
-                    processModeChange(mode);
+                    processModeChange(authService.modeSettings);
                 } else if (state === ConnectionState.Disconnected.toString()) {
                     setConnected(false);
                     setXrpId(null);
@@ -163,39 +163,17 @@ function NavBar({ layoutref }: NavBarProps) {
                 setActiveTab(fileData.name)
                 // Need to access the connection status directly from the manager because the React isConnected state available 
                 // isn't available in the thread context
-                const isConnected = AppMgr.getInstance().getConnection()?.isConnected() ?? false;
-                if (isConnected) {
+                const isConnected = AppMgr.getInstance().getConnection()?.isConnected();
+                if (authService.isLogin && authService.modeSettings === ModeType.GOOUSER) {
+                    // get the content from Google Drive
+                    loadGoogleEditor(filePathData, fileType, filename);
+                } else if (isConnected) {
                     await CommandToXRPMgr.getInstance()
                         .getFileContents(filePathData.xrpPath)
                         .then((content) => {
-                            // if the file is a block files, extract the blockly JSON out of the comment ##XRPBLOCKS
-                            let bytes = content;
-                            if (fileType === FileType.BLOCKLY) {
-                                const data: string = new TextDecoder().decode(new Uint8Array(bytes));
-                                const lines: string[] = data.split('##XRPBLOCKS ');
-                                bytes = Array.from(new TextEncoder().encode(lines.slice(-1)[0]));
-                            }
-                            const text =
-                                typeof bytes === 'string'
-                                    ? bytes
-                                    : new TextDecoder().decode(new Uint8Array(bytes));
-                            // set the content in the editor
-                            const loadContent = { name: filename, content: text };
-                            AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
+                            loadXRPEditor(content, fileType, filename);
                         });
-                } if (authService.isLogin) {
-                    // get the content from Google Drive
-                    driveService.getFileContents(filePathData.gPath).then((fileContent) => {
-                        let content;
-                        if (fileType === FileType.BLOCKLY) {
-                            content = fileContent?.split('##XRPBLOCKS ').at(1);
-                        } else {
-                            content = fileContent;
-                        }
-                        const loadContent = { name: filename, content: content };
-                        AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
-                    });
-                }
+                } 
             });
 
             AppMgr.getInstance().on(EventType.EVENT_MICROPYTHON_UPDATE, (versions) => {
@@ -246,6 +224,14 @@ function NavBar({ layoutref }: NavBarProps) {
                 }
             });
 
+            AppMgr.getInstance().on(EventType.EVENT_LOGIN_STATUS, (status: string) => {
+                if (status === LoginStatus.LOGGED_IN) {
+                    setLogin(true);
+                } else if (status === LoginStatus.LOGGED_OUT) {
+                    setLogin(false);
+                }
+            });
+
             hasSubscribed = true;
         }
     });
@@ -276,6 +262,48 @@ function NavBar({ layoutref }: NavBarProps) {
 
     if (errors.length > 0) {
         return <div>Error: {errors.values.toString()}</div>;
+    }
+
+    /**
+     * loadGoogleEditor - load the file content from Google Drive into the editor
+     * @param filePathData 
+     * @param fileType 
+     * @param filename 
+     */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function loadGoogleEditor(filePathData: any, fileType: FileType, filename: any) {
+        driveService.getFileContents(filePathData.gPath).then((fileContent) => {
+            let content;
+            if (fileType === FileType.BLOCKLY) {
+                content = fileContent?.split('##XRPBLOCKS ').at(1);
+            } else {
+                content = fileContent;
+            }
+            const loadContent = { name: filename, content: content };
+            AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
+        });
+    }
+
+    /**
+     * loadXRPEditor - load the file content from XRP into the editor
+     * @param content 
+     * @param fileType 
+     * @param filename 
+     */
+    function loadXRPEditor(content: number[], fileType: FileType, filename: string) {
+        // if the file is a block files, extract the blockly JSON out of the comment ##XRPBLOCKS
+        let bytes = content;
+        if (fileType === FileType.BLOCKLY) {
+            const data: string = new TextDecoder().decode(new Uint8Array(bytes));
+            const lines: string[] = data.split('##XRPBLOCKS ');
+            bytes = Array.from(new TextEncoder().encode(lines.slice(-1)[0]));
+        }
+        const text = typeof bytes === 'string'
+            ? bytes
+            : new TextDecoder().decode(new Uint8Array(bytes));
+        // set the content in the editor
+        const loadContent = { name: filename, content: text };
+        AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
     }
 
     /**
@@ -379,12 +407,32 @@ function NavBar({ layoutref }: NavBarProps) {
     async function onNewFileSubmitted(data: NewFileData) {
         CreateEditorTab(data, layoutref);
         setActiveTab(data.name);
-        // create the file in XRP
-        await CommandToXRPMgr.getInstance()
-            .uploadFile(data.path, '')
-            .then(() => {
-                CommandToXRPMgr.getInstance().getOnBoardFSTree();
+        if (authService.isLogin) {
+            // create the file in Google Drive
+            const minetype = data.name.includes('.py')
+                        ? 'text/x-python' : data.name.includes('.blocks')
+                        ? 'application/json' : 'text/plain';
+            const blob = new Blob([''], { type: minetype });
+            await driveService.uploadFile(blob, data.name, minetype, data.parentId ?? undefined).then((file) => {
+                console.log('New file created in Google Drive: ', file);
+                // update the file ID in the editor session
+                const editorMgr = EditorMgr.getInstance();
+                const session = editorMgr.getEditorSession(data.name);
+                if (session) {
+                    session.gpath = file?.id;
+                }
             });
+            await fireGoogleUserTree(getUsernameFromEmail(authService.userProfile.email) ?? '');
+        } 
+        
+        if (isConnected) {
+            // create the file in XRP
+            await CommandToXRPMgr.getInstance()
+                .uploadFile(data.path, '')
+                .then(() => {
+                    CommandToXRPMgr.getInstance().getOnBoardFSTree();
+                });
+        }
         toggleDialog();
     }
 
@@ -475,7 +523,7 @@ function NavBar({ layoutref }: NavBarProps) {
                 const newFileData: NewFileData = {
                     parentId: '',
                     path: fileData.path + '/' + fileData.name,
-                    gpath: '',
+                    gpath: fileData.gpath + '/' + fileData.name,
                     name: fileData.name || '',
                     filetype: session.type === EditorType.BLOCKLY ? FileType.BLOCKLY : FileType.PYTHON,
                 };
@@ -483,6 +531,13 @@ function NavBar({ layoutref }: NavBarProps) {
                 setActiveTab(fileData.name)
                 setDialogContent(<div />);
                 await CommandToXRPMgr.getInstance().getOnBoardFSTree();
+                if (authService.isLogin) {
+                    loadGoogleEditor(newFileData, newFileData.filetype, newFileData.name);
+                } else if (isConnected) {
+                    CommandToXRPMgr.getInstance().getFileContents(newFileData.path).then((content) => {
+                        loadXRPEditor(content, newFileData.filetype, newFileData.name);
+                    });
+                }
             });
             toggleDialog();
         }
@@ -727,7 +782,6 @@ function NavBar({ layoutref }: NavBarProps) {
         console.log('onRunBtnClicked');
 
         if (!isRunning) {
-            let continueExecution = true;
             if (!isConnected) {
                 setDialogContent(
                     <AlertDialog
@@ -759,44 +813,58 @@ function NavBar({ layoutref }: NavBarProps) {
                 .batteryVoltage()
                 .then((voltage) => {
                     const connectionType = AppMgr.getInstance().getConnectionType();
+                    const beginExecution = async () => {
+                        // Update the main.js
+                        const session: EditorSession | undefined =
+                            EditorMgr.getInstance().getEditorSession(activeTab);
+                        if (session) {
+                            // Save the current editor before running
+                            //TODO - signal activeTab editor to save the file
+                            await CommandToXRPMgr.getInstance()
+                                .updateMainFile(session.path)
+                                .then(async (lines) => {
+                                    await CommandToXRPMgr.getInstance().executeLines(lines);
+                                });
+                        }
+                        setRunning(false);
+                        broadcastRunningState(false);
+                        CommandToXRPMgr.getInstance().stopProgram();
+                    }
+
+                    const handlePowerSwitchOK = async () => {
+                        setRunning(true);
+                        toggleDialog();
+                        beginExecution();
+                    }
+
+                    const handlePowerSwitchCancel = () => {
+                        setRunning(false);
+                        toggleDialog();
+                    }
+
                     if (connectionType === ConnectionType.USB) {
                         if (voltage < 0.45) {
                             // display a confirmation message to ask the user to turn on the power switch
                             const powerswitchImage = CommandToXRPMgr.getInstance().getXRPDrive() === Constants.XRP_PROCESSOR_BETA ? powerswitch_beta : powerswitch_standard;
-                            setDialogContent(<PowerSwitchAlert powerswitchImage={powerswitchImage} cancelCallback={toggleDialog} />);
+                            setDialogContent(<PowerSwitchAlert powerswitchImage={powerswitchImage} cancelCallback={handlePowerSwitchCancel}  okayCallback={handlePowerSwitchOK}/>);
                             toggleDialog();
-                            continueExecution = false;
+                        } else {
+                            beginExecution();
                         }
                     } else if (connectionType === ConnectionType.BLUETOOTH) {
                         if (voltage < 0.45) {
                             // display a confirmation message to ask the user to turn on the power switch
                             //this one will only happen if they are using a power device plugged into the USB port and the power switch is off.
-                            setDialogContent(<PowerSwitchAlert cancelCallback={toggleDialog} />);
+                            setDialogContent(<PowerSwitchAlert cancelCallback={handlePowerSwitchCancel} okayCallback={handlePowerSwitchOK}/>);
                             toggleDialog();
                         } else if (voltage < 5.0) {
                             setDialogContent(<BatteryBadDlg cancelCallback={toggleDialog} />);
                             toggleDialog();
+                        } else {
+                            beginExecution();
                         }
-                        continueExecution = true;
                     }
-                });
-
-            if (continueExecution) {
-                // Update the main.js
-                const session: EditorSession | undefined =
-                    EditorMgr.getInstance().getEditorSession(activeTab);
-                if (session) {
-                    // Save the current editor before running
-                    //TODO - signal activeTab editor to save the file
-                    await CommandToXRPMgr.getInstance()
-                        .updateMainFile(session.path)
-                        .then(async (lines) => {
-                            await CommandToXRPMgr.getInstance().executeLines(lines);
-                        });
-                }
-                setRunning(false);
-                broadcastRunningState(false);
-            }
+                });         
         } else {
             setRunning(false);
             broadcastRunningState(false);
@@ -878,6 +946,7 @@ function NavBar({ layoutref }: NavBarProps) {
             return;
         }
         if (dialogRef.current.hasAttribute('open')) {
+            setDialogContent(<div />);
             dialogRef.current.close();
         }
         else dialogRef.current.showModal();
@@ -1024,11 +1093,11 @@ function NavBar({ layoutref }: NavBarProps) {
                                     {item.children.map((child, ci) => (
                                         <li
                                             key={ci}
-                                            className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500 ${child.isFile && !isConnected ? 'pointer-events-none' : 'pointer-events-auto'} ${child.isView && !isBlockly ? 'hidden' : 'visible'}`}
+                                            className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500 ${child.isFile && (!isConnected && (!isLogin || child.label !== t('newFile'))) ? 'pointer-events-none' : 'pointer-events-auto'} ${child.isView && !isBlockly ? 'hidden' : 'visible'}`}
                                             onClick={child.clicked}
                                         >
                                             <MenuItem
-                                                isConnected={isConnected && !isRunning}
+                                                isConnected={(isConnected || (isLogin && child.label === t('newFile'))) && !isRunning}
                                                 isOther={isOtherTab}
                                                 item={child}
                                             />

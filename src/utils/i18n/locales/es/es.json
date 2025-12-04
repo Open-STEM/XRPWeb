@@ -45,6 +45,7 @@
     "fileType": "Tipo de Archivo",
     "addUser": "Agregar",
     "selectUser": "Seleccionar",
+    "selectedUser": "Usuario Seleccionado: ",
     "selectUserOption": "Seleccione un Usuario",
     "myview": "Mi Vista",
     "settings": "Configuración",
