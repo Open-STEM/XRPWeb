@@ -727,7 +727,6 @@ function NavBar({ layoutref }: NavBarProps) {
         console.log('onRunBtnClicked');
 
         if (!isRunning) {
-            let continueExecution = true;
             if (!isConnected) {
                 setDialogContent(
                     <AlertDialog
@@ -759,44 +758,49 @@ function NavBar({ layoutref }: NavBarProps) {
                 .batteryVoltage()
                 .then((voltage) => {
                     const connectionType = AppMgr.getInstance().getConnectionType();
+                    const handlePowerSwitchOK = async () => {
+                        setRunning(true);
+                        toggleDialog();
+                        // Update the main.js
+                        const session: EditorSession | undefined =
+                            EditorMgr.getInstance().getEditorSession(activeTab);
+                        if (session) {
+                            // Save the current editor before running
+                            //TODO - signal activeTab editor to save the file
+                            await CommandToXRPMgr.getInstance()
+                                .updateMainFile(session.path)
+                                .then(async (lines) => {
+                                    await CommandToXRPMgr.getInstance().executeLines(lines);
+                                });
+                        }
+                        setRunning(false);
+                        broadcastRunningState(false);
+                    }
+
+                    const handlePowerSwitchCancel = () => {
+                        setRunning(false);
+                        toggleDialog();
+                    }
+
                     if (connectionType === ConnectionType.USB) {
                         if (voltage < 0.45) {
                             // display a confirmation message to ask the user to turn on the power switch
                             const powerswitchImage = CommandToXRPMgr.getInstance().getXRPDrive() === Constants.XRP_PROCESSOR_BETA ? powerswitch_beta : powerswitch_standard;
-                            setDialogContent(<PowerSwitchAlert powerswitchImage={powerswitchImage} cancelCallback={toggleDialog} />);
+                            setDialogContent(<PowerSwitchAlert powerswitchImage={powerswitchImage} cancelCallback={handlePowerSwitchCancel}  okayCallback={handlePowerSwitchOK}/>);
                             toggleDialog();
-                            continueExecution = false;
                         }
                     } else if (connectionType === ConnectionType.BLUETOOTH) {
                         if (voltage < 0.45) {
                             // display a confirmation message to ask the user to turn on the power switch
                             //this one will only happen if they are using a power device plugged into the USB port and the power switch is off.
-                            setDialogContent(<PowerSwitchAlert cancelCallback={toggleDialog} />);
+                            setDialogContent(<PowerSwitchAlert cancelCallback={handlePowerSwitchCancel} okayCallback={handlePowerSwitchOK}/>);
                             toggleDialog();
                         } else if (voltage < 5.0) {
                             setDialogContent(<BatteryBadDlg cancelCallback={toggleDialog} />);
                             toggleDialog();
                         }
-                        continueExecution = true;
                     }
                 });
-
-            if (continueExecution) {
-                // Update the main.js
-                const session: EditorSession | undefined =
-                    EditorMgr.getInstance().getEditorSession(activeTab);
-                if (session) {
-                    // Save the current editor before running
-                    //TODO - signal activeTab editor to save the file
-                    await CommandToXRPMgr.getInstance()
-                        .updateMainFile(session.path)
-                        .then(async (lines) => {
-                            await CommandToXRPMgr.getInstance().executeLines(lines);
-                        });
-                }
-                setRunning(false);
-                broadcastRunningState(false);
-            }
         } else {
             setRunning(false);
             broadcastRunningState(false);
