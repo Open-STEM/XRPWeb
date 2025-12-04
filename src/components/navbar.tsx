@@ -65,6 +65,8 @@ import { Actions, IJsonTabNode } from 'flexlayout-react';
 import GoogleLoginDlg from '@components/dialogs/logindlg';
 import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
 import XRPDriverInstallDlg from './dialogs/driver-installs';
+import powerswitch_standard from '@assets/images/XRP-nonbeta-controller-power.jpg';
+import powerswitch_beta from '@assets/images/XRP_Controller-Power.jpg';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -327,7 +329,7 @@ function NavBar({ layoutref }: NavBarProps) {
             // await CommandToXRPMgr.getInstance().updateMicroPython(dirHandle);
             const fileHandle = await dirHandle?.getFileHandle("firmware.uf2", { create: true });
             writable = await fileHandle!.createWritable();
-            const firmwareFilename = CommandToXRPMgr.getInstance().getXRPDrive() === "RPI-RP2" ? "firmware2040.uf2" : "firmware2350.uf2";
+            const firmwareFilename = CommandToXRPMgr.getInstance().getXRPDrive() === Constants.XRP_PROCESSOR_BETA ? "firmware2040.uf2" : "firmware2350.uf2";
             AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '10');
             const data = await (await fetch("micropython/" + firmwareFilename)).arrayBuffer();
             await writable.write(data);
@@ -760,7 +762,8 @@ function NavBar({ layoutref }: NavBarProps) {
                     if (connectionType === ConnectionType.USB) {
                         if (voltage < 0.45) {
                             // display a confirmation message to ask the user to turn on the power switch
-                            setDialogContent(<PowerSwitchAlert cancelCallback={toggleDialog} />);
+                            const powerswitchImage = CommandToXRPMgr.getInstance().getXRPDrive() === Constants.XRP_PROCESSOR_BETA ? powerswitch_beta : powerswitch_standard;
+                            setDialogContent(<PowerSwitchAlert powerswitchImage={powerswitchImage} cancelCallback={toggleDialog} />);
                             toggleDialog();
                             continueExecution = false;
                         }
