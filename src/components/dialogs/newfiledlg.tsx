@@ -5,6 +5,7 @@ import DialogFooter from './dialog-footer';
 import FolderTree from '../folder-tree';
 import { useTranslation } from 'react-i18next';
 import { Constants } from '@/utils/constants';
+import { getUsernameFromEmail } from '@/utils/google-utils';
 
 type NewFileProps = {
     submitCallback: (formData: NewFileData) => void;
@@ -82,15 +83,19 @@ function NewFileDlg(newFileProps: NewFileProps) {
     /**
      * handleSubmit handler. Gather all data from the form and send back to parent component
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleSubmit = () => {
         const folders = selectedFolder.split('/');
-        const folder = folders[folders.length - 1];
+        const folder = folders[folders.length - 2];
         const parentId = findItemInFolderList(folderList || [], folder)?.id || '';
         const fileExt = filetype === 1 ? '.blocks' : '.py';
+        const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
+        const path = selectedFolder.includes('/XRPCode/')
+            ? selectedFolder.replace('/XRPCode/', Constants.GUSERS_FOLDER + `${username}/`)
+            : selectedFolder;
         const formData: NewFileData = {
             name: `${filename}${fileExt}`,
-            path: `${selectedFolder}/${filename}${fileExt}`,
+            path: `${path}${filename}${fileExt}`,
+            gpath: '',
             filetype: filetype === 1 ? FileType.BLOCKLY : FileType.PYTHON,
             parentId: parentId || '',
         };
@@ -102,25 +107,24 @@ function NewFileDlg(newFileProps: NewFileProps) {
      * @param selectedItem
      */
     const handleFolderSelection = (selectedItem: FolderItem) => {
-        const path = selectedItem.path === '/' ? `` : selectedItem.path;
-        setSelectedFolder(`${path}/${selectedItem.name}`);
+        setSelectedFolder(selectedItem.path);
     };
 
     return (
         <div className="flex flex-col items-center gap-4 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
             <div className="flex w-[90%] flex-col items-center">
-                <h1 className="text-lg font-bold text-mountain-mist-700">{t('newFile')}</h1>
-                <p className="text-sm text-mountain-mist-700">{t('chooseNewFile')}</p>
+                <h1 className="text-lg font-bold text-mountain-mist-700 dark:text-mountain-mist-300">{t('newFile')}</h1>
+                <p className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('chooseNewFile')}</p>
             </div>
             <hr className="w-full border-mountain-mist-600" />
             <form id="fileOptionId" className="flex w-full flex-col gap-2">
-                <label className="text-sm text-mountain-mist-700">{t('destFolder')}</label>
+                <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('destFolder')}</label>
                 <FolderTree
                     treeData={JSON.stringify(folderList)}
                     theme=""
                     onSelected={handleFolderSelection}
                 />
-                <label className="text-sm text-mountain-mist-700" htmlFor="filesId">
+                <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300" htmlFor="filesId">
                     {t('fileType')}
                 </label>
                 <select
@@ -142,7 +146,7 @@ function NewFileDlg(newFileProps: NewFileProps) {
                         </option>
                     ))}
                 </select>
-                <label className="text-sm text-mountain-mist-700">{t('filename')}</label>
+                <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('filename')}</label>
                 <div className="flex flex-col items-center gap-1">
                     <input
                         className={`w-full rounded border ${isFileExists ? 'border-cinnabar-800' : 'border-shark-300 dark:border-shark-600'} p-2 text-sm text-mountain-mist-700 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-400`}
@@ -159,9 +163,9 @@ function NewFileDlg(newFileProps: NewFileProps) {
                         <span className="text-sm text-cinnabar-800">{t('fileExists')}</span>
                     )}
                 </div>
-                <label className="text-mountain-mist-700 text-sm">
+                <label className="text-mountain-mist-700 text-sm dark:text-mountain-mist-300">
                 {t('final-path')}
-                {selectedFolder}/{filename}{filetype === 1 ? '.blocks' : '.py'} 
+                {selectedFolder}{filename}{filetype === 1 ? '.blocks' : '.py'} 
             </label>
 
             </form>

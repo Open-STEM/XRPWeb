@@ -43,6 +43,7 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
         const fileData: NewFileData = {
             name: filename,
             path: selectedFolder,
+            gpath: selectedFolder,
             filetype: activeTab?.includes('.blocks') ? FileType.BLOCKLY : FileType.PYTHON,
             parentId: ''
         }
@@ -81,8 +82,19 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
             if (session) {
                 setSelectedFolder('/' + session.path.split('/')[1]);
             }
+            setFilename(activeTab);
         }
     }, [activeTab]);
+
+    /**
+     * handleFocus - selects the filename without the extension when the input is focused.
+     * @param e
+     */
+    const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+        const dotIndex = e.target.value.lastIndexOf('.');
+        const filenameWithoutExtension = dotIndex === -1 ? e.target.value : e.target.value.substring(0, dotIndex);
+        e.target.setSelectionRange(0, filenameWithoutExtension.length);
+    };    
 
     return (
         <div className="flex h-auto w-96 flex-col gap-2 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
@@ -109,6 +121,7 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
                     value={filename}
                     required
                     onChange={handleFilenameInput}
+                    onFocus={handleFocus}
                     minLength={2}
                 />
                 {isFileExists && (

@@ -1,6 +1,5 @@
 const StorageKeys = {
     LOGLEVEL: 'LogLevel',
-    MODESETTING: 'ModeSetting',
     ACTIVETAB: 'ActiveTab',
     EDITORSTORE: 'EditorStores',
     VERSION: 'Version',

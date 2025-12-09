@@ -38,18 +38,21 @@ type TreeProps = {
 function FolderTree(treeProps: TreeProps) {
     const { t } = useTranslation();
     const [isConnected, setConnected] = useState(false);
+    const isLogin = AppMgr.getInstance().authService.isLogin;
     const [capacity, setCapacity] = useState<string>('0/0');
     const [treeData, setTreeData] = useState<FolderItem[] | undefined>(undefined);
-    const [selectedItems, setSelectedItems] = useState<FolderItem[] | undefined>(undefined);
+    const [, setSelectedItems] = useState<FolderItem[] | undefined>(undefined);
     const [isRunning, setIsRunning] = useState<boolean>(false);
     const appMgrRef = useRef<AppMgr>();
     const treeRef = useRef(null);
     const { ref, width, height } = useResizeObserver();
     const [modeType, setModeType] = useState<number>(0);
     const folderLogger = logger.child({ module: 'folder-tree' });
-    const isLogin = AppMgr.getInstance().authService.isLogin;
     const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
     const dialogRef = useRef<HTMLDialogElement>(null);
+    const [hasSubscribed, setHasSubscribed] = useState<boolean>(false);
+
+
 
     useEffect(() => {
         // If treeData is passed as a prop, build the tree
@@ -60,82 +63,105 @@ function FolderTree(treeProps: TreeProps) {
     }, [treeProps.treeData]);
 
     useEffect(() => {
-        appMgrRef.current = AppMgr.getInstance();
 
-        setConnected(appMgrRef.current.getConnection()?.isConnected() ?? false);
+        if (!hasSubscribed) {
+            appMgrRef.current = AppMgr.getInstance();
 
-        appMgrRef.current.on(EventType.EVENT_CONNECTION_STATUS, (state: string) => {
-            if (state === ConnectionState.Connected.toString()) {
-                setConnected(true);
-            }
-        });
+            setConnected(appMgrRef.current.getConnection()?.isConnected() ?? false);
 
-        appMgrRef.current.on(EventType.EVENT_ISRUNNING, (running: string) => {
-            if (running === 'running') {
-                setIsRunning(true);
-            } else if (running === 'stopped') {
-                setIsRunning(false);
-            }
-        });
-        
-        appMgrRef.current.on(EventType.EVENT_FILESYS, (filesysJson: string) => {
-            if (AppMgr.getInstance().authService.isLogin && (filesysJson === '{}')) {
-                return;
-            }
-
-            try {
-                const filesysData = JSON.parse(filesysJson);
-                // remove admin.json from the filesysDat
-                if (filesysData && filesysData.length > 0) {
-                    filesysData.forEach((item: FolderItem) => {
-                        if (item.children) {
-                            item.children = item.children.filter(
-                                (child) => child.name !== Constants.ADMIN_FILE,
-                            );
-                        }
-                    });
+            appMgrRef.current.on(EventType.EVENT_CONNECTION_STATUS, (state: string) => {
+                if (state === ConnectionState.Connected.toString()) {
+                    setConnected(true);
                 }
-                const mode = parseInt(localStorage.getItem(StorageKeys.MODESETTING) ?? '0');
-                const selectedUser = localStorage.getItem(StorageKeys.XRPUSER)?.replace(/"/g, '');
-                setModeType(mode);
-                if (Object.keys(filesysData).length === 0) {
-                    setTreeData(undefined);
-                } else {
-                    if (mode === ModeType.USER) {
-                        const root = filesysData.at(0);
-                        for (const child of root.children) {
-                            if (child.name === 'lib') {
-                                const index = root.children.indexOf(child);
-                                root.children.splice(index, 1);
-                                break;
+            });
+
+            appMgrRef.current.on(EventType.EVENT_ISRUNNING, (running: string) => {
+                if (running === 'running') {
+                    setIsRunning(true);
+                } else if (running === 'stopped') {
+                    setIsRunning(false);
+                }
+            });
+            
+            appMgrRef.current.on(EventType.EVENT_FILESYS, (filesysJson: string) => {
+                try {
+                    const filesysData = JSON.parse(filesysJson);
+                    // remove admin.json from the filesysDat
+                    if (filesysData && filesysData.length > 0) {
+                        filesysData.forEach((item: FolderItem) => {
+                            if (item.children) {
+                                item.children = item.children.filter(
+                                    (child) => child.name !== Constants.ADMIN_FILE,
+                                );
                             }
-                        }
-                        const node = findNodeByName(filesysData, selectedUser ?? undefined);
-                        const treeData: FolderItem[] = node ? [node] : [];
-                        setTreeData(treeData);
-                    } else if (mode === ModeType.GOOUSER) {
-                        if (filesysData.at(0)?.name !== '/')
-                            setTreeData(filesysData);
-                    } else {
-                        setTreeData(filesysData);
+                        });
                     }
-                    appMgrRef.current?.setFoderData(filesysJson);
+                    const mode = AppMgr.getInstance().authService.modeSettings;
+                    const isLogin = AppMgr.getInstance().authService.isLogin;
+                    const selectedUser = localStorage.getItem(StorageKeys.XRPUSER)?.replace(/"/g, '');
+                    setModeType(mode);
+                    if (Object.keys(filesysData).length === 0) {
+                        if (mode === ModeType.GOOUSER && isConnected && !isLogin) {
+                            // we need to lock out the Google User mode if not logged in even though connected to XRP
+                            setTreeData(undefined);
+                            return
+                        } if (mode === ModeType.GOOUSER && !isConnected && isLogin) {
+                            // fetch the Google Drive tree for Google User mode
+                            const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
+                            if (username) {
+                                fireGoogleUserTree(username);
+                                return;
+                            }
+                        } else if ((mode === ModeType.SYSTEM || mode === ModeType.USER) && isLogin) {
+                            // fetch the Google Drive tree for System/User mode when logged in
+                            AppMgr.getInstance().authService.modeSettings = ModeType.GOOUSER;
+                            const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
+                            if (username) {
+                                fireGoogleUserTree(username);
+                                return;
+                            }
+                        } else {
+                            setTreeData(undefined);
+                        }
+                    
+                    } else {
+                        if (mode === ModeType.USER) {
+                            const root = filesysData.at(0);
+                            for (const child of root.children) {
+                                if (child.name === 'lib') {
+                                    const index = root.children.indexOf(child);
+                                    root.children.splice(index, 1);
+                                    break;
+                                }
+                            }
+                            const node = findNodeByName(filesysData, selectedUser ?? undefined);
+                            const treeData: FolderItem[] = node ? [node] : [];
+                            setTreeData(treeData);
+                        } else if (mode === ModeType.GOOUSER) {
+                            if (filesysData.at(0)?.name !== '/')
+                                setTreeData(filesysData);
+                        } else {
+                            setTreeData(filesysData);
+                        }
+                        appMgrRef.current?.setFoderData(filesysJson);
+                    }
+                } catch (err) {
+                    if (err instanceof Error) {
+                        folderLogger.error(`Failed to parse filesys data:  ${err.stack ?? err.message}`);
+                    }
+                    setTreeData(undefined);
                 }
-            } catch (err) {
-                if (err instanceof Error) {
-                    folderLogger.error(`Failed to parse filesys data:  ${err.stack ?? err.message}`);
-                }
-                setTreeData(undefined);
-            }
-        });
+            });
 
-        AppMgr.getInstance().on(EventType.EVENT_FILESYS_STORAGE, (storageCapacity: string) => {
-            // Update the storage capacity state here
-            folderLogger.debug(`Storage capacity changed to: ${storageCapacity}`);
-            const storage = JSON.parse(storageCapacity);
-            setCapacity(storage.used + '/' + storage.total);
-        });
-    }, [modeType]);
+            AppMgr.getInstance().on(EventType.EVENT_FILESYS_STORAGE, (storageCapacity: string) => {
+                // Update the storage capacity state here
+                folderLogger.debug(`Storage capacity changed to: ${storageCapacity}`);
+                const storage = JSON.parse(storageCapacity);
+                setCapacity(storage.used + '/' + storage.total);
+            });
+            setHasSubscribed(true);
+        }
+    }, [isConnected]);
 
     /**
      * toggleDialog - toggle the dialog open/close state
@@ -197,10 +223,14 @@ function FolderTree(treeProps: TreeProps) {
                     if (node.isInternal) node.toggle();
                     if (!(e.detail % 2) && !isRunning) {
                         if (node.children === null) {
+                            const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
+                            const path = node.data.path.includes('/XRPCode/')
+                                ? node.data.path.replace('/XRPCode/', Constants.GUSERS_FOLDER + `${username}`)
+                                : node.data.path;
                             const filePath =
-                                node.data.path === '/'
-                                    ? node.data.path + node.data.name
-                                    : node.data.path + '/' + node.data.name;
+                                path === '/'
+                                    ? path + node.data.name
+                                    : path + '/' + node.data.name;
                             const filePathData = {
                                 xrpPath: filePath,
                                 gPath: node.data.fileId
@@ -356,6 +386,11 @@ function FolderTree(treeProps: TreeProps) {
             if (modeType === ModeType.GOOUSER && isLogin) {
                 // rename the actual file in Google Drive
                 await AppMgr.getInstance().driveService?.renameFile(found.fileId ?? '', name);
+                const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
+                if (username) {
+                    // refresh the Google Drive tree
+                    fireGoogleUserTree(username);
+                }
             }
             // update the name field
             found.name = name;
@@ -471,7 +506,6 @@ function FolderTree(treeProps: TreeProps) {
     // };{
 
     const onSelected = (nodes: NodeApi<FolderItem>[]) => {
-        // console.log(`Selected nodes: ${nodes.map((node) => node.data.name).join(', ')}`);
         const selectedItems: FolderItem[] = [];
         nodes.map((node) => selectedItems.push(node.data));
         if (treeProps.onSelected && selectedItems.length > 0) {
@@ -479,28 +513,6 @@ function FolderTree(treeProps: TreeProps) {
         }
         setSelectedItems(selectedItems);
     };
-
-    /**
-     * onOpenFolder - open the selected folder
-     */
-    function onOpenFolder(): void {
-        if (selectedItems && selectedItems[0] && selectedItems[0].children === null) {
-            return;
-        }
-
-        const node = findNodeByName(treeData || [], selectedItems?.[0]?.name);
-        const tree = node ? [node] : [];
-        if (tree && tree.length > 0) {
-            setTreeData(tree);
-        }
-    }
-
-    /**
-     * onCloseFolder - close the selected folder
-     */
-    function onCloseFolder(): void {
-        CommandToXRPMgr.getInstance().getOnBoardFSTree();
-    }
 
     function onNewFolder(): void {
         if (treeRef.current) {
@@ -522,8 +534,6 @@ function FolderTree(treeProps: TreeProps) {
         <div className="flex flex-col gap-1">
             {treeProps.isHeader && (isConnected || isLogin) &&(
                 <FolderHeader
-                    openFolderCallback={onOpenFolder}
-                    closeFolderCallback={onCloseFolder}
                     newFileCallback={onNewFile}
                     newFolderCallback={onNewFolder}
                     storageCapacity={capacity}

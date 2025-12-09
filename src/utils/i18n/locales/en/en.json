@@ -45,6 +45,7 @@
     "fileType": "File Type",
     "addUser": "Add",
     "selectUser": "Select",
+    "selectedUser": "Selected User: ",
     "selectUserOption": "Select a User",
     "myview": "My View",
     "settings": "Settings",

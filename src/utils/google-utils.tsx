@@ -9,22 +9,24 @@ import { GoogleDriveFile } from "@/services/google-drive";
  * @param driveItem - tree items from Google Drive
  * @returns - A FolderItem structure
  */
-const transformGDriveTreeToFolderTree = (username: string, driveItem: GoogleDriveFile): FolderItem => {
+const transformGDriveTreeToFolderTree = (username: string, path: string, driveItem: GoogleDriveFile): FolderItem => {
     const itemType: 'file' | 'folder' = 
         driveItem.mimeType === 'application/vnd.google-apps.folder' ? 'folder' : 'file';
-
+    
     const folderItem: FolderItem = {
         name: driveItem.name,
         id: driveItem.id,
         fileId: driveItem.id,
         isReadOnly: false, 
-        path: Constants.GUSERS_FOLDER + username,
-        children: null
+        path: path,
+        children: itemType === 'folder' ? [] : null,
     }
 
     if (driveItem.children && driveItem.children.length > 0 && itemType === 'folder') {
+        const folderName = path.split('/').at(-2);
+        const fullpath = folderName=== folderItem.name ? `${folderItem.path}` : `${path}${folderItem.name}/`;
         folderItem.children = driveItem.children.map(child =>
-            transformGDriveTreeToFolderTree(username, child)
+            transformGDriveTreeToFolderTree(username, fullpath, child)
         );
     }
     return folderItem;
@@ -38,7 +40,7 @@ export const fireGoogleUserTree = async (username: string) => {
 
     await driveService.buildTree(Constants.XRPCODE).then((tree) => {
         if (tree) {
-            const folderTree = transformGDriveTreeToFolderTree(username, tree);
+            const folderTree = transformGDriveTreeToFolderTree(username, `/${tree.name}/`, tree);
             AppMgr.getInstance().emit(EventType.EVENT_FILESYS, JSON.stringify([folderTree]));
         };
     });

@@ -7,7 +7,7 @@ import Button from '@/widgets/button';
 import logger from '@/utils/logger';
 import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
 import { Constants } from '@/utils/constants';
-import AppMgr, { EventType } from '@/managers/appmgr';
+import AppMgr, { EventType, LoginStatus } from '@/managers/appmgr';
 import Login from '@/widgets/login';
 import { UserProfile } from '@/services/google-auth';
 import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
@@ -38,9 +38,8 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
     const [isAddButtonDisabled, setIsAddButtonDisabled] = useState<boolean>(false);
     const [isSelectButtonDisabled, setIsSelectButtonDisabled] = useState<boolean>(false);
     const [adminData, setAdminData] = useState<AdminData | undefined>(undefined);
-    const [modeValue, setModeValue] = useLocalStorage(StorageKeys.MODESETTING, -1);
     const [isValidUsername, setIsValidUsername] = useState<boolean | null>(null);
-    const [, setLSXrpUser] = useLocalStorage(StorageKeys.XRPUSER, '');
+    const [LSXrpUser, setLSXrpUser] = useLocalStorage(StorageKeys.XRPUSER, '');
     const modeLogger = logger.child({ module: 'modes' });
 
     const authService = AppMgr.getInstance().authService;
@@ -99,7 +98,6 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
                                 const json = new TextDecoder().decode(new Uint8Array(data));
                                 const adminData = JSON.parse(json) as AdminData;
                                 setAdminData(adminData);
-                                setModeValue(adminData.mode);
                                 setSettings({
                                     mode: adminData.mode,
                                 });
@@ -108,11 +106,12 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
                                     authService.userProfile.email === adminData.email
                                 ) {
                                     setIsDisabled(false);
+                                } else if (adminData.mode === ModeType.SYSTEM) {
+                                    setIsDisabled(false);
                                 } else {
                                     setIsDisabled(true);
                                 }
                             } else {
-                                setModeValue(ModeType.SYSTEM);
                                 setSettings({
                                     mode: ModeType.SYSTEM,
                                 });
@@ -127,8 +126,9 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
                 }
             }
         } else {
-            setModeValue(ModeType.GOOUSER);
             setSettings({ mode: ModeType.GOOUSER});
+            authService.modeSettings = ModeType.GOOUSER;
+            setIsDisabled(true);
         }
     };
 
@@ -142,23 +142,39 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
 
         switch (mode) {
             case ModeType.SYSTEM:
-                setModeValue(ModeType.SYSTEM);
                 if (isXrpConnected) {
                     CommandToXRPMgr.getInstance().getOnBoardFSTree();
                 }
                 break;
-            case ModeType.USER:
-                setModeValue(ModeType.USER);
+            case ModeType.USER: {
+                    const storedUser = localStorage.getItem(StorageKeys.XRPUSER)?.replace(/"/g, '') || '';
+                    if (storedUser !== '') {
+                        setXRPUser(storedUser);
+                        setLSXrpUser(storedUser);
+                        if (isXrpConnected) {
+                            CommandToXRPMgr.getInstance().getOnBoardFSTree();
+                        }
+                    }
+                }
                 break;
             case ModeType.GOOUSER:
                 {
-                    setModeValue(ModeType.GOOUSER);
                     if (authService.isLogin) {
                         const username = getUsernameFromEmail(authService.userProfile.email);
                         fireGoogleUserTree(username ?? '');
                     }
                 }
                 break;
+        }
+
+        // if connected, update admin file immediately
+        if (isXrpConnected && adminData !== undefined) {
+            adminData.mode = mode;
+            CommandToXRPMgr.getInstance().uploadFile(
+                adminFilePath,
+                JSON.stringify(adminData),
+            );
+            authService.modeSettings = mode;
         }
     };
 
@@ -168,9 +184,9 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
     const handleLanguageChange = (event: { target: { value: string } }) => {
         const newLanguage = event.target.value;
         i18n.changeLanguage(newLanguage);
-        if (modeValue === ModeType.GOOUSER && authService.isLogin) {
+        if (settings?.mode === ModeType.GOOUSER && authService.isLogin) {
             fireGoogleUserTree(username ?? '');            
-        } else if (modeValue === ModeType.SYSTEM || modeValue === ModeType.USER) {
+        } else if (settings?.mode === ModeType.SYSTEM || settings?.mode === ModeType.USER) {
             CommandToXRPMgr.getInstance().getOnBoardFSTree();
         }
     };
@@ -187,8 +203,9 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
                 JSON.stringify(adminData),
             );
         }
-        setModeValue(settings?.mode ?? -1);
-        setLSXrpUser(xrpUser);
+        if (settings?.mode === ModeType.USER) {
+            setLSXrpUser(xrpUser);
+        }
     };
 
     /**
@@ -242,10 +259,12 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
      * and updates the state accordingly.
      */
     const googleSignOut = () => {
-        if (modeValue === ModeType.GOOUSER) {
+        if (settings?.mode === ModeType.GOOUSER) {
             setIsDisabled(true);
             AppMgr.getInstance().emit(EventType.EVENT_FILESYS, '{}');
         }
+        AppMgr.getInstance().emit(EventType.EVENT_LOGIN_STATUS, LoginStatus.LOGGED_OUT);
+        authService.logOut();
     };
 
     /**
@@ -307,6 +326,7 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
     };
 
     const onLoginSuccess = async (data: UserProfile) => {
+        AppMgr.getInstance().emit(EventType.EVENT_LOGIN_STATUS, LoginStatus.LOGGED_IN);
         const username = getUsernameFromEmail(data.email);
         if (username !== undefined) {
             setXRPUser(username ?? '');
@@ -333,12 +353,13 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
                 }
             }
         }
-        if (modeValue === ModeType.GOOUSER) {
+        if (settings?.mode === ModeType.GOOUSER) {
             fireGoogleUserTree(username ?? '');
         }
     };
 
     useEffect(() => {
+        setXRPUser(LSXrpUser)
         getAdminData();
     }, []);
 
@@ -360,7 +381,7 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
                             onChange={handleModeSelection}
                             disabled={isDisabled}
                         >
-                            <option defaultValue={modeValue}>{selectLabel(modeValue)}</option>
+                            <option defaultValue={settings?.mode}>{selectLabel(settings?.mode ?? ModeType.SYSTEM)}</option>
                             {modeOptions.map((option) => (
                                 <option key={option.label} value={selectValue(option.label)}>
                                     {option.label}
@@ -407,6 +428,7 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
                                         </select>
                                     </div>
                                 )}
+                                <label className="text-mountain-mist-900 dark:text-curious-blue-100">{t('selectedUser')}{xrpUser}</label>
                                 <div className="flex flex-col items-end">
                                     <div className="flex flex-row gap-2">
                                         <Button disabled={isAddButtonDisabled} onClicked={addUser}>
@@ -419,7 +441,7 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
                                 </div>
                             </>
                         )}
-                        { modeValue === ModeType.GOOUSER && (
+                        { settings?.mode === ModeType.GOOUSER && (
                             <Login onSuccess={onLoginSuccess} logoutCallback={googleSignOut} />
                         )}
                     </div>
