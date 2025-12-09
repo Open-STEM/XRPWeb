@@ -99,6 +99,7 @@
     "dashboard": "Panel",
     "dashboard-no-run": "La pestaña del panel no puede ejecutarse en el XRP.",
     "FilesystemStorage": "Sistema de archivos: {{ capacity }} MB",
+    "GoogleDriveStorage": "Sistema de archivos de Google Drive",
     "sensors": "Sensores",
     "accelerometer": "Acelerómetro",
     "gyroscope": "Giroscopio",

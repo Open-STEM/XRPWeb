@@ -1,4 +1,5 @@
 import AppMgr, { EventType } from '@/managers/appmgr';
+import { ModeType } from '@/utils/types';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AiOutlineFileAdd } from "react-icons/ai";
@@ -13,9 +14,10 @@ interface FolderHeaderProps {
 function FolderHeader({ storageCapacity, newFolderCallback, newFileCallback }: FolderHeaderProps) {
     const { t } = useTranslation();
     const [isRunning, setIsRunning] = useState<boolean>(false);
+    const [appMgr, SetAppMgr] = useState<AppMgr>(AppMgr.getInstance());
 
     useEffect(() => {
-        const appMgr = AppMgr.getInstance();
+        SetAppMgr(AppMgr.getInstance());
 
         appMgr.on(EventType.EVENT_ISRUNNING, (running: string) => {
             if (running === 'running') {
@@ -29,7 +31,11 @@ function FolderHeader({ storageCapacity, newFolderCallback, newFileCallback }: F
     return (
         <div className="flex flex-row items-center justify-between bg-mountain-mist-100 p-1 text-sm dark:bg-mountain-mist-800">
             <div className="flex flex-row">
-                <span>{t('FilesystemStorage', { capacity: storageCapacity})}</span>
+                { appMgr.authService.modeSettings === ModeType.SYSTEM || appMgr.authService.modeSettings === ModeType.USER ?
+                    <span>{t('FilesystemStorage', { capacity: storageCapacity})}</span>
+                    :
+                    <span>{t('GoogleDriveStorage')}</span>
+                }
             </div>
             <div className="flex flex-row gap-1">
                 <button title={t('newFolder')} onClick={newFolderCallback} disabled={isRunning}>
