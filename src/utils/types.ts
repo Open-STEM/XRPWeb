@@ -39,6 +39,7 @@ export interface FolderItem {
     icon?: React.ComponentType;
     path: string;
     fileId?: string;    // Google Drive file ID
+    gparentId?: string; // Google Drive parent IDxs
     parent?: FolderItem;
     children: FolderItem[] | null;
 };
@@ -52,6 +53,7 @@ export type NewFileData = {
     name: string;
     path: string,
     gpath?: string,
+    gparentId?: string,
     filetype: FileType
     parentId: string;
     content?: string;
