@@ -195,7 +195,8 @@ class GoogleDriveService {
                         kind: file.kind,
                         id: file.id,
                         name: file.name,
-                        mimeType: file.mimeType
+                        mimeType: file.mimeType,
+                        parents: file.parents || undefined
                     }));
                 }
             })
@@ -645,6 +646,39 @@ class GoogleDriveService {
             }
         }
 
+    }
+
+    /**
+     * trash a file from Google Drive
+     * @param fileId 
+     */
+    async trashFile(fileId: string): Promise<void> {
+        const url = `https://www.googleapis.com/drive/v3/files/${fileId}`;
+        const requestBody = {
+            'trashed': true,
+        };
+
+        try {
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    Authorization: `Bearer ${this._accessToken}`,
+                },
+                body: JSON.stringify(requestBody),
+            });
+
+            if (response.ok) {
+                this._modeLogger.debug(`File moved to trash successfully.`);
+            } else {
+                const errorData = await response.json();
+                this._modeLogger.error(`API error: ${response.status} - ${JSON.stringify(errorData)}`);
+            }
+
+        } catch (error) {
+            if (error instanceof Error) {
+                this._modeLogger.error(`Error trashing file: ${error.message}`);
+            }
+        }
     }
 }
 

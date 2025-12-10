@@ -15,6 +15,7 @@ export type EditorSession = {
     id: string;
     path: string;
     gpath?: string,
+    gparentId?: string,
     type: EditorType;
     isSubscribed: boolean;
     isModified: boolean;

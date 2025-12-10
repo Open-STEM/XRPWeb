@@ -96,6 +96,7 @@ function NewFileDlg(newFileProps: NewFileProps) {
             name: `${filename}${fileExt}`,
             path: `${path}${filename}${fileExt}`,
             gpath: '',
+            gparentId: parentId || '',
             filetype: filetype === 1 ? FileType.BLOCKLY : FileType.PYTHON,
             parentId: parentId || '',
         };

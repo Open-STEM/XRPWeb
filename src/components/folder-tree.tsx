@@ -22,6 +22,7 @@ import Dialog from './dialogs/dialog';
 import ConfirmationDlg from './dialogs/confirmdlg';
 import AlertDialog from './dialogs/alertdlg';
 import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
+import EditorMgr from '@/managers/editormgr';
 
 type TreeProps = {
     treeData: string | null;
@@ -233,7 +234,8 @@ function FolderTree(treeProps: TreeProps) {
                                     : path + '/' + node.data.name;
                             const filePathData = {
                                 xrpPath: filePath,
-                                gPath: node.data.fileId
+                                gPath: node.data.fileId,
+                                gparentId: node.data.gparentId
                             };
                             AppMgr.getInstance().emit(EventType.EVENT_OPEN_FILE, JSON.stringify(filePathData));
                         }
@@ -350,6 +352,14 @@ function FolderTree(treeProps: TreeProps) {
                             fireGoogleUserTree(username);
                         }
                     }
+                }
+
+                // remove the node from the tab and editor manager
+                const editorMgr = EditorMgr.getInstance();
+                const editorSession = editorMgr.getEditorSession(found.name);
+                if (editorSession) {
+                    editorMgr.RemoveEditor(found.name);
+                    editorMgr.RemoveEditorTab(found.name);
                 }
             }
         };

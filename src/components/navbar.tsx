@@ -156,6 +156,7 @@ function NavBar({ layoutref }: NavBarProps) {
                     parentId: '',
                     path: filePathData.xrpPath,
                     gpath: filePathData.gPath,
+                    gparentId: filePathData.gparentId,
                     name: filename || '',
                     filetype: fileType,
                 };
@@ -592,31 +593,47 @@ function NavBar({ layoutref }: NavBarProps) {
             const editorSession = EditorMgr.getInstance().getEditorSession(activeTab);
             if (editorSession) {
                 const fileData: NewFileData = {
-                    parentId: '',
+                    parentId: editorSession.id,
                     path: editorSession?.path,
                     name: editorSession.id.split('.blocks')[0] + '.py',
+                    gpath: editorSession.gpath,
+                    gparentId: editorSession.gparentId,
                     filetype: FileType.PYTHON,
                     content: code,
                 };
-                // move the converted blockly file to /trash
-                await CommandToXRPMgr.getInstance().renameFile(
-                    editorSession.path,
-                    Constants.TRASH_FOLDER + '/' + editorSession.id,
-                ).then(async () => {
-                    // save the file to python
-                    const path = editorSession.path.split('.blocks')[0] + '.py';
-                    await CommandToXRPMgr.getInstance().uploadFile(path, code).then(() => {
-                        EditorMgr.getInstance().RemoveEditor(activeTab);
-                        CreateEditorTab(fileData, layoutref);
-                        setActiveTab(fileData.name);
+                if ((authService.modeSettings === ModeType.SYSTEM || authService.modeSettings === ModeType.USER) && isConnected) {
+                    // move the converted blockly file to /trash
+                    await CommandToXRPMgr.getInstance().buildPath(Constants.TRASH_FOLDER);  // ensure the trash folder exists
+                    await CommandToXRPMgr.getInstance().renameFile(
+                        editorSession.path,
+                        Constants.TRASH_FOLDER + '/' + editorSession.id,
+                    ).then(async () => {
+                        // save the file to python
+                        const path = editorSession.path.split('.blocks')[0] + '.py';
+                        await CommandToXRPMgr.getInstance().uploadFile(path, code).then(() => {
+                            EditorMgr.getInstance().RemoveEditor(activeTab);
+                            CreateEditorTab(fileData, layoutref);
+                            setActiveTab(fileData.name);
+                        });
+                        await CommandToXRPMgr.getInstance().getFileContents(path).then((content) => {
+                            loadXRPEditor(content, FileType.PYTHON, fileData.name);
+                        })
+                        await CommandToXRPMgr.getInstance().getOnBoardFSTree();
                     });
-                    await CommandToXRPMgr.getInstance().getFileContents(path).then((content) => {
-                        // if the file is a block files, extract the blockly JSON out of the comment ##XRPBLOCKS
-                        const text = new TextDecoder().decode(new Uint8Array(content));
-                        const loadContent = { name: fileData.name, content: text };
-                        AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
-                    })
-                });
+                } else if (authService.modeSettings === ModeType.GOOUSER && authService.isLogin) {
+                    // trash the file
+                    await driveService.trashFile(fileData.gpath ?? '').then(async () => {
+                        const minetype = 'text/x-python';
+                        const blob = new Blob([code], { type: minetype });
+                        await driveService.uploadFile(blob, fileData.name, minetype, fileData.gparentId ?? undefined).then(() => {
+                            EditorMgr.getInstance().RemoveEditor(activeTab);
+                            CreateEditorTab(fileData, layoutref);
+                            // loadGoogleEditor(fileData, FileType.PYTHON, fileData.name);
+                            setActiveTab(fileData.name);
+                        });
+                        await fireGoogleUserTree(getUsernameFromEmail(authService.userProfile.email) ?? '');
+                    });
+                }
             }
             EditorMgr.getInstance().RemoveEditorTab(activeTab);
             appMgr.eventOff(EventType.EVENT_GENPYTHON_DONE);
@@ -635,7 +652,7 @@ function NavBar({ layoutref }: NavBarProps) {
         if (isOtherTab) {
             return;
         }
-        if (!isConnected) {
+        if (!isConnected && !authService.isLogin) {
             setDialogContent(
                 <AlertDialog
                     alertMessage={t('XRP-not-connected')}
