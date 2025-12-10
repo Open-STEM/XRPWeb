@@ -284,8 +284,7 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
             }
         }
 
-<<<<<<< HEAD
-        // Set up language based on stored preference
+ // Set up language based on stored preference
         const setupLanguage = () => {
             const storedLanguage = localStorage.getItem(StorageKeys.LANGUAGE) || 'en';
             setBlocklyLocale(storedLanguage);
@@ -293,8 +292,6 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
         
         // Call setupLanguage to initialize Blockly locale
         setupLanguage();
-=======
->>>>>>> fc3059d102fb984c5ee3bfecc3a19af618a27b2d
         // Set up workspace change listener for live content tracking
         const setupWorkspaceListener = () => {
             const ws = Blockly.getMainWorkspace();
