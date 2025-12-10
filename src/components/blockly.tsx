@@ -3,6 +3,7 @@ import { registerFieldColour } from '@blockly/field-colour';
 import { BlocklyWorkspace, Workspace } from 'react-blockly';
 import BlocklyConfigs from '@components/blockly/xrp_blockly_configs';
 import * as Blockly from 'blockly/core';
+import { setBlocklyLocale } from '@/utils/blockly-locales';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
 import { useEffect, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -288,7 +289,14 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
             }
         }
 
+        // Set up language based on stored preference
+        const setupLanguage = () => {
+            const storedLanguage = localStorage.getItem(StorageKeys.LANGUAGE) || 'en';
+            setBlocklyLocale(storedLanguage);
+        };
         
+        // Call setupLanguage to initialize Blockly locale
+        setupLanguage();
         // Set up workspace change listener for live content tracking
         const setupWorkspaceListener = () => {
             const ws = Blockly.getMainWorkspace();
