@@ -45,6 +45,7 @@
     "fileType": "File Type",
     "addUser": "Add",
     "selectUser": "Select",
+    "selectedUser": "Selected User: ",
     "selectUserOption": "Select a User",
     "myview": "My View",
     "settings": "Settings",
@@ -97,7 +98,8 @@
     "update-lib-complete": "The XRP library update process has completed successfully.",
     "dashboard": "Dashboard",
     "dashboard-no-run": "Dashboard tab can not be running on the XRP.",
-    "FilesystemStorage": "Filesystem: {{ capacity }} MB",
+    "FilesystemStorage": "XRP Filesystem: {{ capacity }} MB",
+    "GoogleDriveStorage": "Google Drive Filesystem",
     "sensors": "Sensors",
     "accelerometer": "Accelerometer",
     "gyroscope": "Gyroscope",
@@ -146,8 +148,6 @@
     "alertOpenPortFailed": "Opening port failed, is another application accessing this device/port?",
     "confirmDeleteFileOrFolder": "Are you sure you want to delete '{{ name }}' ? This action cannot be undone.",
     "select-parent-node": "Please select a parent node to create the new folder or file under.",
-    "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
-    "individualMotors": "Individual Motors",
     "language": "Language",
     "languageSelection": "Select Language",
     "connectXRP": "CONNECT XRP",
@@ -166,5 +166,10 @@
         "stopGeneration": "Stop generation",
         "sendMessage": "Send message",
         "buddyTyping": "XRPCode Buddy is typing..."
-    }
+    },
+    "editor": {
+        "saveconnect": "To save your file, please connect to your XRP or login to your Google Drive account."
+    },
+    "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
+    "individualMotors": "Individual Motors"
 }

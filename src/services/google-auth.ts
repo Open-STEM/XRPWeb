@@ -1,4 +1,5 @@
 import logger from "@/utils/logger";
+import { ModeType } from "@/utils/types";
 import { googleLogout } from "@react-oauth/google";
 
 export type UserProfile = {
@@ -29,6 +30,7 @@ class GoogleAuthService {
     private _clientId: string;
     private _isLogin: boolean = false;
     private _isAdmin: boolean = false;
+    private _modeSettings: number = ModeType.SYSTEM;
     private _clientSecret: string;
     private _redirectUri: string;
     private _code: string | null = null;
@@ -109,6 +111,20 @@ class GoogleAuthService {
      */
     set isAdmin(isAdmin: boolean) {
         this._isAdmin = isAdmin;
+    }
+
+    /**
+     * Get the mode settings
+     */
+    get modeSettings(): number {
+        return this._modeSettings;
+    }
+
+    /**
+     * Set the mode settings
+     */
+    set modeSettings(mode: number) {
+        this._modeSettings = mode;
     }
 
     /**

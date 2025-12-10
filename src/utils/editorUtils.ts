@@ -26,9 +26,12 @@ export function CreateEditorTab(data: NewFileData, layoutref: React.RefObject<La
                     type: EditorType.BLOCKLY,
                     path: data.path,
                     gpath: data.gpath,
+                    gparentId: data.gparentId,
                     isSubscribed: false,
                     fontsize: Constants.DEFAULT_FONTSIZE,
                     content: data.content,
+                    lastUpdated: new Date(),
+                    isModified: false,
                 });
             }
             break;
@@ -48,9 +51,12 @@ export function CreateEditorTab(data: NewFileData, layoutref: React.RefObject<La
                     type: EditorType.PYTHON,
                     path: data.path,
                     gpath: data.gpath,
+                    gparentId: data.gparentId,
                     isSubscribed: false,
                     fontsize: Constants.DEFAULT_FONTSIZE,
                     content: data.content,
+                    lastUpdated: new Date(),
+                    isModified: false,
                 });
             }
             break;

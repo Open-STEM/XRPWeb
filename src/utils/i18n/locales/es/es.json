@@ -45,6 +45,7 @@
     "fileType": "Tipo de Archivo",
     "addUser": "Agregar",
     "selectUser": "Seleccionar",
+    "selectedUser": "Usuario Seleccionado: ",
     "selectUserOption": "Seleccione un Usuario",
     "myview": "Mi Vista",
     "settings": "Configuración",
@@ -97,7 +98,8 @@
     "update-lib-complete": "El proceso de actualización de la biblioteca XRP se ha completado con éxito.",
     "dashboard": "Panel",
     "dashboard-no-run": "La pestaña del panel no puede ejecutarse en el XRP.",
-    "FilesystemStorage": "Sistema de archivos: {{ capacity }} MB",
+    "FilesystemStorage": "Sistema de archivos XRP: {{ capacity }} MB",
+    "GoogleDriveStorage": "Sistema de archivos de Google Drive",
     "sensors": "Sensores",
     "accelerometer": "Acelerómetro",
     "gyroscope": "Giroscopio",
@@ -145,9 +147,7 @@
     "progress-item": "Procesando elemento: ",
     "alertOpenPortFailed": "Error al abrir el puerto, ¿hay otra aplicación accediendo a este dispositivo/puerto?",
     "confirmDeleteFileOrFolder": "¿Está seguro de que desea eliminar '{{ name }}' ? Esta acción no se puede deshacer.",
-    "_commentBlockly": "Esto no necesita ser traducido - agregar traducción específica de blockly a continuación",
     "select-parent-node": "Por favor seleccione un nodo padre para crear la nueva carpeta o archivo debajo.",
-    "individualMotors": "Motores Individuales",
     "language": "Idioma",
     "languageSelection": "Seleccionar idioma",
     "connectXRP": "CONECTAR XRP",
@@ -166,5 +166,10 @@
         "stopGeneration": "Detener generación",
         "sendMessage": "Enviar mensaje",
         "buddyTyping": "El Compañero de Código XRP está escribiendo..."
-    }
+    },
+    "editor": {
+        "saveconnect": "Para guardar el archivo, por favor conecte su XRP o inicie sesión en Google Drive."
+    },
+    "_commentBlockly": "Esto no necesita ser traducido - agregar traducción específica de blockly a continuación",
+    "individualMotors": "Motores Individuales"
 }

@@ -6,7 +6,6 @@ import { BluetoothConnection } from '@/connections/bluetoothconnection';
 import { CommandToXRPMgr } from './commandstoxrpmgr';
 import PluginMgr from './pluginmgr';
 import { Constants } from '@/utils/constants';
-import { StorageKeys } from '@/utils/localstorage';
 
 /**
  * ConnectionMgr - manages USB and Bluetooth connection to the XRP Robot
@@ -67,7 +66,7 @@ export default class ConnectionMgr {
                         if (data.length > 0) {
                             const json = new TextDecoder().decode(new Uint8Array(data));
                             const adminData = JSON.parse(json);
-                            localStorage.setItem(StorageKeys.MODESETTING, adminData.mode);
+                            AppMgr.getInstance().authService.modeSettings = adminData.mode;
                         }
                     });
                 } catch(error) {

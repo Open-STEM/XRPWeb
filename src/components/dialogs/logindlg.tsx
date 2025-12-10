@@ -33,6 +33,7 @@ function GoogleLoginDlg({ toggleDialog }: LoginDgProps) {
                         if (jsondata.length > 0) {
                             const json = new TextDecoder().decode(new Uint8Array(jsondata));
                             const adminData = JSON.parse(json) as AdminData;
+                            authService.modeSettings = adminData.mode;
                             if (adminData.email === data.email) {
                                 authService.isAdmin = true;
                             }

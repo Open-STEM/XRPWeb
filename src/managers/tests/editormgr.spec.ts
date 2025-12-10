@@ -15,6 +15,9 @@ describe('EditorMgr', () => {
             type: EditorType.PYTHON,
             isSubscribed: false,
             fontsize: 14,
+            content: 'print("Hello, World!")',
+            lastUpdated: undefined,
+            isModified: false,
         };
     });
 
