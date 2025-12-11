@@ -183,16 +183,33 @@ function FolderTree(treeProps: TreeProps) {
      * @returns
      */
     function Input({ node }: { node: NodeApi<FolderItem> }) {
+        const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+            const { value } = e.currentTarget;
+            const lastDotIndex = value.lastIndexOf('.');
+
+            // If it's a leaf node (a file) and has an extension, select only the name part.
+            if (node.isLeaf && lastDotIndex > 0) {
+                e.currentTarget.setSelectionRange(0, lastDotIndex);
+            } else {
+                // Otherwise, select the whole text (for folders or files without extensions).
+                e.currentTarget.select();
+            }
+        };
+
         return (
             <input
                 autoFocus
                 type="text"
                 defaultValue={node.data.name}
-                onFocus={(e) => e.currentTarget.select()}
+                onFocus={handleFocus}
                 onBlur={() => node.reset()}
                 onKeyDown={(e) => {
                     if (e.key === 'Escape') node.reset();
-                    if (e.key === 'Enter') node.submit(e.currentTarget.value);
+                    if (e.key === 'Enter') {
+                        const { value } = e.currentTarget;
+                        // Submit the value from the input. The onRename handler will manage the extension.
+                        node.submit(value);
+                    }
                 }}
             />
         );
@@ -388,6 +405,14 @@ function FolderTree(treeProps: TreeProps) {
         const found = findItem(rootNode, node.data.id);
 
         if (found) {
+            // Preserve file extension if user omits it
+            const originalName = found.name;
+            const originalExtension = originalName.includes('.') ? originalName.substring(originalName.lastIndexOf('.')) : '';
+
+            if (originalExtension && !name.endsWith(originalExtension) && !name.includes('.')) {
+                name += originalExtension;
+            }
+
             if (isConnected) {
                 // rename the actual file in XRP
                 await CommandToXRPMgr.getInstance().renameFile(found.path + '/' + found.name, name);
