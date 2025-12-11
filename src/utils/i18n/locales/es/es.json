@@ -147,6 +147,7 @@
     "progress-item": "Procesando elemento: ",
     "alertOpenPortFailed": "Error al abrir el puerto, ¿hay otra aplicación accediendo a este dispositivo/puerto?",
     "confirmDeleteFileOrFolder": "¿Está seguro de que desea eliminar '{{ name }}' ? Esta acción no se puede deshacer.",
+    "confirmDeleteTab": "Este archivo tiene cambios sin guardar. ¿Está seguro de que desea cerrarlos?",
     "select-parent-node": "Por favor seleccione un nodo padre para crear la nueva carpeta o archivo debajo.",
     "language": "Idioma",
     "languageSelection": "Seleccionar idioma",

@@ -16,7 +16,7 @@ function App() {
             appMgrRef.current = AppMgr.getInstance();
             appMgrRef.current.start();
         }
-    });
+    }, []);
 
     return (
         <>

@@ -147,6 +147,7 @@
     "progress-item": "Processing item: ",
     "alertOpenPortFailed": "Opening port failed, is another application accessing this device/port?",
     "confirmDeleteFileOrFolder": "Are you sure you want to delete '{{ name }}' ? This action cannot be undone.",
+    "confirmDeleteTab": "This file has unsaved changes. Are you sure you want to close it?",
     "select-parent-node": "Please select a parent node to create the new folder or file under.",
     "language": "Language",
     "languageSelection": "Select Language",
