@@ -171,6 +171,11 @@
     "editor": {
         "saveconnect": "To save your file, please connect to your XRP or login to your Google Drive account."
     },
+    "theme": {
+        "label": "Theme",
+        "light": "Light",
+        "dark": "Dark"
+    },
     "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
     "individualMotors": "Individual Motors"
 }

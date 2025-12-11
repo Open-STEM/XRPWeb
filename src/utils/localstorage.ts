@@ -6,6 +6,7 @@ const StorageKeys = {
     XRPUSER: 'XrpUser',
     GOOUSER: 'GooUser',
     LANGUAGE: 'i18nextLng',
+    THEME: 'Theme'
   } as const;
   
   export type StorageKeysType = (typeof StorageKeys)[keyof typeof StorageKeys];

@@ -7,13 +7,14 @@ import Button from '@/widgets/button';
 import logger from '@/utils/logger';
 import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
 import { Constants } from '@/utils/constants';
-import AppMgr, { EventType, LoginStatus } from '@/managers/appmgr';
+import AppMgr, { EventType, LoginStatus, Themes } from '@/managers/appmgr';
 import Login from '@/widgets/login';
 import { UserProfile } from '@/services/google-auth';
 import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
 import { useTranslation } from 'react-i18next';
 import TabList from '../tab-list';
 import TabItem from '../tab-item';
+import AnimatedThemeToggle from '@/widgets/animated-theme-toggle';
 
 type SettingsProps = {
     /**
@@ -40,6 +41,8 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
     const [adminData, setAdminData] = useState<AdminData | undefined>(undefined);
     const [isValidUsername, setIsValidUsername] = useState<boolean | null>(null);
     const [LSXrpUser, setLSXrpUser] = useLocalStorage(StorageKeys.XRPUSER, '');
+    const [,setTheme] = useLocalStorage(StorageKeys.THEME, Themes.LIGHT);
+
     const modeLogger = logger.child({ module: 'modes' });
 
     const authService = AppMgr.getInstance().authService;
@@ -325,6 +328,30 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
         }
     };
 
+
+    /**
+     * onThemeToggle - toggle theme callback
+     * @param state 
+     */
+    const onThemeToggle = (state: Themes) => {
+        // 1. Update the class for Tailwind CSS theming
+        if (state === Themes.DARK) {
+            document.documentElement.classList.add(Themes.DARK);
+            document.documentElement.classList.remove(Themes.LIGHT);
+        } else if (state === Themes.LIGHT) {
+            document.documentElement.classList.add(Themes.LIGHT);
+            document.documentElement.classList.remove(Themes.DARK);
+        }
+        setTheme(state);
+
+        // 2. Emit a global event to notify other components (like flexlayout)
+        AppMgr.getInstance().setTheme(state);
+    };
+
+    /**
+     * onLoginSuccess - Google authentication callback
+     * @param data 
+     */
     const onLoginSuccess = async (data: UserProfile) => {
         AppMgr.getInstance().emit(EventType.EVENT_LOGIN_STATUS, LoginStatus.LOGGED_IN);
         const username = getUsernameFromEmail(data.email);
@@ -366,8 +393,8 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
     return (
         <div className="flex flex-col items-center gap-4 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
             <div className="flex w-[80%] flex-col items-center">
-                <h1 className="text-lg font-bold text-mountain-mist-700">{t('settings')}</h1>
-                <p className="text-sm text-mountain-mist-700">{t('settingDescription')}</p>
+                <h1 className="text-lg font-bold text-mountain-mist-700 dark:text-mountain-mist-300">{t('settings')}</h1>
+                <p className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('settingDescription')}</p>
             </div>
             <hr className="w-full border-mountain-mist-600" />
             <TabList activeTabIndex={0}>
@@ -461,6 +488,16 @@ function SettingsDlg({ isXrpConnected, toggleDialog }: SettingsProps) {
                                 </option>
                             ))}
                         </select>
+                    </div>
+                </TabItem>
+                <TabItem label={t('theme.label')} isActive={false}>
+                    <div className="flex w-full flex-col gap-2 mt-2">
+                        <AnimatedThemeToggle
+                            labelLeft={t('theme.light')}
+                            labelRight={t('theme.dark')}
+                            initial={document.documentElement.classList.contains('dark')}
+                            onToggle={onThemeToggle}
+                        />
                     </div>
                 </TabItem>
             </TabList>
