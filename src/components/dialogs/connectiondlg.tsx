@@ -46,8 +46,8 @@ function ConnectionDlg(connprops: ConnProps) {
 
     return (
         <div className="border rounded-md border-mountain-mist-700 dark:border-shark-500 dark:bg-shark-950 flex h-auto w-96 flex-col items-center gap-2 p-4 shadow-md transition-all">
-            <h1 className='text-lg font-bold text-mountain-mist-700'>{t('connections')}</h1>
-            <p className='text-sm text-mountain-mist-700'>{t('selectConnection')}</p>
+            <h1 className='text-lg font-bold text-mountain-mist-700 dark:text-mountain-mist-300'>{t('connections')}</h1>
+            <p className='text-sm text-mountain-mist-700 dark:text-mountain-mist-300'>{t('selectConnection')}</p>
             <hr className="w-full border-mountain-mist-600" />
             <ul>
                 {items.map((item) => (
@@ -57,7 +57,7 @@ function ConnectionDlg(connprops: ConnProps) {
                         onClick={() => handleItemClick(item)}
                     >
                         <img data-testid={item.label} src={item.image} height="28px" width="36px" />
-                        <span>{item.label}</span>
+                        <span className='text-mountain-mist-700 dark:text-mountain-mist-300'>{item.label}</span>
                     </li>
                 ))}
             </ul>
