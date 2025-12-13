@@ -224,6 +224,13 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                         content: store.content,
                     }
                     CreateEditorTab(fileData, layoutRef);
+                    if (!store.isSavedToXRP) {
+                        // update the editor session and update the tab dirty status
+                        const editorSession = EditorMgr.getInstance().getEditorSession(store.id);
+                        if (editorSession) {
+                            EditorMgr.getInstance().updateEditorSessionChange(store.id, !store.isSavedToXRP);
+                        }
+                    }
                     setActiveTab(store.id);
                 });
             }

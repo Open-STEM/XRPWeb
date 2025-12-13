@@ -268,7 +268,7 @@ export default class EditorMgr {
             path: session.path,
             gpath: session.gpath,
             isBlockly: session.type === EditorType.BLOCKLY,
-            isSavedToXRP: true,
+            isSavedToXRP: !session.isModified,
             content: code,
         };
         // Update the session content with the new code
@@ -354,5 +354,24 @@ export default class EditorMgr {
             }
         });
         return contents;
+    }
+
+    /**
+     * saveAllEditors - save all editors that hasn't been save yet
+     */
+    public saveAllEditors() {
+        console.log('saveAllEditors');
+        // loop through the editors and save it unsaved content
+        this.editorSessions.forEach(async (session, id) => {
+            // show the progress dialog
+            if (session.isModified && (session.type === EditorType.BLOCKLY || session.type === EditorType.PYTHON) && session.content !== undefined) {
+                console.log('saveAllEditors: ', session);
+                AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
+                await CommandToXRPMgr.getInstance().uploadFile(session.path, session.content, true).then(() =>{
+                    AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
+                });
+                this.updateEditorSessionChange(id, false);
+            }
+        });
     }
 }

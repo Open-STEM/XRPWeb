@@ -825,6 +825,9 @@ function NavBar({ layoutref }: NavBarProps) {
             setRunning(true);
             broadcastRunningState(true);
 
+            // Save all unsave editors
+            EditorMgr.getInstance().saveAllEditors();
+
             // Check battery voltage && version
             await CommandToXRPMgr.getInstance()
                 .batteryVoltage()
