@@ -3,12 +3,18 @@ import { useTranslation } from 'react-i18next';
 
 type ConfirmationProps = {
     confirmationMessage: string;
-    acceptCallback: () => void;
+    acceptCallback: (name?: string) => void;
     toggleDialog: () => void;
+    name?: string;
 }
 
-function ConfirmationDlg({confirmationMessage, acceptCallback, toggleDialog}: ConfirmationProps) {
+function ConfirmationDlg({confirmationMessage, name, acceptCallback, toggleDialog}: ConfirmationProps) {
     const { t } = useTranslation();
+
+    const handleAccept = () => {
+        acceptCallback(name);
+    }
+
     return (
         <div className="flex h-auto w-96 flex-col gap-2 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
             <div className="flex flex-col items-center">
@@ -24,7 +30,7 @@ function ConfirmationDlg({confirmationMessage, acceptCallback, toggleDialog}: Co
                 disabledAccept={false}
                 btnAcceptLabel={t('okButton')}
                 btnCancelCallback={toggleDialog}
-                btnAcceptCallback={acceptCallback}
+                btnAcceptCallback={handleAccept}
             />
         </div>
     )

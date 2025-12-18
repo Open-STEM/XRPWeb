@@ -173,7 +173,6 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
     useHotkeys('ctrl+s, meta+s', (event) => {
         event.preventDefault();
         saveEditor();
-        EditorMgr.getInstance().updateEditorSessionChange(name, false);
     });
 
     useEffect(() => {

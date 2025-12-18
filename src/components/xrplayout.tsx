@@ -150,7 +150,6 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
     const { t } = useTranslation();
     const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
     const dialogRef = useRef<HTMLDialogElement>(null);
-    const [confirmTabName, setConfirmTabName] = useState<string>('');
 
     /**
      * changeTheme - set the system selected theme
@@ -220,10 +219,18 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                         parentId: '',
                         name: store.id,
                         path: store.path,
+                        gpath: store.gpath,
                         filetype: store.isBlockly ? FileType.BLOCKLY : FileType.PYTHON,
                         content: store.content,
                     }
                     CreateEditorTab(fileData, layoutRef);
+                    if (!store.isSavedToXRP) {
+                        // update the editor session and update the tab dirty status
+                        const editorSession = EditorMgr.getInstance().getEditorSession(store.id);
+                        if (editorSession) {
+                            EditorMgr.getInstance().updateEditorSessionChange(store.id, !store.isSavedToXRP);
+                        }
+                    }
                     setActiveTab(store.id);
                 });
             }
@@ -259,13 +266,16 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
     /**
      * handleDeleteTabConfirmation - handle the confirmation of Tab removal from the user
      */
-    const handleDeleteTabConfirmation = () => {
+    const handleDeleteTabConfirmation = (name: string | undefined) => {
         toggleDialog();
         const editorMgr = EditorMgr.getInstance();
-        const editorSession = editorMgr.getEditorSession(confirmTabName);
+        const editorSession = editorMgr.getEditorSession(name || '');
         if (editorSession) {
-            editorMgr.RemoveEditor(confirmTabName);
-            editorMgr.RemoveEditorTab(confirmTabName);
+            const id = editorMgr.RemoveEditor(name || '');
+            editorMgr.RemoveEditorTab(name || '');
+            if (id) {
+                setActiveTab(id);
+            }
         }
     }
 
@@ -292,8 +302,7 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                 console.log('Delete Node:', action.data);
                 const isDirty = EditorMgr.getInstance().hasSessionChanged(action.data.node);
                 if (isDirty) {
-                    setConfirmTabName(action.data.node);
-                    setDialogContent(<ConfirmationDlg acceptCallback={handleDeleteTabConfirmation} toggleDialog={toggleDialog} confirmationMessage={t('confirmDeleteTab', { name: action.data.node })} />);
+                    setDialogContent(<ConfirmationDlg acceptCallback={handleDeleteTabConfirmation} toggleDialog={toggleDialog} confirmationMessage={t('confirmDeleteTab', { name: action.data.node })} name={action.data.node}/>);
                     toggleDialog();
 
                     return undefined;

@@ -811,10 +811,11 @@ function NavBar({ layoutref }: NavBarProps) {
             }
 
             // make sure this is not the dashboard tab or AI chat tab
-            if (activeTab === 'Dashboard' || activeTab === 'AI Chat') {
+            const hasEditorSession = EditorMgr.getInstance().hasEditorSession(activeTab);
+            if (!hasEditorSession) {
                 setDialogContent(
                     <AlertDialog
-                        alertMessage={t('dashboard-no-run')}
+                        alertMessage={t('no-editor-run')}
                         toggleDialog={toggleDialog}
                     />,
                 );
@@ -831,21 +832,23 @@ function NavBar({ layoutref }: NavBarProps) {
                 .then((voltage) => {
                     const connectionType = AppMgr.getInstance().getConnectionType();
                     const beginExecution = async () => {
-                        // Update the main.js
-                        const session: EditorSession | undefined =
-                            EditorMgr.getInstance().getEditorSession(activeTab);
-                        if (session) {
-                            // Save the current editor before running
-                            //TODO - signal activeTab editor to save the file
-                            await CommandToXRPMgr.getInstance()
-                                .updateMainFile(session.path)
-                                .then(async (lines) => {
-                                    await CommandToXRPMgr.getInstance().executeLines(lines);
-                                });
+                        try {
+                            // Save all unsaved editors before running
+                            await EditorMgr.getInstance().saveAllUnsavedEditors();
+                            
+                            // Update the main.js
+                            const session: EditorSession | undefined =
+                                EditorMgr.getInstance().getEditorSession(activeTab);
+                            if (session) {
+                                await CommandToXRPMgr.getInstance()
+                                    .updateMainFile(session.path)
+                                    .then(async (lines) => {
+                                        await CommandToXRPMgr.getInstance().executeLines(lines);
+                                    });
+                            }
+                        } catch (err) {
+                            console.log(err);
                         }
-                        setRunning(false);
-                        broadcastRunningState(false);
-                        CommandToXRPMgr.getInstance().stopProgram();
                     }
 
                     const handlePowerSwitchOK = async () => {
