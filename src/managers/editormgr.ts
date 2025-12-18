@@ -241,17 +241,25 @@ export default class EditorMgr {
                 // save the session to XRP
                 AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
                 await CommandToXRPMgr.getInstance().uploadFile(session.path, code, true).then(() =>{
+                    session.isModified = false;
                     AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
                 });
             }
             
             if (AppMgr.getInstance().authService.isLogin) {
-                const mineType = session.type === EditorType.PYTHON ? 'text/x-python' : 'application/json';
-                const blob = new Blob([code], { type: mineType});
-                const filename = session.path.split('/').pop();
+                if (session.gpath) {
+                    const mineType = session.type === EditorType.PYTHON ? 'text/x-python' : 'application/json';
+                    const blob = new Blob([code], { type: mineType});
+                    const filename = session.path.split('/').pop();
 
-                AppMgr.getInstance().driveService.upsertFileToGoogleDrive(blob, filename ?? '', mineType, session.gpath);
+                    AppMgr.getInstance().driveService.upsertFileToGoogleDrive(blob, filename ?? '', mineType, session.gpath).then(() => {
+                        session.isModified = false;
+                    });
+                } else if (!isConnected) {
+                    AppMgr.getInstance().emit(EventType.EVENT_ALERT, i18n.t('not-google-drive-file'));
+                }
             }
+            this.SelectEditorTab(id);
         }
     }
 
@@ -329,7 +337,7 @@ export default class EditorMgr {
     /**
      * updateEditorSessionChange - set the isModified value of the session
      */
-    updateEditorSessionChange(id: string, hasChanged: boolean) {
+    public updateEditorSessionChange(id: string, hasChanged: boolean) {
         const session = this.editorSessions.get(id);
         if (session) {
             session.isModified = hasChanged;
@@ -357,21 +365,78 @@ export default class EditorMgr {
     }
 
     /**
-     * saveAllEditors - save all editors that hasn't been save yet
+     * Save all unsaved editors to the robot with progress tracking
+     * @returns Promise that resolves when all editors are saved
      */
-    public saveAllEditors() {
-        console.log('saveAllEditors');
-        // loop through the editors and save it unsaved content
-        this.editorSessions.forEach(async (session, id) => {
-            // show the progress dialog
-            if (session.isModified && (session.type === EditorType.BLOCKLY || session.type === EditorType.PYTHON) && session.content !== undefined) {
-                console.log('saveAllEditors: ', session);
-                AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
-                await CommandToXRPMgr.getInstance().uploadFile(session.path, session.content, true).then(() =>{
-                    AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
-                });
-                this.updateEditorSessionChange(id, false);
+    public async saveAllUnsavedEditors(): Promise<void> {
+        const isConnected = AppMgr.getInstance().getConnection()?.isConnected() ?? false;
+        if (!isConnected) {
+            return; // Can't save if not connected
+        }
+
+        // Get all unsaved editor sessions
+        const unsavedSessions: Array<{ id: string; session: EditorSession }> = [];
+        this.editorSessions.forEach((session, id) => {
+            if (session.isModified) {
+                unsavedSessions.push({ id, session });
             }
         });
+
+        if (unsavedSessions.length === 0) {
+            return; // Nothing to save
+        }
+
+        // Show progress dialog
+        AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
+        
+        try {
+            const failedFiles: string[] = [];
+            
+            // Save each editor sequentially
+            for (let i = 0; i < unsavedSessions.length; i++) {
+                const { id, session } = unsavedSessions[i];
+                
+                // Update progress item name
+                const fileName = session.path.split('/').pop() || id;
+                AppMgr.getInstance().emit(EventType.EVENT_PROGRESS_ITEM, fileName);
+                
+                try {
+                    // Get the current content for this editor
+                    const content = session.content
+                    
+                    if (content) {
+                        // Save the editor
+                        await CommandToXRPMgr.getInstance().uploadFile(session.path, content, true);
+                        
+                        // Update session as saved
+                        session.isModified = false;
+                        
+                        // Save to localStorage
+                        this.SaveToLocalStorage(session, content);
+                        
+                    }
+
+                    // If Google user login, also save to Google drive
+
+                } catch (error) {
+                    console.error(`Error saving editor ${id} (${fileName}):`, error);
+                }
+            }
+            
+            if (failedFiles.length > 0) {
+                console.warn(`Failed to save ${failedFiles.length} file(s): ${failedFiles.join(', ')}`);
+            }
+            
+            // Set progress to 100%
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');
+            
+            // Close progress dialog
+            AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
+        } catch (error) {
+            console.error('Error saving unsaved editors:', error);
+            // Close progress dialog even on error
+            AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
+            throw error;
+        }
     }
 }
