@@ -2,6 +2,8 @@ const flowbiteReact = require("flowbite-react/plugin/tailwindcss");
 
 /** @type {import('tailwindcss').Config} */
 export default {
+    // Add or update the darkMode property to 'class'
+    darkMode: 'class',    
     content: [
         './index.html',
         './src/**/*.{js,ts,jsx,tsx}',

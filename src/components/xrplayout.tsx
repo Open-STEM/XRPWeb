@@ -1,5 +1,5 @@
 import { Layout, Model, IJsonModel, TabNode, Action, Actions, ITabRenderValues } from 'flexlayout-react';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import BlocklyEditor from '@components/blockly';
 import MonacoEditor from '@components/MonacoEditor';
 import XRPShell from '@components/xrpshell';
@@ -17,6 +17,8 @@ import { CreateEditorTab } from '@/utils/editorUtils';
 import XRPDashboard from '@/components/dashboard/xrp-dashboard';
 import AIChat from '@/components/chat/ai-chat';
 import { useTranslation } from 'react-i18next';
+import Dialog from '@components/dialogs/dialog';
+import ConfirmationDlg from '@components/dialogs/confirmdlg';
 
 /**
  *  Layout-React's layout JSON to specify the XRPWeb's single page application's layout
@@ -146,6 +148,8 @@ function useOnceCall(cb: () => void, condition = true) {
 function XRPLayout({ forwardedref }: XRPLayoutProps) {
     const [activeTab, setActiveTab] = useLocalStorage(StorageKeys.ACTIVETAB, '');
     const { t } = useTranslation();
+    const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
+    const dialogRef = useRef<HTMLDialogElement>(null);
 
     /**
      * changeTheme - set the system selected theme
@@ -215,10 +219,18 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                         parentId: '',
                         name: store.id,
                         path: store.path,
+                        gpath: store.gpath,
                         filetype: store.isBlockly ? FileType.BLOCKLY : FileType.PYTHON,
                         content: store.content,
                     }
                     CreateEditorTab(fileData, layoutRef);
+                    if (!store.isSavedToXRP) {
+                        // update the editor session and update the tab dirty status
+                        const editorSession = EditorMgr.getInstance().getEditorSession(store.id);
+                        if (editorSession) {
+                            EditorMgr.getInstance().updateEditorSessionChange(store.id, !store.isSavedToXRP);
+                        }
+                    }
                     setActiveTab(store.id);
                 });
             }
@@ -237,6 +249,35 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
             window.removeEventListener('load', handleWindowLoad);
         }
     });
+
+    /**
+     * toggleDialog - toggle the dialog open/close state
+     */
+    const toggleDialog = () => {
+        if (!dialogRef.current) {
+            return;
+        }
+        if (dialogRef.current.hasAttribute('open')) {
+            dialogRef.current.close();
+        }
+        else dialogRef.current.showModal();
+    };
+
+    /**
+     * handleDeleteTabConfirmation - handle the confirmation of Tab removal from the user
+     */
+    const handleDeleteTabConfirmation = (name: string | undefined) => {
+        toggleDialog();
+        const editorMgr = EditorMgr.getInstance();
+        const editorSession = editorMgr.getEditorSession(name || '');
+        if (editorSession) {
+            const id = editorMgr.RemoveEditor(name || '');
+            editorMgr.RemoveEditorTab(name || '');
+            if (id) {
+                setActiveTab(id);
+            }
+        }
+    }
 
     /**
      * handleActions - handle the actions from the layout
@@ -259,6 +300,14 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
             break;
             case Actions.DELETE_TAB: {        
                 console.log('Delete Node:', action.data);
+                const isDirty = EditorMgr.getInstance().hasSessionChanged(action.data.node);
+                if (isDirty) {
+                    setDialogContent(<ConfirmationDlg acceptCallback={handleDeleteTabConfirmation} toggleDialog={toggleDialog} confirmationMessage={t('confirmDeleteTab', { name: action.data.node })} name={action.data.node}/>);
+                    toggleDialog();
+
+                    return undefined;
+                }
+
                 const id = EditorMgr.getInstance().RemoveEditor(action.data.node);
                 if (id) {
                     setActiveTab(id);
@@ -293,7 +342,14 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
         return renderValues;
     };
 
-    return <Layout ref={forwardedref} model={model} factory={factory} onAction={handleActions} onRenderTab={onRenderTab}/>;
+    return (
+        <>
+            <Layout ref={forwardedref} model={model} factory={factory} onAction={handleActions} onRenderTab={onRenderTab}/>
+            <Dialog isOpen={false} toggleDialog={toggleDialog} ref={dialogRef}>
+                {dialogContent}
+            </Dialog>
+        </>
+    );
 }
 
 export default XRPLayout;

@@ -57,6 +57,7 @@
     "sysmode": "Sistema",
     "user-folder": "Nombre de Carpeta de Usuario",
     "google-drive-folder": "Nombre de Carpeta de Google Drive",
+    "not-google-drive-file": "¡Este archivo no se puede guardar en Google Drive porque no se asocia con Google Drive! Por favor intente guardar el archivo en XRP!",
     "userfoldername": "Nombre de Carpeta de Usuario",
     "goouserfoldername": "Nombre de Carpeta de Usuario de Google",
     "chooseFolder": "Elija una Carpeta",
@@ -97,7 +98,7 @@
     "update-lib-error": "El proceso de actualización de la biblioteca XRP ha fallado. Por favor intente nuevamente. El mensaje de error es: {{ error }}",
     "update-lib-complete": "El proceso de actualización de la biblioteca XRP se ha completado con éxito.",
     "dashboard": "Panel",
-    "dashboard-no-run": "La pestaña del panel no puede ejecutarse en el XRP.",
+    "no-editor-run": "¡No hay una sesión de edición activa!",
     "FilesystemStorage": "Sistema de archivos XRP: {{ capacity }} MB",
     "GoogleDriveStorage": "Sistema de archivos de Google Drive",
     "sensors": "Sensores",
@@ -147,6 +148,7 @@
     "progress-item": "Procesando elemento: ",
     "alertOpenPortFailed": "Error al abrir el puerto, ¿hay otra aplicación accediendo a este dispositivo/puerto?",
     "confirmDeleteFileOrFolder": "¿Está seguro de que desea eliminar '{{ name }}' ? Esta acción no se puede deshacer.",
+    "confirmDeleteTab": "Este archivo tiene cambios sin guardar. ¿Está seguro de que desea cerrarlos?",
     "select-parent-node": "Por favor seleccione un nodo padre para crear la nueva carpeta o archivo debajo.",
     "language": "Idioma",
     "languageSelection": "Seleccionar idioma",
@@ -169,6 +171,11 @@
     },
     "editor": {
         "saveconnect": "Para guardar el archivo, por favor conecte su XRP o inicie sesión en Google Drive."
+    },
+    "theme": {
+        "label": "Tema",
+        "light": "Claro",
+        "dark": "Oscuro"
     },
     "_commentBlockly": "Esto no necesita ser traducido - agregar traducción específica de blockly a continuación",
     "individualMotors": "Motores Individuales"

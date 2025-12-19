@@ -133,7 +133,12 @@ export default class AppMgr {
         this.onThemeChange(window.matchMedia('(prefers-color-scheme: dark)').matches ? Themes.DARK : Themes.LIGHT);
         // listen to system theme change event
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => this.onThemeChange(e.matches ? Themes.DARK : Themes.LIGHT));
-        this._connectionMgr = new connecionMgr(this); 
+        this._connectionMgr = new connecionMgr(this);
+        const themeFromLocalStorage = localStorage.getItem('Theme')?.replace(/"/g, '');
+        if (themeFromLocalStorage) {
+            this.onThemeChange(themeFromLocalStorage);
+            this._theme = themeFromLocalStorage;
+        }
     }
 
     /**
@@ -152,9 +157,13 @@ export default class AppMgr {
         if (theme === Themes.DARK) {
             this._theme = Themes.DARK;
             this._emitter.emit(EventType.EVENT_THEME, this._theme);
+            document.documentElement.classList.add(theme)
+            document.documentElement.classList.remove(Themes.LIGHT);
         } else {
             this._theme = Themes.LIGHT;
             this._emitter.emit(EventType.EVENT_THEME, this._theme);
+            document.documentElement.classList.add(theme)
+            document.documentElement.classList.remove(Themes.DARK);
         }
     }
 
@@ -165,6 +174,15 @@ export default class AppMgr {
     public getTheme(): string {
         return this._theme || Themes.LIGHT;
     }
+
+    /**
+     * setTheme
+     * @param theme 
+     */
+    public setTheme(theme: Themes): void {
+        this._theme = theme;
+        this._emitter.emit(EventType.EVENT_THEME, this._theme);
+    }        
 
     /**
      * Subscribe to events

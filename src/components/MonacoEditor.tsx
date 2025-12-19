@@ -266,7 +266,6 @@ const MonacoEditor = ({
                         const code = editor.current?.getValue();
                         if (code !== undefined) {
                             SaveEditor(code);
-                            EditorMgr.getInstance().updateEditorSessionChange(name, false);
                         }
                     },
                 });
@@ -278,7 +277,7 @@ const MonacoEditor = ({
                 }
             }
         }
-    }, [name, language, value]);
+    }, [name, language, value, t]);
 
     return <div ref={containerRef} style={style} className={className} />;
 };

@@ -1,7 +1,6 @@
 import DialogFooter from "@components/dialogs/dialog-footer";
 //import XRPControllerPowerBeta from "@assets/images/XRP_Controller-Power.jpg";
 import { useTranslation } from "react-i18next";
-//TODO: This needs to have some logic to display the correct image based on which board is attached.
 
 interface PowerSwitchAlertProps {
     powerswitchImage?: string;

@@ -57,6 +57,7 @@
     "sysmode": "System",
     "user-folder": "User Folder Name",
     "google-drive-folder": "Google Drive Folder Name",
+    "not-google-drive-file": "This file can not be saved to Google Drive because it was not associated with Google Drive! Please try savinging it to XRP!",
     "userfoldername": "User Folder Name",
     "goouserfoldername": "Google User Folder Name",
     "chooseFolder": "Choose a Folder",
@@ -97,7 +98,7 @@
     "update-lib-error": "The XRP library update process has failed. Please try again. The error message is: {{ error }}",
     "update-lib-complete": "The XRP library update process has completed successfully.",
     "dashboard": "Dashboard",
-    "dashboard-no-run": "Dashboard tab can not be running on the XRP.",
+    "no-editor-run": "No active editor session is running!",
     "FilesystemStorage": "XRP Filesystem: {{ capacity }} MB",
     "GoogleDriveStorage": "Google Drive Filesystem",
     "sensors": "Sensors",
@@ -147,6 +148,7 @@
     "progress-item": "Processing item: ",
     "alertOpenPortFailed": "Opening port failed, is another application accessing this device/port?",
     "confirmDeleteFileOrFolder": "Are you sure you want to delete '{{ name }}' ? This action cannot be undone.",
+    "confirmDeleteTab": "This file has unsaved changes. Are you sure you want to close it?",
     "select-parent-node": "Please select a parent node to create the new folder or file under.",
     "language": "Language",
     "languageSelection": "Select Language",
@@ -169,6 +171,11 @@
     },
     "editor": {
         "saveconnect": "To save your file, please connect to your XRP or login to your Google Drive account."
+    },
+    "theme": {
+        "label": "Theme",
+        "light": "Light",
+        "dark": "Dark"
     },
     "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
     "individualMotors": "Individual Motors"
