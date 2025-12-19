@@ -1,5 +1,4 @@
 import AppMgr, { EventType } from '@/managers/appmgr';
-import { ModeType } from '@/utils/types';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AiOutlineFileAdd } from "react-icons/ai";
@@ -31,10 +30,9 @@ function FolderHeader({ storageCapacity, newFolderCallback, newFileCallback }: F
     return (
         <div className="flex flex-row items-center justify-between bg-mountain-mist-100 p-1 text-sm dark:bg-mountain-mist-800">
             <div className="flex flex-row">
-                { appMgr.authService.modeSettings === ModeType.SYSTEM || appMgr.authService.modeSettings === ModeType.USER ?
+                { appMgr.authService.isLogin ?
+                    <span>{t('GoogleDriveStorage')}</span> :
                     <span>{t('FilesystemStorage', { capacity: storageCapacity})}</span>
-                    :
-                    <span>{t('GoogleDriveStorage')}</span>
                 }
             </div>
             <div className="flex flex-row gap-1">

@@ -9,12 +9,6 @@ export enum FileType {
     OTHER
 }
 
-export enum ModeType {
-    SYSTEM = 0,
-    USER = 1,
-    GOOUSER = 2
-}
-
 export enum EditorType {
     BLOCKLY = 'blockly',
     PYTHON = 'python',
@@ -59,10 +53,6 @@ export type NewFileData = {
     content?: string;
 }
 
-export type SettingData = {
-    mode: number
-}
-
 export type FileData = {
     name: string;
     content: string;
@@ -101,5 +91,4 @@ export type AdminData = {
     name: string;
     email: string;
     isAmin: boolean;
-    mode: ModeType;
 };

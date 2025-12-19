@@ -143,6 +143,22 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
             editorSession.workspace = ws;
         }
     }
+
+    /**
+     * blocklyToPython
+     * @param ws
+     * @returns
+     */
+    function blocklyToPython(ws: Workspace) {
+        const pythonCode = pythonGenerator
+            .workspaceToCode(ws)
+            .replace('from numbers import Number\n', 'Number = int\n');
+        const blocklyCode = JSON.stringify(Blockly.serialization.workspaces.save(ws));
+        const date = moment();
+        const formatedDate = date.format('YYYY-MM-DD HH:MM:SS');
+        const code = pythonCode + '\n\n\n## ' + formatedDate + '\n##XRPBLOCKS ' + blocklyCode;
+        return code;
+    }
     
     /**
      * saveEditor
@@ -152,19 +168,12 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
         if (ws) {
             const activeTab = localStorage.getItem(StorageKeys.ACTIVETAB)?.replace(/^"|"$/g, '');
             if (activeTab === name) {
-                const pythonCode = pythonGenerator
-                    .workspaceToCode(ws)
-                    .replace('from numbers import Number\n', 'Number = int\n');
-                const blocklyCode = JSON.stringify(Blockly.serialization.workspaces.save(ws));
-                const date = moment();
-                const formatedDate = date.format('YYYY-MM-DD HH:MM:SS');
-                const code =
-                    pythonCode + '\n\n\n## ' + formatedDate + '\n##XRPBLOCKS ' + blocklyCode;
+                const code = blocklyToPython(ws);
                 console.log('Saving blockly', activeTab, code);
                 EditorMgr.getInstance().saveEditor(name, code);
                 EditorMgr.getInstance().SaveToLocalStorage(
                     EditorMgr.getInstance().getEditorSession(name) as EditorSession,
-                    blocklyCode
+                    code
                 );
             }
         }
@@ -302,8 +311,8 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                     try {
                         console.log('Workspace changed, saving session:', name);
                         EditorMgr.getInstance().updateEditorSessionChange(name, true);
-                        const json = JSON.stringify(Blockly.serialization.workspaces.save(ws));
-                        EditorMgr.getInstance().SaveToLocalStorage(EditorMgr.getInstance().getEditorSession(name) as EditorSession, json);
+                        const code = blocklyToPython(ws);
+                        EditorMgr.getInstance().SaveToLocalStorage(EditorMgr.getInstance().getEditorSession(name) as EditorSession, code);
                     } catch (e) {
                         console.warn('Failed to serialize Blockly workspace:', e);
                     }
