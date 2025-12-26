@@ -224,6 +224,15 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                         content: store.content,
                     }
                     CreateEditorTab(fileData, layoutRef);
+                    let content: string | undefined;
+                    if (fileData.filetype === FileType.BLOCKLY) {
+                        const lines: string[] | undefined = store.content?.split('##XRPBLOCKS ');
+                        content = lines?.slice(-1)[0];
+                    } else {
+                        content = store.content;
+                    }
+                    const loadContent = { name: store, content: content };
+                    AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
                     if (!store.isSavedToXRP) {
                         // update the editor session and update the tab dirty status
                         const editorSession = EditorMgr.getInstance().getEditorSession(store.id);

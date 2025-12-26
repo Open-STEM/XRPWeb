@@ -6,6 +6,7 @@ import logger from '@/utils/logger';
 import { UserProfile } from '@/services/google-auth';
 import { useTranslation } from 'react-i18next';
 import { Constants } from '@/utils/constants';
+import GoogleLogo from '@assets/images/google-logo.svg';
 
 type LoginProps = {
     logoutCallback: () => void;
@@ -38,6 +39,7 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
     const [user, setUser] = useState(initUserProperties);
     const [isLogin, setIsLogin] = useState<boolean>(false);
     const [userProfile, setUserProfile] = useState<UserProfile>(initUserProfle);
+    const [tooltip, setTooltip] = useState<string>('');
     const authService = AppMgr.getInstance().authService;
     const driveService = AppMgr.getInstance().driveService;
     const loginLogger = logger.child({ module: 'login' });
@@ -138,6 +140,10 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
         if (authService.isLogin) {
             setIsLogin(true);
             setUserProfile(authService.userProfile);
+            setTooltip('googlogoutTooltip');
+        } else {
+            setIsLogin(false);
+            setTooltip('googleLoginTooltip');
         }
     }, [authService.isLogin, authService.userProfile])
 
@@ -145,10 +151,10 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
         <>
             {isLogin && (
                 <div className="flex flex-col">
-                    <label className="text-mountain-mist-900 dark:text-curious-blue-100">{t('userprofile')}</label>
-                    <div className="border-1 flex flex-row items-center gap-2 rounded-md bg-mountain-mist-100 p-2 dark:bg-shark-500">
+                    {/* <label className="text-mountain-mist-900 dark:text-curious-blue-100">{t('userprofile')}</label> */}
+                    <div className="border-1 flex flex-row items-center gap-1 rounded-md bg-mountain-mist-100 p-1 dark:bg-shark-500">
                         <img
-                            className="h-16 w-16 rounded-full"
+                            className="h-10 w-10 rounded-full"
                             src={userProfile.picture}
                             alt="User Profile"
                         />
@@ -159,8 +165,9 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
                     </div>
                 </div>
             )}
-            <div className="flex flex-col items-end gap-2">
-                <Button onClicked={isLogin ? googleLogout : googleSignIn}>
+            <div className="flex flex-col items-end gap-1">
+                <Button onClicked={isLogin ? googleLogout : googleSignIn} tooltip={t(tooltip)}>
+                    <img src={GoogleLogo} className='h-8 w-8' />
                     {isLogin ? t('gooSignOut') : t('gooSignIn')}
                 </Button>
             </div>

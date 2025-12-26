@@ -1,11 +1,16 @@
 import { FileType, FolderItem, ListItem, NewFileData } from '@/utils/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import AppMgr from '@/managers/appmgr';
 import DialogFooter from './dialog-footer';
 import FolderTree from '../folder-tree';
 import { useTranslation } from 'react-i18next';
 import { Constants } from '@/utils/constants';
 import { getUsernameFromEmail } from '@/utils/google-utils';
+import { TiArrowSortedDown } from 'react-icons/ti';
+import pythonicon from '@assets/images/python-svgrepo-com.svg';
+import blockIcon from '@assets/images/blockly.svg';
+import fileIcon from '@assets/images/file.svg';
+import { FiCheckSquare } from "react-icons/fi";
 
 type NewFileProps = {
     submitCallback: (formData: NewFileData) => void;
@@ -20,16 +25,22 @@ function NewFileDlg(newFileProps: NewFileProps) {
     const [filename, setFilename] = useState('');
     const [filetype, setFileType] = useState<number | null>(null);
     const [folderList, setFolderList] = useState<FolderItem[] | null>(null);
+    const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+    const [selectedOption, setSelectedOption] = useState<ListItem | null>(null);
+    const popoverRef = useRef<HTMLDivElement>(null);
 
     const fileOptions: ListItem[] = [
         {
             label: t('blocklyfile'),
+            image: blockIcon
         },
         {
             label: t('pythonfile'),
+            image: pythonicon
         },
         {
             label: t('other'),
+            image: fileIcon
         },
     ];
 
@@ -42,6 +53,59 @@ function NewFileDlg(newFileProps: NewFileProps) {
     }, []);
 
     /**
+     * Handle clicking outside the popover to close it
+     */
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+                setIsPopoverOpen(false);
+            }
+        };
+
+        if (isPopoverOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isPopoverOpen]);
+
+    /**
+     * Handle file type option selection
+     */
+    const handleOptionSelect = (option: ListItem, index: number) => {
+        setSelectedOption(option);
+        // Map index to filetype: 0 = Blockly (filetype 1), 1 = Python (filetype 0), 2 = Other (filetype 0)
+        const filetypeValue = index === 0 ? 1 : 0;
+        setFileType(filetypeValue);
+        setIsPopoverOpen(false);
+        // Re-validate filename if it exists
+        if (filename) {
+            const filenameWithExt = filename + (filetypeValue === 1 ? '.blocks' : '.py');
+            const isValid = Constants.REGEX_FILENAME.test(filenameWithExt);
+            const parts = selectedFolder.split('/').filter((part) => part !== '');
+            const foldername = parts[parts.length - 1];
+            if (!isValid || AppMgr.getInstance().IsFileExists(foldername, filenameWithExt)) {
+                setIsFileExists(true);
+                setIsOkayToSubmit(false);
+            } else {
+                setIsFileExists(false);
+                setIsOkayToSubmit(true);
+            }
+        }
+    };
+
+    /**
+     * Toggle popover open/close
+     */
+    const togglePopover = () => {
+        if (selectedFolder !== '') {
+            setIsPopoverOpen(!isPopoverOpen);
+        }
+    };
+
+    /**
      * handleFilenameInput - handles the filename input from user
      * @param e 
      * @returns 
@@ -50,7 +114,9 @@ function NewFileDlg(newFileProps: NewFileProps) {
         setFilename(e.target.value);
         const filename = e.target.value + (filetype === 1 ? '.blocks' : '.py');
         const isValid = Constants.REGEX_FILENAME.test(filename);
-        if (!isValid || AppMgr.getInstance().IsFileExists(filename)) {
+        const parts = selectedFolder.split('/').filter((part) => part !== '');
+        const foldername = parts[parts.length - 1];
+        if (!isValid || AppMgr.getInstance().IsFileExists(foldername,filename)) {
             setIsFileExists(true);
             setIsOkayToSubmit(false);
             return;
@@ -119,7 +185,7 @@ function NewFileDlg(newFileProps: NewFileProps) {
             </div>
             <hr className="w-full border-mountain-mist-600" />
             <form id="fileOptionId" className="flex w-full flex-col gap-2">
-                <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('destFolder')}</label>
+                <span className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('destFolder')}</span>
                 <FolderTree
                     treeData={JSON.stringify(folderList)}
                     theme=""
@@ -128,29 +194,74 @@ function NewFileDlg(newFileProps: NewFileProps) {
                 <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300" htmlFor="filesId">
                     {t('fileType')}
                 </label>
-                <select
-                    id="filesId"
-                    className="dark:text-white block w-auto rounded border border-s-2 border-shark-300 border-s-curious-blue-500 bg-mountain-mist-100 p-2.5 text-sm text-mountain-mist-700 focus:border-mountain-mist-500 focus:ring-curious-blue-500 dark:border-shark-600 dark:border-s-shark-500 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-400 dark:focus:border-matisse-500 dark:focus:ring-shark-300"
-                    onChange={(e) => {
-                        setFileType(e.target.selectedIndex);
-                    }}
-                    disabled={selectedFolder === ''}
-                >
-                    <option defaultValue={t('files')}>{t('files')}</option>
-                    {fileOptions.map((option) => (
-                        <option
-                            key={option.label}
-                            value={option.label}
-                            className="flex flex-row items-center gap-2"
+                <div className='relative w-full' ref={popoverRef}>
+                    <button 
+                        type='button' 
+                        name='filetypeSelecion' 
+                        onClick={togglePopover}
+                        disabled={selectedFolder === ''}
+                        className={`relative h-10 w-full p-2 text-left border rounded-md shadow-md cursor-default focus:outline-none focus:ring-2 focus:ring-curious-blue-400 dark:border-shark-600 dark:bg-shark-500 ${
+                            selectedFolder === '' 
+                                ? 'border-shark-300 bg-shark-100 opacity-50 cursor-not-allowed' 
+                                : 'border-shark-300 dark:border-shark-600 bg-white dark:bg-shark-500'
+                        }`}
+                        aria-haspopup="listbox" 
+                        aria-expanded={isPopoverOpen} 
+                        aria-labelledby='listbox-label'
+                    >
+                        <span className='flex items-center'>
+                            {selectedOption ? (
+                                <span className='flex items-center gap-2'>
+                                    <img className='h-5 w-5' src={selectedOption.image} alt={selectedOption.label} />
+                                    <span className='text-sm text-mountain-mist-700 dark:text-mountain-mist-200'>{selectedOption.label}</span>
+                                </span>
+                            ) : (
+                                <span className='text-sm text-mountain-mist-700 dark:text-mountain-mist-300'>{t('files')}</span>
+                            )}
+                        </span>
+                        <span className='absolute inset-y-0 right-0 flex pr-3 items-center pointer-events-none'>
+                            <TiArrowSortedDown className={`transition-transform ${isPopoverOpen ? 'rotate-180' : ''} text-mountain-mist-700 dark:text-mountain-mist-300`} />
+                        </span>
+                    </button>
+                    {isPopoverOpen && (
+                        <ul 
+                            className='absolute z-[200] bg-mountain-mist-50 dark:bg-shark-700 w-full mt-1 py-1 overflow-auto text-base border border-gray-300 dark:border-shark-600 rounded-md shadow-xl max-h-56 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm'
+                            role='listbox'
+                            aria-labelledby='listbox-label'
                         >
-                            {option.label}
-                        </option>
-                    ))}
-                </select>
-                <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('filename')}</label>
+                            {fileOptions.map((option, index) => (
+                                <li 
+                                    key={option.label} 
+                                    className={`flex flex-row items-center gap-2 px-3 py-2 cursor-pointer hover:bg-curious-blue-100 dark:hover:bg-shark-600 ${
+                                        selectedOption?.label === option.label ? 'bg-curious-blue-50 dark:bg-shark-700' : ''
+                                    }`}
+                                    tabIndex={0}
+                                    role='option'
+                                    aria-selected={selectedOption?.label === option.label}
+                                    onClick={() => handleOptionSelect(option, index)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            handleOptionSelect(option, index);
+                                        }
+                                    }}
+                                >
+                                    <img className='h-5 w-5' src={option.image} alt={option.label} />
+                                    <span className='text-sm text-mountain-mist-700 dark:text-mountain-mist-200 flex-1'>{option.label}</span>
+                                    {selectedOption?.label === option.label && (
+                                        <span className="flex items-center pr-2 text-curious-blue-600 dark:text-curious-blue-400">
+                                            <FiCheckSquare />
+                                        </span>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+                <span className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('filename')}</span>
                 <div className="flex flex-col items-center gap-1">
                     <input
-                        className={`w-full rounded border ${isFileExists ? 'border-cinnabar-800' : 'border-shark-300 dark:border-shark-600'} p-2 text-sm text-mountain-mist-700 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-400`}
+                        className={`w-full rounded border ${isFileExists ? 'border-cinnabar-800' : 'border-shark-300 dark:border-shark-600'} p-2 text-md text-mountain-mist-700 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-200`}
                         id="filenameId"
                         type="text"
                         placeholder={t('enterFilename')}
@@ -164,11 +275,10 @@ function NewFileDlg(newFileProps: NewFileProps) {
                         <span className="text-sm text-cinnabar-800">{t('fileExists')}</span>
                     )}
                 </div>
-                <label className="text-mountain-mist-700 text-sm dark:text-mountain-mist-300">
-                {t('final-path')}
-                {selectedFolder}{filename}{filetype === 1 ? '.blocks' : '.py'} 
-            </label>
-
+                <span className="text-mountain-mist-700 text-sm dark:text-mountain-mist-300">
+                    {t('final-path')}
+                    {selectedFolder}{filename}{filetype === 1 ? '.blocks' : '.py'} 
+                </span>
             </form>
             <hr className="w-full border-mountain-mist-600" />
             <DialogFooter

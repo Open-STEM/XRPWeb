@@ -18,6 +18,7 @@ export class Constants {
     static readonly DISCONNECTED = "Disconnected";
     static readonly REGEX_FILENAME = /^[a-zA-Z0-9](?:[a-zA-Z0-9 ._-]*[a-zA-Z0-9])?\.[a-zA-Z0-9_-]+$/;
     static readonly XRP_PROCESSOR_BETA = "RPI-RP2"
+    static readonly LASTSAVETIME_CONFG = '1';
 }
 
 export class FlowBiteConstants {

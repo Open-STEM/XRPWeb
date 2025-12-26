@@ -243,6 +243,7 @@ export default class EditorMgr {
                 await CommandToXRPMgr.getInstance().uploadFile(session.path, code, true).then(() =>{
                     session.isModified = false;
                     AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
+                    this.SelectEditorTab(id);
                 });
             }
             
@@ -252,14 +253,17 @@ export default class EditorMgr {
                     const blob = new Blob([code], { type: mineType});
                     const filename = session.path.split('/').pop();
 
+                    AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
                     AppMgr.getInstance().driveService.upsertFileToGoogleDrive(blob, filename ?? '', mineType, session.gpath).then(() => {
                         session.isModified = false;
+                        AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');
+                        AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
+                        this.SelectEditorTab(id);
                     });
                 } else if (!isConnected) {
                     AppMgr.getInstance().emit(EventType.EVENT_ALERT, i18n.t('not-google-drive-file'));
                 }
             }
-            this.SelectEditorTab(id);
         }
     }
 
@@ -434,6 +438,90 @@ export default class EditorMgr {
             AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
         } catch (error) {
             console.error('Error saving unsaved editors:', error);
+            // Close progress dialog even on error
+            AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
+            throw error;
+        }
+    }
+
+    /**
+     * saveAllFilesInGoogleDriveToXRP
+     * @param sessionId 
+     * @returns 
+     */
+    public async saveAllFilesInGoogleDriveToXRP(sessionId: string): Promise<void> {
+        // check when was the last time we saved to XRP from local storage
+        const lastSaveConfig = parseInt(localStorage.getItem(StorageKeys.LAST_GOOGLE_DRIVE_TO_XRP_SAVE_TIME_CONFIG) || Constants.LASTSAVETIME_CONFG);
+        const lastSaveTime = localStorage.getItem(StorageKeys.LAST_GOOGLE_DRIVE_TO_XRP_SAVE_TIME);
+        if (lastSaveTime) {
+            const lastSaveDate = new Date(parseInt(lastSaveTime));
+            const now = new Date();
+            const timeDiff = now.getTime() - lastSaveDate.getTime();
+            const hoursDiff = timeDiff / (1000 * 60 * 60);
+            if (hoursDiff < lastSaveConfig ? lastSaveConfig : 1) {
+                return; // Skip saving if last save was within the past configured hours
+            }
+        }
+
+        const session = this.editorSessions.get(sessionId);
+        if (!session) {
+            return;
+        }
+
+        const isConnected = AppMgr.getInstance().getConnection()?.isConnected() ?? false;
+        if (!isConnected) {
+            return; // Can't save if not connected
+        }
+
+        if (!AppMgr.getInstance().authService.isLogin) {
+            return; // Can't save if not logged in
+        }
+
+        // Show progress dialog
+        AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
+
+        try {
+            // Get a list of all files in Google Drive parent directory
+            const parentId = session.gparentId;
+            if (!parentId) {
+                return;
+            }
+
+            // Update the last save time in local storage
+            localStorage.setItem(StorageKeys.LAST_GOOGLE_DRIVE_TO_XRP_SAVE_TIME, Date.now().toString());
+
+            const fileList = await AppMgr.getInstance().driveService.getFileListByFolderId(parentId);
+
+            for (let i = 0; i < fileList.length; i++) {
+                const file = fileList[i];
+                const fileName = file.name;
+                AppMgr.getInstance().emit(EventType.EVENT_PROGRESS_ITEM, fileName);
+
+                try {
+
+                    if (file.mimeType === 'application/vnd.google-apps.folder') {
+                        // Skip folders
+                        continue;
+                    }
+                    // Get file content from Google Drive
+                    await AppMgr.getInstance().driveService.getFileContents(file.id).then(async (fileContent) => {;
+                        // Determine XRP path
+                        const xrpPath = `${session.path.split('/').slice(0, -1).join('/')}/${fileName}`; // Adjust path as needed
+
+                        // Upload to XRP
+                        await CommandToXRPMgr.getInstance().uploadFile(xrpPath, fileContent || '', true);
+                    });
+                } catch (error) {
+                    console.error(`Error saving Google Drive file ${fileName} to XRP:`, error);
+                }
+            }
+
+            // Set progress to 100%
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');
+            // Close progress dialog
+            AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
+        } catch (error) {
+            console.error('Error saving files to XRP:', error);
             // Close progress dialog even on error
             AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
             throw error;

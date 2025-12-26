@@ -274,10 +274,11 @@ export default class AppMgr {
 
     /**
      * IsFileExists - check if a file exists in the folder data
+     * @param foldername
      * @param filename 
      * @returns true if file exists, false otherwise
      */
-    public IsFileExists(filename: string): boolean {
+    public IsFileExists(foldername: string, filename: string): boolean {
         if (!this._folderDataJson) {
             return false;
         }
@@ -286,7 +287,7 @@ export default class AppMgr {
             for (const folder of folders) {
                 if (folder.children) {
                     for (const item of folder.children) {
-                        if (item.name === filename) {
+                        if (folder.name === foldername && item.name === filename) {
                             return true;
                         }
                     }

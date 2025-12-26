@@ -22,6 +22,7 @@ type FileSaveAsProps = {
 function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
     const { t } = useTranslation();
     const [selectedFolder, setSelectedFolder] = useState<string>('');
+    const [gFolderId, setGFolderId] = useState<string>('');
     const activeTab = useReadLocalStorage<string>(StorageKeys.ACTIVETAB);
     const [isFileExists, setIsFileExists] = useState(false);
     const [isOkayToSubmit, setIsOkayToSubmit] = useState(false);
@@ -44,8 +45,9 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
             name: filename,
             path: selectedFolder,
             gpath: selectedFolder,
+            gparentId: gFolderId,
+            parentId: '',
             filetype: activeTab?.includes('.blocks') ? FileType.BLOCKLY : FileType.PYTHON,
-            parentId: ''
         }
         fileSaveAsProps.saveCallback(fileData);
     };
@@ -56,7 +58,8 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
      */
     const handleFolderSelection = (selectedItem: FolderItem) => {
         const path = selectedItem.path === '/' ? `` : selectedItem.path;
-        setSelectedFolder(`${path}/${selectedItem.name}`);
+        setSelectedFolder(path);
+        setGFolderId(selectedItem.id);
     };
 
     /**
@@ -67,7 +70,9 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
         setFilename(e.target.value);
         const inputName = e.target.value;
         const isValid = Constants.REGEX_FILENAME.test(inputName);
-        if (!isValid || AppMgr.getInstance().IsFileExists(inputName)) {
+        const parts = selectedFolder.split('/').filter((part) => part !== '');
+        const foldername = parts[parts.length - 1];
+        if (!isValid || AppMgr.getInstance().IsFileExists(foldername || '', inputName)) {
             setIsFileExists(true);
             setIsOkayToSubmit(false);
         } else {
@@ -99,11 +104,11 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
     return (
         <div className="flex h-auto w-96 flex-col gap-2 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
             <div className="flex flex-col items-center">
-                <h1 className="text-lg font-bold text-mountain-mist-700">{t('saveFileAs')}</h1>
-                <p className="text-sm text-mountain-mist-700">{t('choose-dest-file')}</p>
+                <h1 className="text-lg font-bold text-mountain-mist-700 dark:text-mountain-mist-300">{t('saveFileAs')}</h1>
+                <p className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('choose-dest-file')}</p>
             </div>
-            <hr className="w-full border-mountain-mist-600" />
-            <label className="text-mountain-mist-700">
+            <hr className="w-full border-mountain-mist-600 dark:border-mountain-mist-200" />
+            <label className="text-mountain-mist-700 dark:text-mountain-mist-300">
                 {t('destFolder')}: {selectedFolder}
             </label>
             <FolderTree
@@ -111,10 +116,10 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
                 theme=""
                 onSelected={handleFolderSelection}
             />
-            <label className="text-sm text-mountain-mist-700">{t('filename')}</label>
+            <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('filename')}</label>
             <div>
                 <input
-                    className={`w-full border p-2 rounded text-md text-mountain-mist-700 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-400 ${isFileExists ? 'border-cinnabar-800' : 'border-shark-300 dark:border-shark-600'}`}
+                    className={`w-full border p-2 rounded text-md text-mountain-mist-700 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-200 ${isFileExists ? 'border-cinnabar-800' : 'border-shark-300 dark:border-shark-600'}`}
                     id="filenameId"
                     type="text"
                     placeholder={t('enterFilename')}
@@ -125,14 +130,14 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
                     minLength={2}
                 />
                 {isFileExists && (
-                    <span className="text-sm text-cinnabar-800">{t('fileExists')}</span>
+                    <span className="text-sm text-cinnabar-800 dark:text-cinnabar-400">{t('fileExists')}</span>
                 )}
             </div>
-            <label className="text-mountain-mist-700">
+            <label className="text-mountain-mist-700 dark:text-mountain-mist-300">
                 {t('final-path')}
-                {selectedFolder}/{filename}
+                {selectedFolder}{filename}
             </label>
-            <hr className="w-full border-mountain-mist-600" />
+            <hr className="w-full border-mountain-mist-600 dark:border-mountain-mist-200" />
             <DialogFooter
                 disabledAccept={!isOkayToSubmit}
                 btnCancelCallback={fileSaveAsProps.toggleDialog}

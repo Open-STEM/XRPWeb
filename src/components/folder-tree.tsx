@@ -1,8 +1,8 @@
-import { FolderItem, ModeType } from '@/utils/types';
+import { FolderItem } from '@/utils/types';
 import { Tree, NodeApi, NodeRendererProps } from 'react-arborist';
 import { RiArrowDownSFill, RiArrowRightSFill } from 'react-icons/ri';
 import { useEffect, useRef, useState } from 'react';
-import AppMgr, { EventType } from '@/managers/appmgr';
+import AppMgr, { EventType, LoginStatus } from '@/managers/appmgr';
 import useResizeObserver from 'use-resize-observer';
 import { FaRegFolder } from 'react-icons/fa';
 import { FaFileAlt } from 'react-icons/fa';
@@ -12,7 +12,6 @@ import { MdEdit } from 'react-icons/md';
 import { MdDeleteOutline } from 'react-icons/md';
 import FolderHeader from './folder-header';
 import uniqueId from '@/utils/unique-id';
-import { StorageKeys } from '@/utils/localstorage';
 import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
 import logger from '@/utils/logger';
 import { Constants } from '@/utils/constants';
@@ -23,6 +22,8 @@ import ConfirmationDlg from './dialogs/confirmdlg';
 import AlertDialog from './dialogs/alertdlg';
 import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
 import EditorMgr from '@/managers/editormgr';
+import Login from '@/widgets/login';
+import { UserProfile } from '@/services/google-auth';
 
 type TreeProps = {
     treeData: string | null;
@@ -39,7 +40,7 @@ type TreeProps = {
 function FolderTree(treeProps: TreeProps) {
     const { t } = useTranslation();
     const [isConnected, setConnected] = useState(false);
-    const isLogin = AppMgr.getInstance().authService.isLogin;
+    const [isLogin, setIsLogin] = useState(false);
     const [capacity, setCapacity] = useState<string>('0/0');
     const [treeData, setTreeData] = useState<FolderItem[] | undefined>(undefined);
     const [, setSelectedItems] = useState<FolderItem[] | undefined>(undefined);
@@ -47,13 +48,10 @@ function FolderTree(treeProps: TreeProps) {
     const appMgrRef = useRef<AppMgr>();
     const treeRef = useRef(null);
     const { ref, width, height } = useResizeObserver();
-    const [modeType, setModeType] = useState<number>(0);
     const folderLogger = logger.child({ module: 'folder-tree' });
     const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [hasSubscribed, setHasSubscribed] = useState<boolean>(false);
-
-
 
     useEffect(() => {
         // If treeData is passed as a prop, build the tree
@@ -87,63 +85,14 @@ function FolderTree(treeProps: TreeProps) {
             appMgrRef.current.on(EventType.EVENT_FILESYS, (filesysJson: string) => {
                 try {
                     const filesysData = JSON.parse(filesysJson);
-                    // remove admin.json from the filesysDat
-                    if (filesysData && filesysData.length > 0) {
-                        filesysData.forEach((item: FolderItem) => {
-                            if (item.children) {
-                                item.children = item.children.filter(
-                                    (child) => child.name !== Constants.ADMIN_FILE,
-                                );
-                            }
-                        });
-                    }
-                    const mode = AppMgr.getInstance().authService.modeSettings;
-                    const isLogin = AppMgr.getInstance().authService.isLogin;
-                    const selectedUser = localStorage.getItem(StorageKeys.XRPUSER)?.replace(/"/g, '');
-                    setModeType(mode);
-                    if (Object.keys(filesysData).length === 0) {
-                        if (mode === ModeType.GOOUSER && isConnected && !isLogin) {
-                            // we need to lock out the Google User mode if not logged in even though connected to XRP
-                            setTreeData(undefined);
-                            return
-                        } if (mode === ModeType.GOOUSER && !isConnected && isLogin) {
-                            // fetch the Google Drive tree for Google User mode
-                            const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
-                            if (username) {
-                                fireGoogleUserTree(username);
-                                return;
-                            }
-                        } else if ((mode === ModeType.SYSTEM || mode === ModeType.USER) && isLogin) {
-                            // fetch the Google Drive tree for System/User mode when logged in
-                            AppMgr.getInstance().authService.modeSettings = ModeType.GOOUSER;
-                            const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
-                            if (username) {
-                                fireGoogleUserTree(username);
-                                return;
-                            }
-                        } else {
-                            setTreeData(undefined);
-                        }
-                    
+                    if (Object.keys(filesysData).length === 0 && AppMgr.getInstance().authService.isLogin === true) {       
+                        fireGoogleUserTree(getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email) ?? '');
+                    } else if (Object.keys(filesysData).length == 0) {
+                        setTreeData(undefined);
+                    } else if (AppMgr.getInstance().authService.isLogin && filesysData[0].id === 'root') {
+                        return;
                     } else {
-                        if (mode === ModeType.USER) {
-                            const root = filesysData.at(0);
-                            for (const child of root.children) {
-                                if (child.name === 'lib') {
-                                    const index = root.children.indexOf(child);
-                                    root.children.splice(index, 1);
-                                    break;
-                                }
-                            }
-                            const node = findNodeByName(filesysData, selectedUser ?? undefined);
-                            const treeData: FolderItem[] = node ? [node] : [];
-                            setTreeData(treeData);
-                        } else if (mode === ModeType.GOOUSER) {
-                            if (filesysData.at(0)?.name !== '/')
-                                setTreeData(filesysData);
-                        } else {
-                            setTreeData(filesysData);
-                        }
+                        setTreeData(filesysData);
                         appMgrRef.current?.setFoderData(filesysJson);
                     }
                 } catch (err) {
@@ -160,6 +109,7 @@ function FolderTree(treeProps: TreeProps) {
                 const storage = JSON.parse(storageCapacity);
                 setCapacity(storage.used + '/' + storage.total);
             });
+
             setHasSubscribed(true);
         }
     }, [isConnected]);
@@ -243,12 +193,12 @@ function FolderTree(treeProps: TreeProps) {
                         if (node.children === null) {
                             const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
                             const path = node.data.path.includes('/XRPCode/')
-                                ? node.data.path.replace('/XRPCode/', Constants.GUSERS_FOLDER + `${username}`)
-                                : node.data.path;
+                                ? node.data.path.replace('/XRPCode/', Constants.GUSERS_FOLDER + `${username}/`)
+                                : node.data.path + '/';
                             const filePath =
                                 path === '/'
                                     ? path + node.data.name
-                                    : path + '/' + node.data.name;
+                                    : path + node.data.name;
                             const filePathData = {
                                 xrpPath: filePath,
                                 gPath: node.data.fileId,
@@ -287,30 +237,6 @@ function FolderTree(treeProps: TreeProps) {
             </div>
         );
     }
-
-    /**
-     * findNodeByName - find the node in the tree by name
-     * @param nodes
-     * @param name
-     * @returns the node
-     */
-    const findNodeByName = (
-        nodes: FolderItem[],
-        name: string | undefined,
-    ): FolderItem | undefined => {
-        for (const node of nodes) {
-            if (node.name === name) {
-                return node;
-            }
-            if (node.children) {
-                const foundChild = findNodeByName(node.children, name);
-                if (foundChild) {
-                    return foundChild;
-                }
-            }
-        }
-        return undefined;
-    };
 
     /**
      * Find the item in the tree
@@ -354,12 +280,7 @@ function FolderTree(treeProps: TreeProps) {
         const handleOnDeleteConfirmation = async () => {
             toggleDialog();
             if (found) {
-                if (isConnected) {
-                    // delete the actual file in XRP
-                    await CommandToXRPMgr.getInstance().deleteFileOrDir(found.path + '/' + found.name);
-                }
-
-                if (modeType === ModeType.GOOUSER && isLogin) {
+                if (isLogin) {
                     // delete the actual file in Google Drive
                     if (found.fileId) {
                         await AppMgr.getInstance().driveService?.DeleteFile(found.fileId);
@@ -369,6 +290,9 @@ function FolderTree(treeProps: TreeProps) {
                             fireGoogleUserTree(username);
                         }
                     }
+                } else if (isConnected) {
+                    // delete the actual file in XRP
+                    await CommandToXRPMgr.getInstance().deleteFileOrDir(found.path + '/' + found.name);
                 }
 
                 // remove the node from the tab and editor manager
@@ -413,12 +337,7 @@ function FolderTree(treeProps: TreeProps) {
                 name += originalExtension;
             }
 
-            if (isConnected) {
-                // rename the actual file in XRP
-                await CommandToXRPMgr.getInstance().renameFile(found.path + '/' + found.name, name);
-            }
-
-            if (modeType === ModeType.GOOUSER && isLogin) {
+            if (isLogin) {
                 // rename the actual file in Google Drive
                 await AppMgr.getInstance().driveService?.renameFile(found.fileId ?? '', name);
                 const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
@@ -426,7 +345,11 @@ function FolderTree(treeProps: TreeProps) {
                     // refresh the Google Drive tree
                     fireGoogleUserTree(username);
                 }
+            } else if (isConnected) {
+                // rename the actual file in XRP
+                await CommandToXRPMgr.getInstance().renameFile(found.path + '/' + found.name, name);
             }
+
             // update the name field
             found.name = name;
         }
@@ -499,27 +422,18 @@ function FolderTree(treeProps: TreeProps) {
                 parentFileId = parentNode.data.fileId;
             }
             if (type === 'internal') {
-                if (isConnected) {
+                if (isLogin) {
+                    await AppMgr.getInstance().driveService?.createFolder(newNode.name,  parentFileId ?? undefined).then((data) => {
+                        newNode.fileId = data?.id;
+                    });               
+                } else if (isConnected) {
                     // create the actual file in XRP
                     await CommandToXRPMgr.getInstance().buildPath(
                         newNode.path + '/' + newNode.name,
                     );
                 } 
-                if (modeType === ModeType.GOOUSER && isLogin) {
-                    await AppMgr.getInstance().driveService?.createFolder(newNode.name,  parentFileId ?? undefined).then((data) => {
-                        newNode.fileId = data?.id;
-                    });               
-                }
             } else if (type === 'leaf') {
-                if (isConnected) {
-                    // create the actual file in XRP
-                    await CommandToXRPMgr.getInstance().uploadFile(
-                        newNode.path + '/' + newNode.name,
-                        '',
-                        true,
-                    );
-                } 
-                if (modeType === ModeType.GOOUSER && isLogin) {
+                if (isLogin) {
                     const mintetype = newNode.name.includes('.py')
                         ? 'text/x-python' : newNode.name.includes('.blocks')
                         ? 'application/json' : 'text/plain';
@@ -529,7 +443,14 @@ function FolderTree(treeProps: TreeProps) {
                             newNode.fileId = file.id;
                         }
                     });
-                }
+                } if (isConnected) {
+                    // create the actual file in XRP
+                    await CommandToXRPMgr.getInstance().uploadFile(
+                        newNode.path + '/' + newNode.name,
+                        '',
+                        true,
+                    );
+                } 
             }
         }
 
@@ -565,8 +486,47 @@ function FolderTree(treeProps: TreeProps) {
         }
     }
 
+    /**
+     * onGoogleLoginSuccess - callback from Google Login component to handle the login logic
+     */
+    const onGoogleLoginSuccess = async (data: UserProfile) => {
+        AppMgr.getInstance().emit(EventType.EVENT_LOGIN_STATUS, LoginStatus.LOGGED_IN);
+        setIsLogin(true);
+
+        const username = getUsernameFromEmail(data.email);
+
+        if (username != undefined) {
+            if (isConnected) {
+                await CommandToXRPMgr.getInstance().buildPath(Constants.GUSERS_FOLDER + username);
+            }
+        }
+
+        fireGoogleUserTree(username ?? '');
+    }
+
+    /**
+     * onGoogleLogout - callback from Google Login component to handle the logout logic
+     */
+    const onGoogleLogout = async () => {
+        setIsLogin(false);
+        AppMgr.getInstance().authService.logOut().then(() => {
+            AppMgr.getInstance().emit(EventType.EVENT_LOGIN_STATUS, LoginStatus.LOGGED_OUT);
+        });
+
+        if (!isConnected) {
+            AppMgr.getInstance().emit(EventType.EVENT_FILESYS, '{}');
+        } {
+            await CommandToXRPMgr.getInstance().getOnBoardFSTree()
+        }
+    }
+
     return (
         <div className="flex flex-col gap-1">
+            {treeProps.isHeader && (
+                <div className='flex flex-col items-center p-1 gap-1 bg-mountain-mist-100 dark:bg-mountain-mist-950'>
+                    <Login onSuccess={onGoogleLoginSuccess} logoutCallback={onGoogleLogout}/>
+                </div>
+            )}
             {treeProps.isHeader && (isConnected || isLogin) &&(
                 <FolderHeader
                     newFileCallback={onNewFile}
