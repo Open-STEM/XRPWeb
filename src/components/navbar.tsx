@@ -864,6 +864,10 @@ function NavBar({ layoutref }: NavBarProps) {
                         } catch (err) {
                             console.log(err);
                         }
+                        // When returning from the execute switch back to RUN mode. This happens when the program ends
+                        // naturaly.
+                        setRunning(false);
+                        broadcastRunningState(false);
                     }
 
                     const handlePowerSwitchOK = async () => {
