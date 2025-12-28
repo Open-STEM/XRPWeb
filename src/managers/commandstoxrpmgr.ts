@@ -920,21 +920,21 @@ export class CommandToXRPMgr {
             "         file.seek(0)\n" +
             "         file.write(b'\\x00')\n" +
             "         doNothing = True\n" +
-            "      else:\n" +
-            "         file.seek(0)\n" +
-            "         file.write(b'\\x01')\n" +
+            //"      else:\n" +
+            //"         file.seek(0)\n" +
+            //"         file.write(b'\\x01')\n" +
             "   if(not doNothing):\n" +
             "       with open('" + fileToEx + "', mode='r') as exfile:\n" +
             "           code = exfile.read()\n" +
             "       execCode = compile(code, '" + fileToEx2 + "', 'exec')\n" +
             "       exec(execCode)\n" +
-            "       with open(FILE_PATH, 'r+b') as file:\n" +
-            "           file.write(b'\\x00')\n" +
+            //"       with open(FILE_PATH, 'r+b') as file:\n" +
+            //"           file.write(b'\\x00')\n" +
             "except Exception as e:\n" +
             "   import sys\n" +
             "   sys.print_exception(e)\n" +
-            "   with open(FILE_PATH, 'r+b') as file:\n" +
-            "      file.write(b'\\x00')\n" +
+           // "   with open(FILE_PATH, 'r+b') as file:\n" +
+           // "      file.write(b'\\x00')\n" +
             "finally:\n" +
             "   import gc\n" +
             "   gc.collect()\n" +
@@ -988,11 +988,13 @@ export class CommandToXRPMgr {
     }
 
     /**
-     * stopProgram - stop program execution on the XRP
+     * stopProgram - stop program execution on the XRP because they pushed the STOP button
      */
     stopProgram() {
         if (this.connection) {
+            this.connection.prepareForStop();
             this.connection.getToREPL();
+            this.BUSY = false;
         }
     }
 
