@@ -238,7 +238,12 @@ abstract class Connection {
                 }
             }
             await new Promise((resolve) => setTimeout(resolve, 85));
-            if (waitTime != -1) {
+            
+            if (waitTime === -2 && this.isRunBusy === false) {
+                return tempLines;
+            }
+
+            if (waitTime != -1 && waitTime != -2 ) {
                 numTimes--;
             }
         }
@@ -359,7 +364,7 @@ abstract class Connection {
         this.specialForceOutputFlag = true;  //you see the OK, but also get any fast output
         this.catchOk = true;
         //await this.waitUntilOK();
-        const result = await this.haltUntilRead(1);
+        const result = await this.haltUntilRead(1, -2);
 
         /*
                 This is where errors can be checked for that were returned incase we want to give a better explanation
@@ -487,6 +492,18 @@ abstract class Connection {
             }
         }
         return gotToPrompt;
+    }
+    async prepareForStop() {
+
+        if(this.isBusy() && this.isRunBusy === false){    //don't try and STOP if the code is BUSY but not from Running a user program.
+            return;
+        }
+        if(this.isRunBusy){  //if the program is running do ctrl-c until we know it has stopped
+            this.STOP = true;  //let the executeLines code know when it stops, it stopped because the STOP button was pushed
+            this.specialForceOutputFlag = false; //turn off showing output so they don't see the keyboardInterrupt and stack trace.
+            this.isRunBusy = false;
+            return
+        }
     }
 
 }
