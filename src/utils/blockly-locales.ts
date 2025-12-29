@@ -13,7 +13,8 @@ import * as EsMsg from 'blockly/msg/es';
 
 // Map of language codes to their Blockly message objects
 // Add new languages here - they will automatically be supported
-const localeMessages: Record<string, typeof EnMsg> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const localeMessages: Record<string, any> = {
     en: EnMsg,
     es: EsMsg,
 };
@@ -37,7 +38,7 @@ export function isLanguageSupported(language: string): boolean {
  * Falls back to 'en' if language is not supported
  */
 export function setBlocklyLocale(language: string): void {
-    const supportedLanguages = getSupportedLanguages();
+    // const supportedLanguages = getSupportedLanguages();
     const defaultLanguage = 'en';
     
     // Validate and fallback to default if needed
@@ -53,4 +54,3 @@ export function setBlocklyLocale(language: string): void {
         Blockly.setLocale(localeMessages[defaultLanguage]);
     }
 }
-

@@ -372,7 +372,7 @@ export default class EditorMgr {
      * Save all unsaved editors to the robot with progress tracking
      * @returns Promise that resolves when all editors are saved
      */
-    public async saveAllUnsavedEditors(): Promise<void> {
+    public async saveAllUnsavedEditors(activeTab: string): Promise<void> {
         const isConnected = AppMgr.getInstance().getConnection()?.isConnected() ?? false;
         if (!isConnected) {
             return; // Can't save if not connected
@@ -431,6 +431,10 @@ export default class EditorMgr {
                 console.warn(`Failed to save ${failedFiles.length} file(s): ${failedFiles.join(', ')}`);
             }
             
+            if (unsavedSessions.length > 0) {
+                this.SelectEditorTab(activeTab);
+            }
+
             // Set progress to 100%
             AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');
             
@@ -445,23 +449,20 @@ export default class EditorMgr {
     }
 
     /**
+     * clearLastFileSaveTime - clear the last file save time for Google Drive files
+     */
+    public clearLastFileSaveTime() {
+        localStorage.removeItem(StorageKeys.LAST_GOOGLE_DRIVE_TO_XRP_SAVE_TIME);
+    }
+
+    /**
      * saveAllFilesInGoogleDriveToXRP
      * @param sessionId 
      * @returns 
      */
     public async saveAllFilesInGoogleDriveToXRP(sessionId: string): Promise<void> {
-        // check when was the last time we saved to XRP from local storage
-        const lastSaveConfig = parseInt(localStorage.getItem(StorageKeys.LAST_GOOGLE_DRIVE_TO_XRP_SAVE_TIME_CONFIG) || Constants.LASTSAVETIME_CONFG);
         const lastSaveTime = localStorage.getItem(StorageKeys.LAST_GOOGLE_DRIVE_TO_XRP_SAVE_TIME);
-        if (lastSaveTime) {
-            const lastSaveDate = new Date(parseInt(lastSaveTime));
-            const now = new Date();
-            const timeDiff = now.getTime() - lastSaveDate.getTime();
-            const hoursDiff = timeDiff / (1000 * 60 * 60);
-            if (hoursDiff < lastSaveConfig ? lastSaveConfig : 1) {
-                return; // Skip saving if last save was within the past configured hours
-            }
-        }
+        const lastSaveDate = lastSaveTime ? new Date(parseInt(lastSaveTime)) : null;
 
         const session = this.editorSessions.get(sessionId);
         if (!session) {
@@ -487,9 +488,6 @@ export default class EditorMgr {
                 return;
             }
 
-            // Update the last save time in local storage
-            localStorage.setItem(StorageKeys.LAST_GOOGLE_DRIVE_TO_XRP_SAVE_TIME, Date.now().toString());
-
             const fileList = await AppMgr.getInstance().driveService.getFileListByFolderId(parentId);
 
             for (let i = 0; i < fileList.length; i++) {
@@ -503,6 +501,13 @@ export default class EditorMgr {
                         // Skip folders
                         continue;
                     }
+
+                    const fileModifiedDateTime = new Date(file.modifiedTime || '');
+                    if (lastSaveDate && fileModifiedDateTime <= lastSaveDate) {
+                        // Skip files that have not been modified since last save
+                        continue;
+                    }
+
                     // Get file content from Google Drive
                     await AppMgr.getInstance().driveService.getFileContents(file.id).then(async (fileContent) => {;
                         // Determine XRP path
@@ -515,6 +520,9 @@ export default class EditorMgr {
                     console.error(`Error saving Google Drive file ${fileName} to XRP:`, error);
                 }
             }
+
+            // Update the last save time in local storage
+            localStorage.setItem(StorageKeys.LAST_GOOGLE_DRIVE_TO_XRP_SAVE_TIME, Date.now().toString());
 
             // Set progress to 100%
             AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');

@@ -117,6 +117,8 @@ function NavBar({ layoutref }: NavBarProps) {
             // subscribe to the connection event
             AppMgr.getInstance().on(EventType.EVENT_CONNECTION_STATUS, async (state: string) => {
                 if (state === ConnectionState.Connected.toString()) {
+                    // clear the existing last file save time for Google Drive files
+                    EditorMgr.getInstance().clearLastFileSaveTime();
                     setConnected(true);
                     setRunning(false);
                 } else if (state === ConnectionState.Disconnected.toString()) {
@@ -832,7 +834,7 @@ function NavBar({ layoutref }: NavBarProps) {
                     const beginExecution = async () => {
                         try {
                             // Save all unsaved editors before running
-                            await EditorMgr.getInstance().saveAllUnsavedEditors();
+                            await EditorMgr.getInstance().saveAllUnsavedEditors(activeTab);
 
                             // Update the main.js
                             const session: EditorSession | undefined =
@@ -850,6 +852,9 @@ function NavBar({ layoutref }: NavBarProps) {
                                                 .updateMainFile(session.path)
                                                 .then(async (lines) => {
                                                     await CommandToXRPMgr.getInstance().executeLines(lines);
+                                                    setRunning(false);
+                                                    broadcastRunningState(false);
+
                                                 });
                                         });
                                     });
@@ -858,16 +863,14 @@ function NavBar({ layoutref }: NavBarProps) {
                                         .updateMainFile(session.path)
                                         .then(async (lines) => {
                                             await CommandToXRPMgr.getInstance().executeLines(lines);
+                                            setRunning(false);
+                                            broadcastRunningState(false);
                                         });
                                 }
                             }
                         } catch (err) {
                             console.log(err);
                         }
-                        // When returning from the execute switch back to RUN mode. This happens when the program ends
-                        // naturaly.
-                        setRunning(false);
-                        broadcastRunningState(false);
                     }
 
                     const handlePowerSwitchOK = async () => {

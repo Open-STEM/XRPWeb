@@ -22,8 +22,8 @@ export interface GoogleDriveFile {
     thumbnailLink?: string;
     parents?: string[];
     children?: GoogleDriveFile[]
-    // createdTime?: string;
-    // modifiedTime?: string;
+    createdTime?: string;
+    modifiedTime?: string;
 };
 
 /**
@@ -175,7 +175,7 @@ class GoogleDriveService {
      */
     async getFileListByFolderId(folderId: string): Promise<GoogleDriveFile[]> {
         const query = `'${folderId}' in parents and trashed = false`;
-        const fields = 'files(id, name, mimeType, parents)';
+        const fields = 'files(id, name, mimeType, parents, createdTime, modifiedTime, kind)';
         const url = new URL(this._driveApiUrl);
         url.searchParams.append('q', query);
         url.searchParams.append('fields', fields);
@@ -196,6 +196,8 @@ class GoogleDriveService {
                         id: file.id,
                         name: file.name,
                         mimeType: file.mimeType,
+                        createdTime: file.createdTime,
+                        modifiedTime: file.modifiedTime,
                         parents: file.parents || undefined
                     }));
                 }
@@ -222,6 +224,8 @@ class GoogleDriveService {
                 name: file.name,
                 kind: file.kind,
                 mimeType: file.mimeType,
+                createdTime: file.createdTime,
+                modifiedTime: file.modifiedTime,
                 parents: file.parents || undefined
             };
 
@@ -252,6 +256,8 @@ class GoogleDriveService {
             mimeType: foundFolder.mimeType,
             kind: foundFolder.kind,
             parents: foundFolder.parents,
+            createdTime: foundFolder.createdTime,
+            modifiedTime: foundFolder.modifiedTime,
             children: await this.getChildren(foundFolder.id),
         };
         
@@ -376,7 +382,7 @@ class GoogleDriveService {
      */
     async findFolderByName(folderName: string, parentFolderId?: string): Promise<GoogleDriveFile | null> {
         let query = `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
-        const fields = 'files(id, name, kind, mimeType)';
+        const fields = 'files(id, name, kind, mimeType, createdTime, modifiedTime, parents)';
         if (parentFolderId) {
             query += ` and '${parentFolderId}' in parents`;
         }
@@ -513,7 +519,7 @@ class GoogleDriveService {
         existingFileId?: string,
         parentFolderId?: string,
     ): Promise<GoogleDriveFile | null> {
-        const fieldsToReturn = 'id,name,mimeType,webViewLink,webContentLink,thumbnailLink';
+        const fieldsToReturn = 'id,name,mimeType,webViewLink,webContentLink,thumbnailLink, createdTime, modifiedTime, parents';
 
         let method: 'POST' | 'PATCH' = 'POST';
         try {

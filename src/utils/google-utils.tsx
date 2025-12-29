@@ -20,6 +20,8 @@ const transformGDriveTreeToFolderTree = (username: string, path: string, driveIt
         gparentId: driveItem.parents ? driveItem.parents[0] : undefined,
         isReadOnly: false, 
         path: path,
+        createdTime: driveItem.createdTime,
+        modifiedTime: driveItem.modifiedTime,
         children: itemType === 'folder' ? [] : null,
     }
 
