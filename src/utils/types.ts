@@ -34,6 +34,8 @@ export interface FolderItem {
     path: string;
     fileId?: string;    // Google Drive file ID
     gparentId?: string; // Google Drive parent IDxs
+    createdTime?: string;
+    modifiedTime?: string;
     parent?: FolderItem;
     children: FolderItem[] | null;
 };
