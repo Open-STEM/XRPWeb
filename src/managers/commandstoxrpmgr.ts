@@ -983,7 +983,10 @@ export class CommandToXRPMgr {
 
         // Make sure to update the filesystem as there is a small chance that the program saved something like a log file.
         setTimeout(() => {
-            this.getOnBoardFSTree();
+            this.getOnBoardFSTree().then(() => {
+                // File system tree updated after execution
+                AppMgr.getInstance().emit(EventType.EVENT_PROGRAM_EXECUTED, '');
+            });
         });
     }
 

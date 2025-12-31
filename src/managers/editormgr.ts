@@ -6,6 +6,7 @@ import { StorageKeys } from "@/utils/localstorage";
 import { Constants } from "@/utils/constants";
 import { Workspace } from "react-blockly";
 import i18n from "@/utils/i18n";
+import { GoogleDriveFile } from "@/services/google-drive";
 
 /**
  * EditorSession - Editor session object
@@ -478,9 +479,6 @@ export default class EditorMgr {
             return; // Can't save if not logged in
         }
 
-        // Show progress dialog
-        AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
-
         try {
             // Get a list of all files in Google Drive parent directory
             const parentId = session.gparentId;
@@ -490,6 +488,9 @@ export default class EditorMgr {
 
             const fileList = await AppMgr.getInstance().driveService.getFileListByFolderId(parentId);
 
+            const googleFilesTobeUploadedToXRP: GoogleDriveFile[] = [];
+            
+            // Iterate through files and upload to XRP if modified since last save
             for (let i = 0; i < fileList.length; i++) {
                 const file = fileList[i];
                 const fileName = file.name;
@@ -508,6 +509,26 @@ export default class EditorMgr {
                         continue;
                     }
 
+                    googleFilesTobeUploadedToXRP.push(file);
+
+                } catch (error) {
+                    console.error(`Error identifying Google Drive modified file ${fileName} to XRP:`, error);
+                }
+            }
+
+            if (googleFilesTobeUploadedToXRP.length === 0) {
+                return; // Nothing to save
+            }
+
+            // Show progress dialog
+            AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
+
+            for (let i = 0; i < googleFilesTobeUploadedToXRP.length; i++) {
+                const file = googleFilesTobeUploadedToXRP[i];
+                const fileName = file.name;
+                AppMgr.getInstance().emit(EventType.EVENT_PROGRESS_ITEM, fileName);
+
+                try {
                     // Get file content from Google Drive
                     await AppMgr.getInstance().driveService.getFileContents(file.id).then(async (fileContent) => {;
                         // Determine XRP path
