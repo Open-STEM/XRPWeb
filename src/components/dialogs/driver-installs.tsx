@@ -68,30 +68,19 @@ function XRPDriverInstallDlg({toggleDialog}: XRPDriverInstallsProps) {
      * updatePlugins - Update the blockly plugins.json in the /lib/plugins directory
      * @param json 
      */
-    const updatePlugins = async (json: string) => {
+    const updatePlugins = async (plugin: Plugin) => {
         // create the plugins.json if it doesn't exist
         // or append additional information if it does
         const pluginJsonPath = Constants.LIBDIR + 'plugins/plugins.json';
         await CommandToXRPMgr.getInstance().getFileContents(pluginJsonPath).then(async (content) => {
             const fileData: string = new TextDecoder().decode(new Uint8Array(content));
-            const jsonData = JSON.parse(json);
             const pluginConfig: PluginConfig = { plugins: [] };
             if (fileData.includes('Traceback')) {
                 // create the plugins.json
-                const plugin: Plugin = {
-                    friendly_name: jsonData.friendly_name,
-                    blocks_url: jsonData.urls[0][1],
-                    script_url: jsonData.urls[1][1]
-                };
                 pluginConfig.plugins.push(plugin);
             } else {
                 // append to plugins.json
                 pluginConfig.plugins = JSON.parse(fileData).plugins;
-                const plugin: Plugin = {
-                    friendly_name: jsonData.friendly_name,
-                    blocks_url: jsonData.urls[0][1],
-                    script_url: jsonData.urls[1][1]
-                }
                 pluginConfig.plugins.push(plugin);
             }
             await CommandToXRPMgr.getInstance().uploadFile(pluginJsonPath, JSON.stringify(pluginConfig), true);
@@ -145,7 +134,6 @@ function XRPDriverInstallDlg({toggleDialog}: XRPDriverInstallsProps) {
         if (packageData.deps) {
             for (const dep in packageData.deps) {
                 const depUrl = packageData.deps[dep];
-                let isPlugin: boolean = false;
                 // check if the dependency is already installed
                 if (drivers.find(d => d.name === depUrl[0] && d.hasInstalled))
                     continue;
@@ -154,9 +142,6 @@ function XRPDriverInstallDlg({toggleDialog}: XRPDriverInstallsProps) {
                         // create the dependency folder if it doesn't exist
                         const depFolder = Constants.LIBDIR + depUrl[0];
                         await CommandToXRPMgr.getInstance().buildPath(depFolder);
-                        if (depUrl[0].includes('plugins')) {
-                            isPlugin = true;
-                        }
                     }
                 }
                 await fetch(depUrl[1])
@@ -168,17 +153,20 @@ function XRPDriverInstallDlg({toggleDialog}: XRPDriverInstallsProps) {
                     })
                     .then(async (json) => {
                         await installDriver(json);
-                        if (isPlugin) {
-                            updatePlugins(json);
-                            setTimeout(async () => {
-                                await PluginMgr.getInstance().pluginCheck();
-                            }, 2000);
-                        }
                     })
                     .catch((error) => {
                         console.error('Failed to download dependency:', error);
                     });
             }
+        }
+        if(packageData.blocks) {
+            for (const block in packageData.blocks) {
+                const blockUrl = packageData.blocks[block];
+                await updatePlugins(blockUrl);
+                setTimeout(async () => {
+                    await PluginMgr.getInstance().pluginCheck();
+                }, 2000);
+            }  
         }
     }
 
