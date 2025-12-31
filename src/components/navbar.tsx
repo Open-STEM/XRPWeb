@@ -84,6 +84,7 @@ function NavBar({ layoutref }: NavBarProps) {
     const [isConnected, setConnected] = useState(false);
     const [isLogin, setLogin] = useState(false);
     const [isRunning, setRunning] = useState(false);
+    const [isStopping, setIsStopping] = useState(false);
     const [isBlockly, setBlockly] = useState(false);
     const [isOtherTab, setIsOtherTab] = useState(false);
     const dialogRef = useRef<HTMLDialogElement>(null);
@@ -798,6 +799,15 @@ function NavBar({ layoutref }: NavBarProps) {
     async function onRunBtnClicked() {
         console.log('onRunBtnClicked');
 
+        const resetRunButtonStates = () => {
+            AppMgr.getInstance().on(EventType.EVENT_PROGRAM_EXECUTED, () => {
+                setRunning(false);
+                setIsStopping(false);
+                broadcastRunningState(false);
+                AppMgr.getInstance().eventOff(EventType.EVENT_PROGRAM_EXECUTED);
+            });
+        }
+
         if (!isRunning) {
             if (!isConnected) {
                 setDialogContent(
@@ -852,9 +862,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                                 .updateMainFile(session.path)
                                                 .then(async (lines) => {
                                                     await CommandToXRPMgr.getInstance().executeLines(lines);
-                                                    setRunning(false);
-                                                    broadcastRunningState(false);
-
+                                                    resetRunButtonStates();
                                                 });
                                         });
                                     });
@@ -863,8 +871,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                         .updateMainFile(session.path)
                                         .then(async (lines) => {
                                             await CommandToXRPMgr.getInstance().executeLines(lines);
-                                            setRunning(false);
-                                            broadcastRunningState(false);
+                                            resetRunButtonStates();
                                         });
                                 }
                             }
@@ -908,8 +915,7 @@ function NavBar({ layoutref }: NavBarProps) {
                     }
                 });         
         } else {
-            setRunning(false);
-            broadcastRunningState(false);
+            setIsStopping(true);
             CommandToXRPMgr.getInstance().stopProgram();
         }
     }
@@ -1197,6 +1203,7 @@ function NavBar({ layoutref }: NavBarProps) {
                     id="runBtn"
                     className={`text-white h-full w-[120] items-center justify-center rounded-3xl px-4 py-2 ${isRunning ? 'bg-cinnabar-600' : 'bg-chateau-green-500'} ${isConnected ? 'flex' : 'hidden'}`}
                     onClick={onRunBtnClicked}
+                    disabled={isStopping}
                 >
                     {isRunning ? (
                         <>

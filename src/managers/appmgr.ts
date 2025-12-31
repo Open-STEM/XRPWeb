@@ -46,7 +46,8 @@ export enum EventType {
     EVENT_GAMEPAD_STATUS = 'gamepad-status', // Gamepad status on/off
     EVENT_ALERT = 'alert', // Alert dialog event
     EVENT_ISRUNNING = 'is-running', // XRP is running user code
-    EVENT_LOGIN_STATUS = 'login-status' // Google login status
+    EVENT_LOGIN_STATUS = 'login-status', // Google login status
+    EVENT_PROGRAM_EXECUTED = 'runstop-complete' // Run/Stop command complete
 }
 
 type Events = {
@@ -80,6 +81,7 @@ type Events = {
     [EventType.EVENT_ALERT]: string;
     [EventType.EVENT_ISRUNNING]: string;
     [EventType.EVENT_LOGIN_STATUS]: string;
+    [EventType.EVENT_PROGRAM_EXECUTED]: string;
 };
 
 /**
