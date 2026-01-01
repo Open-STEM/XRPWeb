@@ -850,7 +850,7 @@ function NavBar({ layoutref }: NavBarProps) {
                             const session: EditorSession | undefined =
                                 EditorMgr.getInstance().getEditorSession(activeTab);
                             if (session) {
-                                if (isLogin) {
+                                if (isLogin && session.gpath) {
                                     // saving the Google drive parent directory to XRP first
                                     await EditorMgr.getInstance().saveAllFilesInGoogleDriveToXRP(session.id);
 
