@@ -9,7 +9,7 @@ const useSensorData = () => {
   const [activeSensors, setActiveSensors] = useState<Set<string>>(new Set());
 
   const handleSensorData = useCallback((data: string) => {
-    console.log('Received sensor data:', data);
+    //console.log('Received sensor data:', data);
     try {
       const parsedData = JSON.parse(data) as NetworkTable;
 
