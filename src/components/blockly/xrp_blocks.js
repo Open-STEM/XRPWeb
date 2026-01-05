@@ -608,6 +608,65 @@ Blockly.Blocks['xrp_sleep'] = {
   }
 };
 
+// Dashboard
+Blockly.Blocks['xrp_dashboard_start_all'] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("Dashboard start all");
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setColour(200); // slate blue
+    this.setTooltip("Start all default dashboard variables");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['xrp_dashboard_stop_all'] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("Dashboard stop all");
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setColour(200); // slate blue
+    this.setTooltip("Stop all default dashboard variables");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['xrp_dashboard_set_value'] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("Dashboard set value");
+    this.appendValueInput("var_name")
+      .setCheck("String")
+      .appendField("Name:");
+    this.appendValueInput("value")
+      .setCheck("Number")
+      .appendField("Value:");
+    this.setInputsInline(false);
+    this.setPreviousStatement(true, null);
+    this.setNextStatement(true, null);
+    this.setColour(200); // slate blue
+    this.setTooltip("Set a dashboard variable value");
+    this.setHelpUrl("");
+  }
+};
+
+Blockly.Blocks['xrp_dashboard_get_value'] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("Dashboard get value");
+    this.appendValueInput("var_name")
+      .setCheck("String")
+      .appendField("Name:");
+    this.setInputsInline(false);
+    this.setOutput(true, "Number");
+    this.setColour(200); // slate blue
+    this.setTooltip("Get a dashboard variable value");
+    this.setHelpUrl("");
+  }
+};
+
 // Text
 Blockly.Blocks['comment'] = {
   init: function() {

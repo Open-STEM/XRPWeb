@@ -262,6 +262,32 @@ const ToolboxJson = {
                     "blockxml": "<block type=\"xrp_ws_connect_server\"><value name=\"server_ssid\">\n<shadow type=\"text\">\n<field name=\"TEXT\">xrp_1</field>\n</shadow>\n</value>\n      <value name=\"server_pwd\">\n<shadow type=\"text\">\n<field name=\"TEXT\"></field>\n</shadow>\n</value>\n</block>",
                 },
             ]
+        },{
+            "kind": "CATEGORY",
+            "name": "Dashboard",
+            "colour": "#5b80a5", // slate blue
+            "contents": [
+                {
+                    "kind": "BLOCK",
+                    "type": "xrp_dashboard_start_all"
+                },
+                {
+                    "kind": "BLOCK",
+                    "type": "xrp_dashboard_stop_all"
+                },
+                {
+                    "kind": "BLOCK",
+                    "type": "xrp_dashboard_set_value",
+                    "blockxml": "<block type=\"xrp_dashboard_set_value\"><value name=\"var_name\">\n<shadow type=\"text\">\n<field name=\"TEXT\">cust1</field>\n</shadow>\n</value>\n</block>",
+
+                },
+                {
+                    "kind": "BLOCK",
+                    "type": "xrp_dashboard_get_value",
+                    "blockxml": "<block type=\"xrp_dashboard_get_value\"><value name=\"var_name\">\n<shadow type=\"text\">\n<field name=\"TEXT\">cust1</field>\n</shadow>\n</value>\n</block>",
+
+                },
+            ]
         },
         {
             "kind": "CATEGORY",
