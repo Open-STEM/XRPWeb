@@ -33,6 +33,8 @@ export class BluetoothConnection extends Connection {
     private ble2DataResolveFunc: ((value: Uint8Array) => void) | null = null;
 
     private readonly BLE_STOP_MSG  = "##XRPSTOP##"
+    private reconnectSuccess: boolean = true;
+    private readWorkerRunning: boolean = false;
 
     private  Table: TableMgr | undefined = undefined;
 
@@ -250,6 +252,7 @@ export class BluetoothConnection extends Connection {
      */
     async readWorker() {
         while (this.connectionStates === ConnectionState.Connected) {
+            this.readWorkerRunning = true;
             this.startBLEData();
             try {
                 while (true) {
@@ -285,10 +288,15 @@ export class BluetoothConnection extends Connection {
     private async onConnected() {
         this.connectionStates = ConnectionState.Connected;
         this.lastProgramRan = undefined;
-        if (this.connLogger) { //BUGBUG: why is this dependent on the connLogger?
+        if (this.connMgr) { 
             this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
         }
-        this.readWorker();
+        if(!this.readWorkerRunning){  // if the read worker is not running then restart it  
+            this.readWorker();
+        }
+        else{
+            this.startBLEData(); // the readers may have been updated so start them again
+        }
         //await this.getToNormal();
     }
 
@@ -412,7 +420,7 @@ export class BluetoothConnection extends Connection {
             
 
         //this.MANNUALLY_CONNECTING = false;
-        this.connLogger.debug('Existing BLE connect');
+        this.connLogger.debug('Exiting BLE connect');
     }
 
     public async disconnect(): Promise<void> {
@@ -454,9 +462,12 @@ export class BluetoothConnection extends Connection {
                 this.bleDataReader = await this.btService.getCharacteristic(
                     this.DATA_RX_CHARACTERISTIC_UUID,
                 );
-            
+
                 this.bleReader.startNotifications();
-                this.onConnected();
+                this.bleDataReader.startNotifications();
+                await this.onConnected();
+                this.reconnectSuccess = true;
+                
                 //return true;
                 // Perform operations after successful connection
             } catch (error) {
@@ -534,8 +545,16 @@ export class BluetoothConnection extends Connection {
     public async getToREPL():Promise<boolean>{
         this.connLogger.info("BLE getToREPL")
         if(await this.checkPrompt()){
+            //this.connLogger.info("BLE getToREPL: checkPrompt succeeded");
             return true;
         }
+
+        if(!this.reconnectSuccess){
+            //this.connLogger.info("BLE getToREPL: leaving nothing done");
+            return false;
+        }
+        // Need to send BLE_STOP_MSG, this causes the XRP to reboot so we need to wait for reconnect to complete
+        this.reconnectSuccess = false;
         await this.writeToDevice(this.BLE_STOP_MSG);
         return true;
     }

@@ -246,7 +246,7 @@ export class CommandToXRPMgr {
         //get version information from the XRP
         const info = await this.getVersionInfo();
 
-        if (info == undefined) {
+        if (info == undefined || info[0] == undefined || info[1] == undefined) {
             return this.XRPId; //this happens if the XRP is rebooting we are under BLE and no other way to stop it.
         }
 
@@ -833,8 +833,9 @@ export class CommandToXRPMgr {
 
         const hiddenLines = await this.connection?.writeUtilityCmdRaw(cmd, true, 1, "###DONE READING FILE###");
         let lines = hiddenLines!.join('\r\n');
-
-        lines = lines.slice(2, lines[0].length - 27);  // Get rid of 'OK' and '###DONE READING FILE###'
+        if(lines.length > 0){ 
+            lines = lines.slice(2, lines[0].length - 27);  // Get rid of 'OK' and '###DONE READING FILE###'
+        }
 
         this.BUSY = false;
         await this.connection?.getToNormal(3);
@@ -943,7 +944,9 @@ export class CommandToXRPMgr {
             "   import XRPLib.resetbot";
 
         if (this.lastRun == undefined || this.lastRun != fileToEx) {
+            this.BUSY = false; // make sure we are not busy before uploading the file
             await this.uploadFile("//main.py", value, true); //no need to save the main file again if it is the same file to execute.
+            this.BUSY = true; // make sure we are busy after uploading the file
         }
         this.lastRun = fileToEx;
         this.BUSY = false;
