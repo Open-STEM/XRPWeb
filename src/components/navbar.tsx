@@ -373,8 +373,8 @@ function NavBar({ layoutref }: NavBarProps) {
         }
         toggleDialog();
         setDialogContent(<AlertDialog alertMessage={t('update-lib-complete')} toggleDialog={toggleDialog} />);
-        await CommandToXRPMgr.getInstance().restartXRP();
         toggleDialog();
+        await CommandToXRPMgr.getInstance().restartXRP();
     }
 
     /**
