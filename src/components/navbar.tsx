@@ -353,8 +353,8 @@ function NavBar({ layoutref }: NavBarProps) {
     async function handleXRPLibUpdateCallback() {
         // ask the user to confirm the update and provide instructions to the user about the update
         const xrpDrive = CommandToXRPMgr.getInstance().getXRPDrive();
+        toggleDialog(); // close the update dialog first. Can't display a dialog on top of another dialog.
         setDialogContent(<ConfirmationDlg acceptCallback={handleXRPLibUpdateConfirmed} toggleDialog={toggleDialog} confirmationMessage={t('update-lib-instructions', { drive: xrpDrive })} />);
-        toggleDialog();
     }
 
     /**
