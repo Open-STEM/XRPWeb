@@ -354,6 +354,10 @@ export class CommandToXRPMgr {
         await this.getOnBoardFSTree();
     }
 
+    async restartXRP() {
+        await this.connection?.writeToDevice(this.connection!.CTRL_CMD_SOFTRESET);
+    }
+
     async enterBootSelect() {
         if (this.HAS_MICROPYTHON) {
             const cmd = "import machine\n" +

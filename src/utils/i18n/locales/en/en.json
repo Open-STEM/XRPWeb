@@ -94,7 +94,7 @@
     "xrpLibUpdateTitle": "XRP Library Update",
     "update-lib-instructions": "The update process will take a few minutes. Please do not disconnect the USB cable during this time.",
     "update-lib-error": "The XRP library update process has failed. Please try again. The error message is: {{ error }}",
-    "update-lib-complete": "The XRP library update process has completed successfully.",
+    "update-lib-complete": "The XRP library update process has completed successfully. The XRP must be restarted for changes to take affect.",
     "dashboard": "Dashboard",
     "no-editor-run": "No active editor session is running!",
     "FilesystemStorage": "XRP Filesystem: {{ capacity }} MB",
