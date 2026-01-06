@@ -265,7 +265,7 @@ const ToolboxJson = {
         },{
             "kind": "CATEGORY",
             "name": "Dashboard",
-            "colour": "#5b80a5", // slate blue
+            "colour": "#0080ff", // bright blue
             "contents": [
                 {
                     "kind": "BLOCK",

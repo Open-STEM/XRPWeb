@@ -615,7 +615,7 @@ Blockly.Blocks['xrp_dashboard_start_all'] = {
       .appendField("Dashboard start all");
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(200); // slate blue
+    this.setColour("#0080ff"); // bright blue
     this.setTooltip("Start all default dashboard variables");
     this.setHelpUrl("");
   }
@@ -627,7 +627,7 @@ Blockly.Blocks['xrp_dashboard_stop_all'] = {
       .appendField("Dashboard stop all");
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(200); // slate blue
+    this.setColour("#0080ff"); // bright blue
     this.setTooltip("Stop all default dashboard variables");
     this.setHelpUrl("");
   }
@@ -646,7 +646,7 @@ Blockly.Blocks['xrp_dashboard_set_value'] = {
     this.setInputsInline(false);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(200); // slate blue
+    this.setColour("#0080ff"); // bright blue
     this.setTooltip("Set a dashboard variable value");
     this.setHelpUrl("");
   }
@@ -661,7 +661,7 @@ Blockly.Blocks['xrp_dashboard_get_value'] = {
       .appendField("Name:");
     this.setInputsInline(false);
     this.setOutput(true, "Number");
-    this.setColour(200); // slate blue
+    this.setColour("#0080ff"); // bright blue
     this.setTooltip("Get a dashboard variable value");
     this.setHelpUrl("");
   }
