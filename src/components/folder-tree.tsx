@@ -520,6 +520,20 @@ function FolderTree(treeProps: TreeProps) {
         }
     }
 
+    /**
+     * Cursor component for rendering the cursor position
+     * @param param0 
+     * @returns 
+     */
+    function Cursor({ top, left }: { top: number; left: number }) {
+        return (
+            <div
+                className="absolute w-full h-0 border-dashed border-t-2 bg-mountain-mist-500 dark:bg-mountain-mist-300"
+                style={{top, left,}}
+            />
+        );
+    }
+
     return (
         <div className="flex flex-col gap-1">
             {treeProps.isHeader && (
@@ -542,13 +556,11 @@ function FolderTree(treeProps: TreeProps) {
                     width={width}
                     height={height}
                     rowHeight={24}
-                    renderCursor={() => 'default'}
+                    renderCursor={Cursor}
                     openByDefault={false}
                     initialOpenState={{ root: true }}
                     paddingBottom={32}
                     disableEdit={(data) => data.isReadOnly}
-                    disableDrag={true}
-                    disableDrop={true}
                     onDelete={onDelete}
                     onRename={onRename}
                     onSelect={onSelected}
