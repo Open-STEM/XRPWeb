@@ -33,8 +33,15 @@ export class BluetoothConnection extends Connection {
     private ble2DataResolveFunc: ((value: Uint8Array) => void) | null = null;
 
     private readonly BLE_STOP_MSG  = "##XRPSTOP##"
+    private reconnectSuccess: boolean = true;
+    private readWorkerRunning: boolean = false;
 
     private  Table: TableMgr | undefined = undefined;
+
+    // XPP Protocol constants for packet detection
+    private readonly XPP_START_SEQ: number[] = [0xAA, 0x55];
+    private readonly XPP_END_SEQ: number[] = [0x55, 0xAA];
+    private xppBuffer: Uint8Array = new Uint8Array(0); // Buffer for incomplete XPP packets
 
     constructor(connMgr: ConnectionMgr) {
         super();
@@ -174,10 +181,78 @@ export class BluetoothConnection extends Connection {
 
 
     /**
+     * Extracts complete XPP packets from the buffer and returns them.
+     * XPP packet format: [0xAA 0x55] [Type] [Length] [Payload] [0x55 0xAA]
+     * @param data - New data to add to the buffer
+     * @returns Array of complete XPP packets
+     */
+    private extractCompleteXPPPackets(data: Uint8Array): Uint8Array[] {
+        // Add new data to buffer
+        this.xppBuffer = this.concatUint8Arrays(this.xppBuffer, data);
+        
+        const completePackets: Uint8Array[] = [];
+        
+        while (this.xppBuffer.length >= 4) { // Minimum packet size is 4 bytes (start + type + length + end)
+            // Look for start sequence [0xAA 0x55]
+            const startIndex = this.xppBuffer.findIndex((val, idx) => 
+                idx < this.xppBuffer.length - 1 && 
+                val === this.XPP_START_SEQ[0] && 
+                this.xppBuffer[idx + 1] === this.XPP_START_SEQ[1]
+            );
+            
+            if (startIndex === -1) {
+                // No start sequence found, clear buffer
+                this.xppBuffer = new Uint8Array(0);
+                break;
+            }
+            
+            // Remove any data before the start sequence
+            if (startIndex > 0) {
+                this.xppBuffer = this.xppBuffer.subarray(startIndex);
+            }
+            
+            // Check if we have enough data for type and length (at least 4 bytes: start + type + length)
+            if (this.xppBuffer.length < 4) {
+                break; // Need more data
+            }
+            
+            // Extract length (byte 3 after start sequence)
+            // Type is at byte 2, but we don't need it for packet extraction
+            const payloadLength = this.xppBuffer[3];
+            
+            // Calculate total packet size: start(2) + type(1) + length(1) + payload + end(2)
+            const totalPacketSize = 2 + 1 + 1 + payloadLength + 2;
+            
+            // Check if we have the complete packet
+            if (this.xppBuffer.length < totalPacketSize) {
+                break; // Need more data
+            }
+            
+            // Verify end sequence
+            const endIndex = totalPacketSize - 2;
+            if (this.xppBuffer[endIndex] === this.XPP_END_SEQ[0] && 
+                this.xppBuffer[endIndex + 1] === this.XPP_END_SEQ[1]) {
+                // Complete packet found
+                const completePacket = this.xppBuffer.subarray(0, totalPacketSize);
+                completePackets.push(completePacket);
+                
+                // Remove processed packet from buffer
+                this.xppBuffer = this.xppBuffer.subarray(totalPacketSize);
+            } else {
+                // Invalid end sequence, skip this start sequence and continue
+                this.xppBuffer = this.xppBuffer.subarray(2);
+            }
+        }
+        
+        return completePackets;
+    }
+
+    /**
      * readWorker - this worker read data from the XRP robot
      */
     async readWorker() {
         while (this.connectionStates === ConnectionState.Connected) {
+            this.readWorkerRunning = true;
             this.startBLEData();
             try {
                 while (true) {
@@ -188,8 +263,15 @@ export class BluetoothConnection extends Connection {
                     let valuesD: Uint8Array | undefined = undefined;
                     if(this.bleDataReader != undefined){
                         valuesD = await this.get2BLEData();
-                        if(valuesD != undefined)
-                            this.Table?.readFromDevice(valuesD);
+                        if(valuesD != undefined) {
+                            // Extract complete XPP packets and only process those
+                            const completePackets = this.extractCompleteXPPPackets(valuesD);
+                            for (const packet of completePackets) {
+                                this.joyStick?.handleXPPMessage(packet);
+                                this.Table?.readFromDevice(packet);
+                                //NOTE: if there is one more of these then we should switch to a subscription model.
+                            }
+                        }
                     }
                 
                 }
@@ -206,10 +288,15 @@ export class BluetoothConnection extends Connection {
     private async onConnected() {
         this.connectionStates = ConnectionState.Connected;
         this.lastProgramRan = undefined;
-        if (this.connLogger) { //BUGBUG: why is this dependent on the connLogger?
+        if (this.connMgr) { 
             this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
         }
-        this.readWorker();
+        if(!this.readWorkerRunning){  // if the read worker is not running then restart it  
+            this.readWorker();
+        }
+        else{
+            this.startBLEData(); // the readers may have been updated so start them again
+        }
         //await this.getToNormal();
     }
 
@@ -333,7 +420,7 @@ export class BluetoothConnection extends Connection {
             
 
         //this.MANNUALLY_CONNECTING = false;
-        this.connLogger.debug('Existing BLE connect');
+        this.connLogger.debug('Exiting BLE connect');
     }
 
     public async disconnect(): Promise<void> {
@@ -375,9 +462,12 @@ export class BluetoothConnection extends Connection {
                 this.bleDataReader = await this.btService.getCharacteristic(
                     this.DATA_RX_CHARACTERISTIC_UUID,
                 );
-            
+
                 this.bleReader.startNotifications();
-                this.onConnected();
+                this.bleDataReader.startNotifications();
+                await this.onConnected();
+                this.reconnectSuccess = true;
+                
                 //return true;
                 // Perform operations after successful connection
             } catch (error) {
@@ -455,8 +545,16 @@ export class BluetoothConnection extends Connection {
     public async getToREPL():Promise<boolean>{
         this.connLogger.info("BLE getToREPL")
         if(await this.checkPrompt()){
+            //this.connLogger.info("BLE getToREPL: checkPrompt succeeded");
             return true;
         }
+
+        if(!this.reconnectSuccess){
+            //this.connLogger.info("BLE getToREPL: leaving nothing done");
+            return false;
+        }
+        // Need to send BLE_STOP_MSG, this causes the XRP to reboot so we need to wait for reconnect to complete
+        this.reconnectSuccess = false;
         await this.writeToDevice(this.BLE_STOP_MSG);
         return true;
     }

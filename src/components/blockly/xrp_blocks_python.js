@@ -343,6 +343,38 @@ pythonGenerator.forBlock['xrp_ws_start_server'] = function (block) {
   return code;
 };
 
+// Dashboard
+
+pythonGenerator.forBlock['xrp_dashboard_start_all'] = function (block) {
+  pythonGenerator.definitions_['import_dashboard'] = 'from XRPLib.dashboard import Dashboard';
+  pythonGenerator.definitions_[`dashboard_setup`] = `dashboard = Dashboard.get_default_dashboard()`;
+  var code = `dashboard.start()\n`;
+  return code;
+};
+
+pythonGenerator.forBlock['xrp_dashboard_stop_all'] = function (block) {
+  pythonGenerator.definitions_['import_dashboard'] = 'from XRPLib.dashboard import Dashboard';
+  pythonGenerator.definitions_[`dashboard_setup`] = `dashboard = Dashboard.get_default_dashboard()`;
+  var code = `dashboard.stop()\n`;
+  return code;
+};
+
+pythonGenerator.forBlock['xrp_dashboard_set_value'] = function (block) {
+  pythonGenerator.definitions_['import_dashboard'] = 'from XRPLib.dashboard import Dashboard';
+  pythonGenerator.definitions_[`dashboard_setup`] = `dashboard = Dashboard.get_default_dashboard()`;
+  var name = block.getInputTargetBlock("var_name").getFieldValue("TEXT");
+  var value = pythonGenerator.valueToCode(block, 'value', pythonGenerator.ORDER_ATOMIC);
+  var code = `dashboard.set_value("${name}", ${value})\n`;
+  return code;
+};
+
+pythonGenerator.forBlock['xrp_dashboard_get_value'] = function (block) {
+  pythonGenerator.definitions_['import_dashboard'] = 'from XRPLib.dashboard import Dashboard';
+  pythonGenerator.definitions_[`dashboard_setup`] = `dashboard = Dashboard.get_default_dashboard()`;
+  var name = block.getInputTargetBlock("var_name").getFieldValue("TEXT");
+  var code = `dashboard.get_value("${name}")`;
+  return [code, pythonGenerator.ORDER_NONE];
+};
 // Gamepad
 
 pythonGenerator.forBlock['xrp_gp_get_value'] = function (block) {

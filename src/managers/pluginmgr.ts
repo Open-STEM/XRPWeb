@@ -69,7 +69,7 @@ export default class PluginMgr {
         try {
             // Try to read plugin.json from the XRP device
             const pluginContent = await this.cmdToXRPMgr.getFileContents('lib/plugins/plugins.json');
-            if (pluginContent) {
+            if (pluginContent && pluginContent.length > 0) {
                 const pluginText = new TextDecoder().decode(new Uint8Array(pluginContent));
                 this.pluginConfig = JSON.parse(pluginText);
                 await this.processPlugins();
