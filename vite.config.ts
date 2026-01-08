@@ -67,7 +67,7 @@ export default defineConfig(({ mode }) => {
         server: {
             port: 3000,
             proxy: {
-                '/api': env.AI_URL
+                '/api': env.GOOGLE_CHATAPI_PROXY_TARGET
             }
         },
         build: {
