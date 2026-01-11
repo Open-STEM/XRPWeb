@@ -285,7 +285,9 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                 // There appears to be some timing issues in loading the content into the workspace
                 // Set 100 ms delay to accommendate the timing issue
                 const loadEditor = (name: string, content: string) => {
-                    const loadContent = { name: name, content: content};
+                    const lines: string[] | undefined = content.split('##XRPBLOCKS ');
+                    const blockContent = lines.length > 1 ? lines[1] : lines[0];
+                    const loadContent = { name: name, content: blockContent };
                     AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));                    
                 };
                 setTimeout(loadEditor, 100, name, editorSession.content);
