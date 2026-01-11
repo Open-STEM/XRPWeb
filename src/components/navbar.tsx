@@ -737,14 +737,14 @@ function NavBar({ layoutref }: NavBarProps) {
         if (EditorMgr.getInstance().hasEditorSession(Constants.AI_CHAT_TAB_ID)) {
             const layoutModel = EditorMgr.getInstance().getLayoutModel();
             layoutModel?.doAction(Actions.selectTab(Constants.AI_CHAT_TAB_ID));
-            setActiveTab('AI Chat');
+            setActiveTab(t('ai-chat'));
             return;
         };
         const tabInfo: IJsonTabNode = {
             component: 'aichat',
-            name: 'AI Chat',
+            name: 'ai-chat',
             id: Constants.AI_CHAT_TAB_ID,
-            helpText: 'Chat with AI models from Hugging Face',
+            helpText: t('ai-chat-help'),
         };
         layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
         EditorMgr.getInstance().AddEditor({
@@ -759,7 +759,7 @@ function NavBar({ layoutref }: NavBarProps) {
             isModified: false,
         });
         setIsOtherTab(true);
-        setActiveTab('AI Chat');
+        setActiveTab(t('ai-chat'));
     }
 
     /**

@@ -63,19 +63,6 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
                             expire_in: token.expires_in,
                         }));
                         driveService.setAccessToken(token.access_token);
-                        // check if XRPCode folder exists, if not create it
-                        try {
-                            const folder = await driveService.findFolderByName(Constants.XRPCODE);
-                            if (!folder) {
-                                await driveService.createFolder(Constants.XRPCODE);
-                            }
-                        } catch (error) {
-                            if (error instanceof Error) {
-                                loginLogger.error(`Error checking or creating XRPCode folder: ${error.stack ?? error.message}`);
-                            } else {
-                                loginLogger.error(`Error checking or creating XRPCode folder: ${String(error)}`);
-                            }   
-                        }
                     });
 
                     if (user.refresh_token) {
@@ -130,6 +117,19 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
                 .then(async (data) => {
                     setUserProfile(data);
                     authService.userProfile = data;
+                        // check if XRPCode folder exists, if not create it
+                        try {
+                            const folder = await driveService.findFolderByName(Constants.XRPCODE);
+                            if (!folder) {
+                                await driveService.createFolder(Constants.XRPCODE);
+                            }
+                        } catch (error) {
+                            if (error instanceof Error) {
+                                loginLogger.error(`Error checking or creating XRPCode folder: ${error.stack ?? error.message}`);
+                            } else {
+                                loginLogger.error(`Error checking or creating XRPCode folder: ${String(error)}`);
+                            }   
+                        }
                     onSuccess(data);
                 })
                 .catch((err) => loginLogger.error('Error fetching user profile:', err));
