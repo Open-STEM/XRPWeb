@@ -1,6 +1,6 @@
 import '@codingame/monaco-vscode-python-default-extension';
 import '@codingame/monaco-vscode-theme-defaults-default-extension';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import { initialize } from 'vscode/services';
 import getLanguagesServiceOverride from '@codingame/monaco-vscode-languages-service-override';
@@ -131,25 +131,37 @@ type MonacoEditorProps = {
 
 const MonacoEditor = ({
     name,
-    width = '100vw',
-    height = '100vh',
     language = 'python',
     value,
     className,
 }: MonacoEditorProps) => {
     const { t } = useTranslation();
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const editorRef = useRef<HTMLDivElement | null>(null);
     const editor = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+    const [childWidth, setChildWidth] = useState(0);
+    const [childHeight, setChildHeight] = useState(0);
 
-    const fixedWidth = width;
-    const fixedHeight = height;
-    const style = useMemo(
-        () => ({
-            width: fixedWidth,
-            height: fixedHeight,
-        }),
-        [fixedWidth, fixedHeight],
-    );
+    useEffect(() => {
+        if (containerRef.current) {
+            const resizeObserver = new ResizeObserver((entries) => {
+                // we only expect one element to be observed
+                if (!entries || entries.length === 0) {
+                    return;
+                }
+                const {clientWidth, clientHeight} = entries[0].target as HTMLDivElement;
+                setChildWidth(clientWidth);
+                setChildHeight(clientHeight);
+                if (editor.current) {
+                    editor.current.layout({ width: clientWidth, height: clientHeight });
+                }
+            });
+            resizeObserver.observe(containerRef.current);
+            return () => {
+                resizeObserver.disconnect();
+            };
+        }
+    }, []);
 
     useEffect(() => {
         /**
@@ -181,7 +193,7 @@ const MonacoEditor = ({
                 console.log('Editor Content', content);
                 const loadContent = JSON.parse(content);
                 if (loadContent.name !== name) return;
-                if (containerRef.current && editor.current) {
+                if (editorRef.current && editor.current) {
                     const model = monaco.editor.createModel(loadContent.content, languageId);
                     editor.current.setModel(model);
                 }
@@ -219,14 +231,14 @@ const MonacoEditor = ({
             EditorMgr.getInstance().setSubscription(name);
         }
 
-        if (containerRef.current) {
+        if (editorRef.current && childWidth > 0 && childHeight > 0) {
             if (editor.current === null) {
                 updateUserConfiguration(`{
                     "editor.fontSize": ${Constants.DEFAULT_FONTSIZE},
                     "workbench.colorTheme": "${AppMgr.getInstance().getTheme() === Themes.DARK ? 'Default Dark Modern' : 'vs'}"
                 }`);
 
-                editor.current = monaco.editor.create(containerRef.current, {
+                editor.current = monaco.editor.create(editorRef.current, {
                     value: value,
                     language: language,
                 });
@@ -277,9 +289,15 @@ const MonacoEditor = ({
                 }
             }
         }
-    }, [name, language, value, t]);
+    }, [name, language, value, t, childWidth, childHeight]);
 
-    return <div ref={containerRef} style={style} className={className} />;
+    return (
+        <>
+            <div ref={containerRef} className='w-full h-full'>
+                <div ref={editorRef} style={{ width: childWidth, height: childHeight }} className={className} />
+            </div>
+        </>
+    );
 };
 
 export default MonacoEditor;
