@@ -164,14 +164,14 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
     /**
      * saveEditor
      */
-    function saveEditor() {
+    async function saveEditor() {
         const ws = EditorMgr.getInstance().getEditorSession(name)?.workspace;
         if (ws) {
             const activeTab = localStorage.getItem(StorageKeys.ACTIVETAB)?.replace(/^"|"$/g, '');
             if (activeTab === name) {
                 const code = blocklyToPython(ws);
                 console.log('Saving blockly', activeTab, code);
-                EditorMgr.getInstance().saveEditor(name, code);
+                await EditorMgr.getInstance().saveEditor(name, code);
                 EditorMgr.getInstance().SaveToLocalStorage(
                     EditorMgr.getInstance().getEditorSession(name) as EditorSession,
                     code
