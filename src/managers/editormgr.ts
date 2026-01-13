@@ -281,7 +281,7 @@ export default class EditorMgr {
             path: session.path,
             gpath: session.gpath,
             isBlockly: session.type === EditorType.BLOCKLY,
-            isSavedToXRP: session.isModified,
+            isSavedToXRP: !session.isModified,
             content: code,
         };
         // Update the session content with the new code
