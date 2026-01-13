@@ -65,6 +65,7 @@ import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
 import XRPDriverInstallDlg from './dialogs/driver-installs';
 import powerswitch_standard from '@assets/images/XRP-nonbeta-controller-power.jpg';
 import powerswitch_beta from '@assets/images/XRP_Controller-Power.jpg';
+import BusyDialog from './dialogs/busydlg';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -231,6 +232,16 @@ function NavBar({ layoutref }: NavBarProps) {
                 } else if (status === LoginStatus.LOGGED_OUT) {
                     setLogin(false);
                 }
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_SHOWBLUETOOTH_CONNECTING, () => {
+                setDialogContent(<BusyDialog title={t('connecting-bluetooth')} />);
+                toggleDialog();
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_HIDE_BLUETOOTH_CONNECTING, () => {
+                toggleDialog();
+                setDialogContent(<div />);
             });
 
             hasSubscribed = true;
@@ -805,6 +816,7 @@ function NavBar({ layoutref }: NavBarProps) {
                 setRunning(false);
                 setIsStopping(false);
                 broadcastRunningState(false);
+                toggleDialog();
                 AppMgr.getInstance().eventOff(EventType.EVENT_PROGRAM_EXECUTED);
             });
         }
@@ -918,6 +930,8 @@ function NavBar({ layoutref }: NavBarProps) {
         } else {
             setIsStopping(true);
             CommandToXRPMgr.getInstance().stopProgram();
+            setDialogContent(<BusyDialog title={t('stopRunningProgram')} />);
+            toggleDialog();
         }
     }
 

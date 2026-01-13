@@ -23,6 +23,7 @@
     "okButton": "OK",
     "cancelButton": "Cancel",
     "connections": "Connections",
+    "connecting-bluetooth": "Connecting via Bluetooth...",
     "selectConnection": "Please select your desired connection to begin...",
     "usbConnection": "USB Connection",
     "bluetoothConnection": "Bluetooth Connection",
@@ -153,6 +154,7 @@
     "connectXRP": "CONNECT XRP",
     "run": "RUN",
     "stop": "STOP",
+    "stopRunningProgram": "Stop Running Program...",
     "aiChat": {
         "buddyName": "XRPCode Buddy",
         "poweredBy": "Powered by Gemini",
