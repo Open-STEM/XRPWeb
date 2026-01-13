@@ -2,6 +2,7 @@ import ConnectionMgr from '@/managers/connectionmgr';
 import { ConnectionType } from '@/utils/types';
 import Connection, { ConnectionState } from '@connections/connection';
 import TableMgr from '@/managers/tablemgr';
+import AppMgr, { EventType } from '@/managers/appmgr';
 
 /**
  * BluetoothConnection class
@@ -350,7 +351,8 @@ export class BluetoothConnection extends Connection {
             })
             .then(async (device) => {
                 this.connLogger.info('Connecting to device...');
-                //TODO: Put up a spinner until connection is fully complete, including reading the directory.
+                // show a dialog that the bluetooth is connecting
+                AppMgr.getInstance().emit(EventType.EVENT_SHOWBLUETOOTH_CONNECTING, 'show-bluetooth-connecting');
                 this.bleDevice = device;
                 if (device.gatt?.connected) {
                     console.log("Reconnecting...");

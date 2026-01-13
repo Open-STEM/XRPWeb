@@ -47,7 +47,9 @@ export enum EventType {
     EVENT_ALERT = 'alert', // Alert dialog event
     EVENT_ISRUNNING = 'is-running', // XRP is running user code
     EVENT_LOGIN_STATUS = 'login-status', // Google login status
-    EVENT_PROGRAM_EXECUTED = 'runstop-complete' // Run/Stop command complete
+    EVENT_PROGRAM_EXECUTED = 'runstop-complete', // Run/Stop command complete
+    EVENT_SHOWBLUETOOTH_CONNECTING = 'show-bluetooth-connecting', // Show Bluetooth connecting dialog
+    EVENT_HIDE_BLUETOOTH_CONNECTING = 'hide-bluetooth-connecting', // Hide Bluetooth connecting dialog
 }
 
 type Events = {
@@ -82,6 +84,8 @@ type Events = {
     [EventType.EVENT_ISRUNNING]: string;
     [EventType.EVENT_LOGIN_STATUS]: string;
     [EventType.EVENT_PROGRAM_EXECUTED]: string;
+    [EventType.EVENT_SHOWBLUETOOTH_CONNECTING]: string;
+    [EventType.EVENT_HIDE_BLUETOOTH_CONNECTING]: string;
 };
 
 /**

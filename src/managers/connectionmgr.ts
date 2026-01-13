@@ -75,7 +75,10 @@ export default class ConnectionMgr {
                 // Check for plugins after connection is established
                 await this.pluginMgr.pluginCheck();
                 
-                //TODO: if this was a bluetooth connection this is where to take down the spinner.
+                // After successufully connected to the bluetooth, hide the connecting dialog
+                if (connType === ConnectionType.BLUETOOTH) {
+                    AppMgr.getInstance().emit(EventType.EVENT_HIDE_BLUETOOTH_CONNECTING, 'hide-bluetooth-connecting');
+                }
             }
         } else if (state === ConnectionState.Disconnected) {
             this.appMgr.emit(
