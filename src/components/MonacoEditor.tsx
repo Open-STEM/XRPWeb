@@ -120,10 +120,6 @@ type MonacoEditorProps = {
      */
     language?: string;
     /**
-     * Path of the file
-     */
-    // path?: string,
-    /**
      * Value of the current model
      */
     value?: string;
@@ -131,6 +127,8 @@ type MonacoEditorProps = {
 
 const MonacoEditor = ({
     name,
+    width,
+    height,
     language = 'python',
     value,
     className,
@@ -139,8 +137,8 @@ const MonacoEditor = ({
     const containerRef = useRef<HTMLDivElement | null>(null);
     const editorRef = useRef<HTMLDivElement | null>(null);
     const editor = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-    const [childWidth, setChildWidth] = useState(0);
-    const [childHeight, setChildHeight] = useState(0);
+    const [childWidth, setChildWidth] = useState(width);
+    const [childHeight, setChildHeight] = useState(height);
 
     useEffect(() => {
         if (containerRef.current) {
@@ -231,7 +229,7 @@ const MonacoEditor = ({
             EditorMgr.getInstance().setSubscription(name);
         }
 
-        if (editorRef.current && childWidth > 0 && childHeight > 0) {
+        if (editorRef.current) {
             if (editor.current === null) {
                 updateUserConfiguration(`{
                     "editor.fontSize": ${Constants.DEFAULT_FONTSIZE},
