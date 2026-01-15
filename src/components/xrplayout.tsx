@@ -104,13 +104,13 @@ let layoutRef: React.RefObject<Layout> = {
 const factory = (node: TabNode) => {
     const component = node.getComponent();
     if (component == 'editor') {
-        return <MonacoEditor name={node.getName()} width="100vw" height="100vh" />;
+        return <MonacoEditor tabname={node.getName()} width="100vw" height="100vh" />;
     } else if (component == 'xterm') {
         return <XRPShell />;
     } else if (component == 'folders') {
         return <FolderTree treeData={null} theme="rct-dark" isHeader={true} />;
     } else if (component == 'blockly') {
-        return <BlocklyEditor name={node.getName()} />;
+        return <BlocklyEditor tabname={node.getName()} />;
     } else if (component == 'dashboard') {
         return <XRPDashboard />;
     } else if (component == 'aichat') {

@@ -102,7 +102,7 @@ type MonacoEditorProps = {
     /**
      * name of the editor container
      */
-    name: string;
+    tabname: string;
     /**
      * Height of the editor container
      */
@@ -126,7 +126,7 @@ type MonacoEditorProps = {
 };
 
 const MonacoEditor = ({
-    name,
+    tabname,
     width,
     height,
     language = 'python',
@@ -139,6 +139,12 @@ const MonacoEditor = ({
     const editor = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
     const [childWidth, setChildWidth] = useState(width);
     const [childHeight, setChildHeight] = useState(height);
+    const [name, setName] = useState<string>(tabname);
+    const nameRef = useRef(name);
+
+    useEffect(() => {
+        nameRef.current = name;
+    }, [name]);
 
     useEffect(() => {
         if (containerRef.current) {
@@ -166,20 +172,21 @@ const MonacoEditor = ({
          * SaveEditor save the current editor session to XRP
          * @param code
          */
-        function SaveEditor(code: string) {
+        async function SaveEditor(code: string) {
+            const currentName = nameRef.current;
             const activeTab = localStorage.getItem(StorageKeys.ACTIVETAB)?.replace(/^"|"$/g, '');
-            if (activeTab === name) {
-                EditorMgr.getInstance().saveEditor(name, code);
+            if (activeTab === currentName) {
+                await EditorMgr.getInstance().saveEditor(currentName, code);
                 EditorMgr.getInstance().SaveToLocalStorage(
-                    EditorMgr.getInstance().getEditorSession(name) as EditorSession,
+                    EditorMgr.getInstance().getEditorSession(currentName) as EditorSession,
                     code,
                 );
             }
         }
 
         if (
-            EditorMgr.getInstance().hasEditorSession(name) &&
-            !EditorMgr.getInstance().hasSubscription(name)
+            EditorMgr.getInstance().hasEditorSession(nameRef.current) &&
+            !EditorMgr.getInstance().hasSubscription(nameRef.current)
         ) {
             AppMgr.getInstance().on(EventType.EVENT_THEME, (theme) => {
                 console.log('Monaco set theme to ${selectedTheme}');
@@ -190,7 +197,7 @@ const MonacoEditor = ({
             AppMgr.getInstance().on(EventType.EVENT_EDITOR_LOAD, (content) => {
                 console.log('Editor Content', content);
                 const loadContent = JSON.parse(content);
-                if (loadContent.name !== name) return;
+                if (loadContent.name !== nameRef.current) return;
                 if (editorRef.current && editor.current) {
                     const model = monaco.editor.createModel(loadContent.content, languageId);
                     editor.current.setModel(model);
@@ -203,17 +210,18 @@ const MonacoEditor = ({
             });
 
             AppMgr.getInstance().on(EventType.EVENT_FONTCHANGE, (change) => {
+                const currentName = nameRef.current;
                 const activeTab = localStorage
                     .getItem(StorageKeys.ACTIVETAB)
                     ?.replace(/^"|"$/g, '');
-                if (activeTab !== name) return;
+                if (activeTab !== currentName) return;
                 if (change === FontSize.INCREASE) {
-                    const fontsize = EditorMgr.getInstance().getFontsize(name) + 1;
-                    EditorMgr.getInstance().setFontsize(name, fontsize);
+                    const fontsize = EditorMgr.getInstance().getFontsize(currentName) + 1;
+                    EditorMgr.getInstance().setFontsize(currentName, fontsize);
                     editor.current?.updateOptions({ fontSize: fontsize });
                 } else if (change === FontSize.DESCREASE) {
-                    const fontsize = EditorMgr.getInstance().getFontsize(name) - 1;
-                    EditorMgr.getInstance().setFontsize(name, fontsize);
+                    const fontsize = EditorMgr.getInstance().getFontsize(currentName) - 1;
+                    EditorMgr.getInstance().setFontsize(currentName, fontsize);
                     editor.current?.updateOptions({ fontSize: fontsize });
                 }
             });
@@ -225,8 +233,12 @@ const MonacoEditor = ({
                 }
             });
 
-            EditorMgr.getInstance().setFontsize(name, Constants.DEFAULT_FONTSIZE);
-            EditorMgr.getInstance().setSubscription(name);
+            AppMgr.getInstance().on(EventType.EVENT_EDITOR_NAME_CHANGED, (newName) => {
+                setName(newName);
+            });
+
+            EditorMgr.getInstance().setFontsize(nameRef.current, Constants.DEFAULT_FONTSIZE);
+            EditorMgr.getInstance().setSubscription(nameRef.current);
         }
 
         if (editorRef.current) {
@@ -245,7 +257,7 @@ const MonacoEditor = ({
                     console.log('Editor created', codeEditor.getId());
                 });
 
-                const editorSession = EditorMgr.getInstance().getEditorSession(name);
+                const editorSession = EditorMgr.getInstance().getEditorSession(nameRef.current);
                 if (editorSession && editorSession.content) {
                     const model = monaco.editor.createModel(editorSession.content, languageId);
                     editor.current?.setModel(model);
@@ -253,11 +265,12 @@ const MonacoEditor = ({
                 }
     
                 editor.current.onDidChangeModelContent(() => {
+                    const currentName = nameRef.current;
                     const code = editor.current?.getValue();
                     if (code) {
-                        EditorMgr.getInstance().updateEditorSessionChange(name, true);
+                        EditorMgr.getInstance().updateEditorSessionChange(currentName, true);
                         EditorMgr.getInstance().SaveToLocalStorage(
-                            EditorMgr.getInstance().getEditorSession(name) as EditorSession,
+                            EditorMgr.getInstance().getEditorSession(currentName) as EditorSession,
                             code,
                         );
                     }
@@ -287,7 +300,7 @@ const MonacoEditor = ({
                 }
             }
         }
-    }, [name, language, value, t, childWidth, childHeight]);
+    }, [language, value, t, childWidth, childHeight]);
 
     return (
         <>

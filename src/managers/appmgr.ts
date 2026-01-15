@@ -50,6 +50,7 @@ export enum EventType {
     EVENT_PROGRAM_EXECUTED = 'runstop-complete', // Run/Stop command complete
     EVENT_SHOWBLUETOOTH_CONNECTING = 'show-bluetooth-connecting', // Show Bluetooth connecting dialog
     EVENT_HIDE_BLUETOOTH_CONNECTING = 'hide-bluetooth-connecting', // Hide Bluetooth connecting dialog
+    EVENT_EDITOR_NAME_CHANGED = 'editor-name-changed', // Editor name changed
 }
 
 type Events = {
@@ -86,6 +87,7 @@ type Events = {
     [EventType.EVENT_PROGRAM_EXECUTED]: string;
     [EventType.EVENT_SHOWBLUETOOTH_CONNECTING]: string;
     [EventType.EVENT_HIDE_BLUETOOTH_CONNECTING]: string;
+    [EventType.EVENT_EDITOR_NAME_CHANGED]: string;
 };
 
 /**
