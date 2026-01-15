@@ -350,6 +350,8 @@ function FolderTree(treeProps: TreeProps) {
                 await CommandToXRPMgr.getInstance().renameFile(found.path + '/' + found.name, name);
             }
 
+            EditorMgr.getInstance().RenameEditorTab(originalName, name);
+
             // update the name field
             found.name = name;
         }

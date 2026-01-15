@@ -154,6 +154,42 @@ export default class EditorMgr {
     }
 
     /**
+     * RenameEditorTab - rename editor tab
+     * @param oldId 
+     * @param newId 
+     */
+    public RenameEditorTab(oldId: string, newId: string) {
+        const session = this.getEditorSession(oldId);
+        if (session) {
+            // update the session id
+            session.id = newId;
+            // update the session XRP path
+            if (session.path) {
+                session.path = session.path.replace(oldId, newId);
+            }
+            // update the session Google Drive path
+            if (session.gpath) {
+                session.gpath = session.gpath.replace(oldId, newId);
+            }
+            // update the tab name
+            this.layoutModel?.doAction(Actions.renameTab(oldId, newId));
+
+            // remove the session from the editor maps and re-insert it
+            this.editorSessions.delete(oldId);
+            this.editorSessions.set(newId, session);
+
+            // remove the old session from localstorage
+            this.RemoveFromLocalStorage(oldId);
+            // save the new session to localstorage
+            this.SaveToLocalStorage(session, session.content || '');
+
+            // update the active tab in localstorage
+            localStorage.setItem(StorageKeys.ACTIVETAB, JSON.stringify(newId));
+            AppMgr.getInstance().emit(EventType.EVENT_EDITOR_NAME_CHANGED, newId);
+        }
+    }
+
+    /**
      * getEditorSession - Get an editor session
      * @param id 
      * @returns EditorSession | undefined
@@ -255,7 +291,7 @@ export default class EditorMgr {
                     const filename = session.path.split('/').pop();
 
                     AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
-                    AppMgr.getInstance().driveService.upsertFileToGoogleDrive(blob, filename ?? '', mineType, session.gpath).then(() => {
+                    await AppMgr.getInstance().driveService.upsertFileToGoogleDrive(blob, filename ?? '', mineType, session.gpath).then(() => {
                         session.isModified = false;
                         AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');
                         AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');

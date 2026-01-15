@@ -5,7 +5,7 @@ import BlocklyConfigs from '@components/blockly/xrp_blockly_configs';
 import * as Blockly from 'blockly/core';
 import { setBlocklyLocale } from '@/utils/blockly-locales';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { StorageKeys } from '@/utils/localstorage';
 import EditorMgr, { EditorSession } from '@/managers/editormgr';
@@ -122,17 +122,36 @@ const blocklyMpdernTheme = Blockly.Theme.defineTheme('modern', {
 });
 
 interface BlocklyEditorProps {
-    name: string;
+    tabname: string;
 }
+
+/**
+ * blocklyToPython
+ * @param ws
+ * @returns
+ */
+function blocklyToPython(ws: Workspace) {
+    const pythonCode = pythonGenerator
+        .workspaceToCode(ws)
+        .replace('from numbers import Number\n', 'Number = int\n');
+    const blocklyCode = JSON.stringify(Blockly.serialization.workspaces.save(ws));
+    const date = moment();
+    const formatedDate = date.format('YYYY-MM-DD HH:MM:SS');
+    const code = pythonCode + '\n\n\n## ' + formatedDate + '\n##XRPBLOCKS ' + blocklyCode;
+    return code;
+}
+
 
 /**
  * BlocklyEditor component
  * @returns
  */
-function BlocklyEditor({ name }: BlocklyEditorProps) {
+function BlocklyEditor({ tabname }: BlocklyEditorProps) {
     const [toolboxKey, setToolboxKey] = useState(0); // Force re-render when toolbox updates
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [isListenerSet, setIsListenerSet] = useState(false);
+    const [name, setName] = useState<string>(tabname);
+    const nameRef = useRef(name);
 
     /**
      * handleOnInject
@@ -144,54 +163,46 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
             editorSession.workspace = ws;
         }
     }
-
-    /**
-     * blocklyToPython
-     * @param ws
-     * @returns
-     */
-    function blocklyToPython(ws: Workspace) {
-        const pythonCode = pythonGenerator
-            .workspaceToCode(ws)
-            .replace('from numbers import Number\n', 'Number = int\n');
-        const blocklyCode = JSON.stringify(Blockly.serialization.workspaces.save(ws));
-        const date = moment();
-        const formatedDate = date.format('YYYY-MM-DD HH:MM:SS');
-        const code = pythonCode + '\n\n\n## ' + formatedDate + '\n##XRPBLOCKS ' + blocklyCode;
-        return code;
-    }
     
     /**
      * saveEditor
      */
-    async function saveEditor() {
-        const ws = EditorMgr.getInstance().getEditorSession(name)?.workspace;
+    const saveEditor = useCallback(async () =>{
+        const currentName = nameRef.current;
+        const ws = EditorMgr.getInstance().getEditorSession(currentName)?.workspace;
         if (ws) {
             const activeTab = localStorage.getItem(StorageKeys.ACTIVETAB)?.replace(/^"|"$/g, '');
-            if (activeTab === name) {
+            if (activeTab === currentName) {
                 const code = blocklyToPython(ws);
                 console.log('Saving blockly', activeTab, code);
-                await EditorMgr.getInstance().saveEditor(name, code);
+                await EditorMgr.getInstance().saveEditor(currentName, code);
                 EditorMgr.getInstance().SaveToLocalStorage(
-                    EditorMgr.getInstance().getEditorSession(name) as EditorSession,
+                    EditorMgr.getInstance().getEditorSession(currentName) as EditorSession,
                     code
                 );
             }
         }
-    }
+    }, []);
 
     useHotkeys('ctrl+s, meta+s', (event) => {
         event.preventDefault();
         saveEditor();
     });
 
+    /**
+     * useEffect - setup a reference to the editor name
+     */
+    useEffect(() => {
+        nameRef.current = name;
+    }, [name]);
+
     useEffect(() => {
         if (
-            EditorMgr.getInstance().hasEditorSession(name) &&
-            !EditorMgr.getInstance().hasSubscription(name)
+            EditorMgr.getInstance().hasEditorSession(nameRef.current) &&
+            !EditorMgr.getInstance().hasSubscription(nameRef.current)
         ) {
             AppMgr.getInstance().on(EventType.EVENT_THEME, (theme) => {
-                const ws = EditorMgr.getInstance().getEditorSession(name)?.workspace;
+                const ws = EditorMgr.getInstance().getEditorSession(nameRef.current)?.workspace;
 
                 if (ws) {
                     // Not sure why the compiler complain but it works at runtime
@@ -203,9 +214,9 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
 
             AppMgr.getInstance().on(EventType.EVENT_EDITOR_LOAD, (content) => {
                 const loadContent = JSON.parse(content);
-                if (loadContent.name !== name) return;
+                if (loadContent.name !== nameRef.current) return;
 
-                const ws = EditorMgr.getInstance().getEditorSession(name)?.workspace;
+                const ws = EditorMgr.getInstance().getEditorSession(nameRef.current)?.workspace;
                 if (ws) {
                     Blockly.serialization.workspaces.load(JSON.parse(loadContent.content), ws);
                     // @ts-expect-error - it is a valid function
@@ -222,7 +233,7 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
 
             AppMgr.getInstance().on(EventType.EVENT_EDITOR, (type) => {
                 if (type === EditorType.BLOCKLY) {
-                    const ws = EditorMgr.getInstance().getEditorSession(name)?.workspace;
+                    const ws = EditorMgr.getInstance().getEditorSession(nameRef.current)?.workspace;
                     if (ws) {
                         console.log('rescrolling to center!')
                         // @ts-expect-error - it is a valid function
@@ -237,7 +248,7 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
 
             AppMgr.getInstance().on(EventType.EVENT_BLOCKLY_TOOLBOX_UPDATED, () => {
                 // Force a re-render of the Blockly workspace to show new blocks
-                const ws = EditorMgr.getInstance().getEditorSession(name)?.workspace;
+                const ws = EditorMgr.getInstance().getEditorSession(nameRef.current)?.workspace;
                 if (ws) {
                     // Save current workspace content
                     const content = Blockly.serialization.workspaces.save(ws);
@@ -260,7 +271,7 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
             });
 
             AppMgr.getInstance().on(EventType.EVENT_GENPYTHON, (activeTab) => {
-                if (name === activeTab) {
+                if (nameRef.current === activeTab) {
                     const session: EditorSession | undefined =
                     EditorMgr.getInstance().getEditorSession(activeTab);
                     if (session) {
@@ -277,10 +288,14 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                 saveEditor();
             });
 
-            EditorMgr.getInstance().setSubscription(name);
+            AppMgr.getInstance().on(EventType.EVENT_EDITOR_NAME_CHANGED, (newName) => {
+                setName(newName);
+            });            
+
+            EditorMgr.getInstance().setSubscription(nameRef.current);
 
         } else {
-            const editorSession = EditorMgr.getInstance().getEditorSession(name);
+            const editorSession = EditorMgr.getInstance().getEditorSession(nameRef.current);
             if (editorSession && editorSession.content) {
                 // There appears to be some timing issues in loading the content into the workspace
                 // Set 100 ms delay to accommendate the timing issue
@@ -290,11 +305,11 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                     const loadContent = { name: name, content: blockContent };
                     AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));                    
                 };
-                setTimeout(loadEditor, 100, name, editorSession.content);
+                setTimeout(loadEditor, 100, nameRef.current, editorSession.content);
             }
         }
 
- // Set up language based on stored preference
+        // Set up language based on stored preference
         const setupLanguage = () => {
             const storedLanguage = localStorage.getItem(StorageKeys.LANGUAGE) || 'en';
             setBlocklyLocale(storedLanguage);
@@ -320,10 +335,10 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                     ) { return; }
                     if (event.type === Blockly.Events.VIEWPORT_CHANGE || event.isUiEvent) { return; }
                     try {
-                        console.log('Workspace changed, saving session:', name);
-                        EditorMgr.getInstance().updateEditorSessionChange(name, true);
+                        console.log('Workspace changed, saving session:', nameRef.current);
+                        EditorMgr.getInstance().updateEditorSessionChange(nameRef.current, true);
                         const code = blocklyToPython(ws);
-                        EditorMgr.getInstance().SaveToLocalStorage(EditorMgr.getInstance().getEditorSession(name) as EditorSession, code);
+                        EditorMgr.getInstance().SaveToLocalStorage(EditorMgr.getInstance().getEditorSession(nameRef.current) as EditorSession, code);
                     } catch (e) {
                         console.warn('Failed to serialize Blockly workspace:', e);
                     }
@@ -351,7 +366,7 @@ function BlocklyEditor({ name }: BlocklyEditorProps) {
                 ws.removeChangeListener(listener);
             }
         }
-    });
+    }, [isListenerSet, isLoading, saveEditor]);
 
     return (
         <BlocklyWorkspace
