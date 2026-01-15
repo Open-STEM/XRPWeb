@@ -45,6 +45,6 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: xrpweb-v${{ github.run_number }}.zip
-          asset_name: xrpweb
+          asset_name: xrpweb-v${{ github.run_number }}.zip
           tag: ${{ github.ref }}
           overwrite: true
