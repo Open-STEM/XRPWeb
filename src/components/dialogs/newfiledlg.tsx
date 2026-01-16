@@ -115,7 +115,7 @@ function NewFileDlg(newFileProps: NewFileProps) {
         const filename = e.target.value + (filetype === 1 ? '.blocks' : '.py');
         const isValid = Constants.REGEX_FILENAME.test(filename);
         const parts = selectedFolder.split('/').filter((part) => part !== '');
-        const foldername = parts[parts.length - 1];
+        const foldername = parts.length > 0 ? parts[parts.length - 1] : selectedFolder;
         if (!isValid || AppMgr.getInstance().IsFileExists(foldername,filename)) {
             setIsFileExists(true);
             setIsOkayToSubmit(false);

@@ -1,6 +1,7 @@
 {
     "_commentXRP": "Esta línea no necesita ser traducida; agregar traducción específica de XRP a continuación",
     "file": "Archivo",
+    "file-exists-on-python-convert": "El archivo de Python {{ filename }} ya existe. Cámbiele el nombre antes de realizar la conversión.",
     "view": "Ver",
     "help": "Ayuda",
     "folders": "Carpetas",

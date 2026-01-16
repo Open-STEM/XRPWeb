@@ -11,6 +11,7 @@ describe('EditorMgr', () => {
         editorMgr = EditorMgr.getInstance();
         session = {
             id: '1',
+            name: 'Test Session',
             path: '/path/to/file',
             type: EditorType.PYTHON,
             isSubscribed: false,

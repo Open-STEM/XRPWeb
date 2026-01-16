@@ -1,6 +1,7 @@
 {
     "_commentXRP": "This line does not need to be translated; add specific XRP translation below",
     "file": "File",
+    "file-exists-on-python-convert": "Python file {{ filename }} is already exists. Please rename it before performing conversion.",
     "view": "View",
     "help": "Help",
     "folders": "Folders",
