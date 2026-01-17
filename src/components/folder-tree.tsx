@@ -21,7 +21,7 @@ import Dialog from './dialogs/dialog';
 import ConfirmationDlg from './dialogs/confirmdlg';
 import AlertDialog from './dialogs/alertdlg';
 import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
-import EditorMgr from '@/managers/editormgr';
+import EditorMgr, { EdSearchParams } from '@/managers/editormgr';
 import Login from '@/widgets/login';
 import { UserProfile } from '@/services/google-auth';
 
@@ -165,6 +165,22 @@ function FolderTree(treeProps: TreeProps) {
         );
     }
 
+    /**
+     * getFilePath - construct the file path
+     * @param node
+     * @returns filepath
+     */
+    function getFilePath(node: FolderItem) {
+        const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
+        const path = node.path.includes('/XRPCode/')
+            ? node.path.replace('/XRPCode/', Constants.GUSERS_FOLDER + `${username}/`)
+            : node.path === '/' ?  node.path : node.path + '/';
+        const filePath = path === '/'
+            ? path + node.name
+            : path + node.name;
+        return filePath;
+    }    
+
     /**     
      * Node component for rendering each tree node
      * @param param0
@@ -191,20 +207,22 @@ function FolderTree(treeProps: TreeProps) {
                     if (node.isInternal) node.toggle();
                     if (!(e.detail % 2) && !isRunning) {
                         if (node.children === null) {
-                            const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
-                            const path = node.data.path.includes('/XRPCode/')
-                                ? node.data.path.replace('/XRPCode/', Constants.GUSERS_FOLDER + `${username}/`)
-                                : node.data.path + '/';
-                            const filePath =
-                                path === '/'
-                                    ? path + node.data.name
-                                    : path + node.data.name;
+                            const filePath = getFilePath(node.data);
                             const filePathData = {
                                 xrpPath: filePath,
                                 gPath: node.data.fileId,
                                 gparentId: node.data.gparentId
                             };
                             AppMgr.getInstance().emit(EventType.EVENT_OPEN_FILE, JSON.stringify(filePathData));
+                        }
+                    } else {
+                        if (node.children === null) {
+                            const filePath = getFilePath(node.data);
+                            const seachParams: EdSearchParams = {
+                                name: node.data.name,
+                                path: filePath,
+                            }
+                            EditorMgr.getInstance().SelectEditorTabByName(seachParams);
                         }
                     }
                 }}
@@ -297,10 +315,14 @@ function FolderTree(treeProps: TreeProps) {
 
                 // remove the node from the tab and editor manager
                 const editorMgr = EditorMgr.getInstance();
-                const editorSession = editorMgr.getEditorSession(found.name);
+                const searchParams : EdSearchParams = {
+                    name: found.name,
+                    path: getFilePath(found),
+                }
+                const editorSession = editorMgr.getEditorSessionByName(searchParams);
                 if (editorSession) {
-                    editorMgr.RemoveEditor(found.name);
-                    editorMgr.RemoveEditorTab(found.name);
+                    editorMgr.RemoveEditorTabByName(searchParams);
+                    editorMgr.RemoveEditorByName(searchParams);
                 }
             }
         };
@@ -350,7 +372,11 @@ function FolderTree(treeProps: TreeProps) {
                 await CommandToXRPMgr.getInstance().renameFile(found.path + '/' + found.name, name);
             }
 
-            EditorMgr.getInstance().RenameEditorTab(originalName, name);
+            const searchParams : EdSearchParams = {
+                name: found.name,
+                path: getFilePath(node.data),
+            }
+            EditorMgr.getInstance().RenameEditorTab(searchParams, name);
 
             // update the name field
             found.name = name;

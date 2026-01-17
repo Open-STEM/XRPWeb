@@ -46,6 +46,7 @@ export type ListItem = {
 };
 
 export type NewFileData = {
+    id?: string;
     name: string;
     path: string,
     gpath?: string,

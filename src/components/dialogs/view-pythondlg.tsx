@@ -50,6 +50,7 @@ export default function ViewPythonDlg({ code, toggleDlg, clearDlg }: ViewPythonD
             <hr className="w-full border-mountain-mist-600" />
             <MonacoEditor
                 value={code}
+                tabId={t('python-untile')}
                 tabname={t('python-untile')}
                 width={'80vw'}
                 height={'80vw'}

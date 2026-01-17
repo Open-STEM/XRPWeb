@@ -46,7 +46,7 @@ import NewFileDlg from '@/components/dialogs/newfiledlg';
 import { Constants } from '@/utils/constants';
 import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
 import UploadFileDlg from '@/components/dialogs/uploadfiledlg';
-import EditorMgr, { EditorSession } from '@/managers/editormgr';
+import EditorMgr, { EditorSession, EdSearchParams } from '@/managers/editormgr';
 import { useLocalStorage } from 'usehooks-ts';
 import { StorageKeys } from '@/utils/localstorage';
 import FileSaver from 'file-saver';
@@ -148,8 +148,12 @@ function NavBar({ layoutref }: NavBarProps) {
             AppMgr.getInstance().on(EventType.EVENT_OPEN_FILE, async (filePathDataJson: string) => {
                 const filePathData = JSON.parse(filePathDataJson);
                 const filename = filePathData.xrpPath.split('/').pop();
-                if (filename && EditorMgr.getInstance().hasEditorSession(filename)) {
-                    EditorMgr.getInstance().SelectEditorTab(filename);
+                const searchParams: EdSearchParams = {
+                    name: filename,
+                    path: filePathData.xrpPath,
+                };
+                if (filename && EditorMgr.getInstance().hasEditorSessionByName(searchParams)) {
+                    EditorMgr.getInstance().SelectEditorTabByName(searchParams);
                     return;
                 }
                 const fileType = filename?.includes('.blocks') ? FileType.BLOCKLY : FileType.PYTHON;
@@ -161,8 +165,8 @@ function NavBar({ layoutref }: NavBarProps) {
                     name: filename || '',
                     filetype: fileType,
                 };
-                CreateEditorTab(mewFileData, layoutref);
-                setActiveTab(mewFileData.name)
+                const tabId = CreateEditorTab(mewFileData, layoutref);
+                setActiveTab(tabId);
                 // Need to access the connection status directly from the manager because the React isConnected state available 
                 // isn't available in the thread context
                 const isConnected = AppMgr.getInstance().getConnection()?.isConnected();
@@ -173,7 +177,7 @@ function NavBar({ layoutref }: NavBarProps) {
                     await CommandToXRPMgr.getInstance()
                         .getFileContents(filePathData.xrpPath)
                         .then((content) => {
-                            loadXRPEditor(content, fileType, filename);
+                            loadXRPEditor(content, fileType, filename, filePathData.xrpPath);
                         });
                 } 
             });
@@ -292,7 +296,7 @@ function NavBar({ layoutref }: NavBarProps) {
             } else {
                 content = fileContent;
             }
-            const loadContent = { name: filename, content: content };
+            const loadContent = { name: filename, path: filePathData.path, content: content };
             AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
         });
     }
@@ -302,8 +306,9 @@ function NavBar({ layoutref }: NavBarProps) {
      * @param content 
      * @param fileType 
      * @param filename 
+     * @param path
      */
-    function loadXRPEditor(content: number[], fileType: FileType, filename: string) {
+    function loadXRPEditor(content: number[], fileType: FileType, filename: string, path: string) {
         // if the file is a block files, extract the blockly JSON out of the comment ##XRPBLOCKS
         let bytes = content;
         if (fileType === FileType.BLOCKLY) {
@@ -315,7 +320,7 @@ function NavBar({ layoutref }: NavBarProps) {
             ? bytes
             : new TextDecoder().decode(new Uint8Array(bytes));
         // set the content in the editor
-        const loadContent = { name: filename, content: text };
+        const loadContent = { name: filename, path: path, content: text };
         AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
     }
 
@@ -396,8 +401,8 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     async function onNewFileSubmitted(data: NewFileData) {
         toggleDialog();
-        CreateEditorTab(data, layoutref);
-        setActiveTab(data.name);
+        const tabId = CreateEditorTab(data, layoutref);
+        setActiveTab(tabId);
         if (authService.isLogin) {
             // create the file in Google Drive
             const minetype = data.name.includes('.py')
@@ -408,7 +413,11 @@ function NavBar({ layoutref }: NavBarProps) {
                 console.log('New file created in Google Drive: ', file);
                 // update the file ID in the editor session
                 const editorMgr = EditorMgr.getInstance();
-                const session = editorMgr.getEditorSession(data.name);
+                const searchParams: EdSearchParams = {
+                    name: data.name,
+                    path: data.path,
+                };
+                const session = editorMgr.getEditorSessionByName(searchParams);
                 if (session) {
                     session.gpath = file?.id;
                 }
@@ -455,7 +464,7 @@ function NavBar({ layoutref }: NavBarProps) {
                 .then((content) => {
                     const data: string = new TextDecoder().decode(new Uint8Array(content));
                     const blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
-                    FileSaver.saveAs(blob, session.id);
+                    FileSaver.saveAs(blob, session.name);
                 });
         } else {
             setDialogContent(
@@ -498,14 +507,14 @@ function NavBar({ layoutref }: NavBarProps) {
         const RemoveAndSwitchTab = async (newFileData: NewFileData) => {
             editorMgr.RemoveEditorTab(activeTab);
             editorMgr.RemoveEditor(activeTab);
-            CreateEditorTab(newFileData, layoutref);
-            setActiveTab(fileData.name)
+            const tabId = CreateEditorTab(newFileData, layoutref);
+            setActiveTab(tabId);
             setDialogContent(<div />);
             if (authService.isLogin) {
                 await loadGoogleEditor(newFileData, newFileData.filetype, newFileData.name);
             } else if (isConnected) {
                 await CommandToXRPMgr.getInstance().getFileContents(newFileData.path).then(async (content) => {
-                    loadXRPEditor(content, newFileData.filetype, newFileData.name);
+                    loadXRPEditor(content, newFileData.filetype, newFileData.name, newFileData.path);
                 });
             }
             if (newFileData.filetype === FileType.BLOCKLY) {
@@ -599,7 +608,7 @@ function NavBar({ layoutref }: NavBarProps) {
     /**
      * BlocksToPythonCallback - setup the conversion of the current active Blocks program to Python program
      */
-    const BlocksToPythonCallback = () => {
+    const BlocksToPythonCallback = async () => {
         const appMgr = AppMgr.getInstance();
         const convertToPythonHandler = async (code: string) => {
             // remove the active tab and create a new python editor tab with the code
@@ -608,7 +617,7 @@ function NavBar({ layoutref }: NavBarProps) {
                 const newFileData: NewFileData = {
                     parentId: editorSession.id,
                     path: editorSession?.path,
-                    name: editorSession.id.split('.blocks')[0] + '.py',
+                    name: editorSession.name.split('.blocks')[0] + '.py',
                     gpath: editorSession.gpath,
                     gparentId: editorSession.gparentId,
                     filetype: FileType.PYTHON,
@@ -622,9 +631,11 @@ function NavBar({ layoutref }: NavBarProps) {
                         const blob = new Blob([code], { type: minetype });
                         await driveService.uploadFile(blob, newFileData.name, minetype, newFileData.gparentId ?? undefined).then(() => {
                             EditorMgr.getInstance().RemoveEditor(activeTab);
-                            CreateEditorTab(newFileData, layoutref);
-                            setActiveTab(newFileData.name);
-                            AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(code));                        });
+                            const tabId = CreateEditorTab(newFileData, layoutref);
+                            setActiveTab(tabId);
+                            const loadContent = { name: newFileData.name, path: newFileData.path, content: code };
+                            AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));                        
+                        });
                         await fireGoogleUserTree(getUsernameFromEmail(authService.userProfile.email) ?? '');
                     });
                 }
@@ -633,17 +644,17 @@ function NavBar({ layoutref }: NavBarProps) {
                     await CommandToXRPMgr.getInstance().buildPath(Constants.TRASH_FOLDER);  // ensure the trash folder exists
                     await CommandToXRPMgr.getInstance().renameFile(
                         editorSession.path,
-                        Constants.TRASH_FOLDER + '/' + editorSession.id,
+                        Constants.TRASH_FOLDER + '/' + editorSession.name,
                     ).then(async () => {
                         // save the file to python
                         const path = editorSession.path.split('.blocks')[0] + '.py';
                         await CommandToXRPMgr.getInstance().uploadFile(path, code).then(() => {
                             EditorMgr.getInstance().RemoveEditor(activeTab);
-                            CreateEditorTab(newFileData, layoutref);
-                            setActiveTab(newFileData.name);
+                            const tabId = CreateEditorTab(newFileData, layoutref);
+                            setActiveTab(tabId);
                         });
                         await CommandToXRPMgr.getInstance().getFileContents(path).then((content) => {
-                            loadXRPEditor(content, FileType.PYTHON, newFileData.name);
+                            loadXRPEditor(content, FileType.PYTHON, newFileData.name, path);
                         })
                         await CommandToXRPMgr.getInstance().getOnBoardFSTree();
                     });
@@ -652,6 +663,38 @@ function NavBar({ layoutref }: NavBarProps) {
             EditorMgr.getInstance().RemoveEditorTab(activeTab);
             appMgr.eventOff(EventType.EVENT_GENPYTHON_DONE);
         };
+
+        // Check to see if there is a python file match the name of the blockly file to be converted
+        const editorSession = EditorMgr.getInstance().getEditorSession(activeTab);
+        if (editorSession) {
+            if (isLogin) {
+                // check if existing python file exist with the same name in the Google drive
+                if (editorSession.gparentId) {
+                    const foldername = await AppMgr.getInstance().driveService.getFolderName(editorSession.gparentId);
+                    const filename = editorSession.name.split('.blocks')[0] + '.py';
+                    if (AppMgr.getInstance().IsFileExists(foldername || '', filename)) {
+                        toggleDialog();
+                        setDialogContent(<AlertDialog alertMessage={t('file-exists-on-python-convert', { filename: filename })} toggleDialog={toggleDialog} />);
+                        toggleDialog();
+                        return; 
+                    }
+                }
+            } else if (isConnected) {
+                const folderpath = editorSession.path.split(`/${editorSession.name}`);
+                const foldername = folderpath[0] !== '/' ? folderpath[0].split('/').pop() : folderpath[0];
+                console.log('foldername: ', foldername)
+
+                // check if existing python file exist with the same name
+                const filename = editorSession.name.split('.blocks')[0] + '.py';
+                if (AppMgr.getInstance().IsFileExists(foldername || '', filename)) {
+                    toggleDialog();
+                    setDialogContent(<AlertDialog alertMessage={t('file-exists-on-python-convert', { filename: filename })} toggleDialog={toggleDialog} />);
+                    toggleDialog();
+                    return; 
+                }
+            }
+        }
+        
         // signal the editor to generate the python content in this editor session
         appMgr.on(EventType.EVENT_GENPYTHON_DONE, convertToPythonHandler);
         appMgr.emit(EventType.EVENT_GENPYTHON, activeTab);
@@ -727,6 +770,7 @@ function NavBar({ layoutref }: NavBarProps) {
         layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
         EditorMgr.getInstance().AddEditor({
             id: Constants.DASHBOARD_TAB_ID,
+            name: t('dashboard'),
             type: EditorType.OTHER,
             path: '',
             gpath: '',
@@ -760,6 +804,7 @@ function NavBar({ layoutref }: NavBarProps) {
         layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
         EditorMgr.getInstance().AddEditor({
             id: Constants.AI_CHAT_TAB_ID,
+            name: t('ai-chat'),
             type: EditorType.OTHER,
             path: '',
             gpath: '',
@@ -865,7 +910,7 @@ function NavBar({ layoutref }: NavBarProps) {
                             if (session) {
                                 if (isLogin && session.gpath) {
                                     // saving the Google drive parent directory to XRP first
-                                    await EditorMgr.getInstance().saveAllFilesInGoogleDriveToXRP(session.id);
+                                    await EditorMgr.getInstance().saveAllFilesInGoogleDriveToXRP(session.name);
 
                                     // if Google Drive, need to save the select tab to XRP first
                                     // get the file from Google Drive and save it to XRP
