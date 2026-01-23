@@ -44,41 +44,33 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
     const driveService = AppMgr.getInstance().driveService;
     const loginLogger = logger.child({ module: 'login' });
 
-    const SCOPE = 'https://mail.google.com https://www.googleapis.com/auth/drive';
+    const SCOPE = 'https://www.googleapis.com/auth/drive.file';
 
     const googleSignIn = useGoogleLogin({
         scope: SCOPE,
         flow: 'auth-code',
         onSuccess: (codeResponse) => {
-            if (codeResponse.scope.split(' ').includes('https://mail.google.com/')) {
-                setIsLogin(true);
-                authService.isLogin = true;
-                new Promise<void>((resolve) => {
-                    authService.setCode(codeResponse.code);
-                    authService.getRefreshToken().then(async (token) => {
-                        setUser((prev) => ({
-                            ...prev,
-                            access_token: token.access_token,
-                            refresh_token: token.refresh_token,
-                            expire_in: token.expires_in,
-                        }));
-                        driveService.setAccessToken(token.access_token);
-                    });
-
-                    if (user.refresh_token) {
-                        // wait for the refresh token to arrive.
-                        resolve();
-                    }
-                }).then(() => {
-                    setTimeout(() => {
-                        authService.getAccessToken().then((token) => {
-                            loginLogger.debug('Access Token:', token);
-                        });
-                    }, 1000);
+            setIsLogin(true);
+            authService.isLogin = true;
+            new Promise<void>((resolve) => {
+                authService.setCode(codeResponse.code);
+                authService.getRefreshToken().then(async (token) => {
+                    setUser((prev) => ({
+                        ...prev,
+                        access_token: token.access_token,
+                        refresh_token: token.refresh_token,
+                        expire_in: token.expires_in,
+                    }));
+                    driveService.setAccessToken(token.access_token);
+                    resolve();
                 });
-            } else {
-                loginLogger.error('please give required permissions to the app.');
-            }
+            }).then(() => {
+                setTimeout(() => {
+                    authService.getAccessToken().then((token) => {
+                        loginLogger.debug('Access Token:', token);
+                    });
+                }, 1000);
+            });
         },
         onError: (error) => {
             if (error instanceof Error) {
@@ -105,7 +97,7 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
     useEffect(() => {
         if (user.access_token && userProfile.email === '') {
             fetch(
-                `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${user.access_token}`,
+                `https://www.googleapis.com/drive/v3/about?fields=user`,
                 {
                     headers: {
                         Authorization: `Bearer ${user.access_token}`,
@@ -115,8 +107,16 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
             )
                 .then((res) => res.json())
                 .then(async (data) => {
-                    setUserProfile(data);
-                    authService.userProfile = data;
+                    // Map Drive About API response to UserProfile format
+                    const profile: UserProfile = {
+                        id: data.user?.permissionId || data.user?.emailAddress || '',
+                        email: data.user?.emailAddress || '',
+                        name: data.user?.displayName || '',
+                        picture: data.user?.photoLink || '',
+                        verified_email: true, // Drive API doesn't provide this, assume verified
+                    };
+                    setUserProfile(profile);
+                    authService.userProfile = profile;
                         // check if XRPCode folder exists, if not create it
                         try {
                             const folder = await driveService.findFolderByName(Constants.XRPCODE);
@@ -130,7 +130,7 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
                                 loginLogger.error(`Error checking or creating XRPCode folder: ${String(error)}`);
                             }   
                         }
-                    onSuccess(data);
+                    onSuccess(profile);
                 })
                 .catch((err) => loginLogger.error('Error fetching user profile:', err));
         }
