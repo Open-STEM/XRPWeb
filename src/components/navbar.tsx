@@ -1244,7 +1244,7 @@ function NavBar({ layoutref }: NavBarProps) {
             {/** platform infor and connect button*/}
             <div className="flex flex-row items-center gap-4">
                 <div className="flex flex-col items-center text-sm text-shark-300">
-                    {xprID && <span>{`${xprID['platform']}-${xprID['XRPID']}`}</span>}
+                    {xprID && <span>{`XRP-${xprID['XRPID']}`}</span>}
                 </div>
                 <button
                     id="connectBtn"
