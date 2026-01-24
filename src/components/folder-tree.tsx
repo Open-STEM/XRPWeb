@@ -53,6 +53,7 @@ function FolderTree(treeProps: TreeProps) {
     const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [hasSubscribed, setHasSubscribed] = useState<boolean>(false);
+    const [isTreeLoaded, setIsTreeLoaded] = useState(false);
 
     useEffect(() => {
         // If treeData is passed as a prop, build the tree
@@ -114,6 +115,23 @@ function FolderTree(treeProps: TreeProps) {
             setHasSubscribed(true);
         }
     }, [isConnected]);
+
+    /**
+     * Auto select and open the root node when the tree data is loaded
+     */
+    useEffect(() => {
+        if (treeData && treeData.length > 0 && !isTreeLoaded && treeRef.current) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            treeRef.current.select(treeData[0].id);
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            treeRef.current.open(treeData[0].id);
+            setIsTreeLoaded(true);
+        } else if (!treeData) {
+            setIsTreeLoaded(false);
+        }
+    }, [treeData, isTreeLoaded]);
 
     /**
      * toggleDialog - toggle the dialog open/close state
@@ -586,7 +604,7 @@ function FolderTree(treeProps: TreeProps) {
     }
 
     return (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 h-full">
             {treeProps.isHeader && (
                 <div className='flex flex-col items-center p-1 gap-1 bg-mountain-mist-100 dark:bg-mountain-mist-950'>
                     <Login onSuccess={onGoogleLoginSuccess} logoutCallback={onGoogleLogout}/>
@@ -599,7 +617,7 @@ function FolderTree(treeProps: TreeProps) {
                     storageCapacity={capacity}
                 />
             )}
-            <div ref={ref} style={{ height: treeProps.treeData ? '40vh' : '100vh' }}>
+            <div ref={ref} className="flex-1 min-h-0">
                 <Tree
                     ref={treeRef}
                     className="text-md border border-shark-200 bg-mountain-mist-100 text-shark-900 dark:border-shark-950 dark:bg-mountain-mist-950 dark:text-shark-200"
