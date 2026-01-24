@@ -153,6 +153,11 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
     const [isListenerSet, setIsListenerSet] = useState(false);
     const [name, setName] = useState<string>(tabName);
     const nameRef = useRef(name);
+    const isLoadingRef = useRef(isLoading);
+
+    useEffect(() => {
+        isLoadingRef.current = isLoading;
+    }, [isLoading]);
 
     /**
      * handleOnInject
@@ -330,10 +335,10 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
                         setIsLoading(false);
                         return;
                     }
-                    if (isLoading && 
-                        event.type === Blockly.Events.BLOCK_CREATE ||
+                    if (isLoadingRef.current && 
+                        (event.type === Blockly.Events.BLOCK_CREATE ||
                         event.type === Blockly.Events.BLOCK_DELETE ||
-                        event.type === Blockly.Events.BLOCK_CHANGE
+                        event.type === Blockly.Events.BLOCK_CHANGE)
                     ) { return; }
                     if (event.type === Blockly.Events.VIEWPORT_CHANGE || event.isUiEvent) { return; }
                     try {
@@ -368,7 +373,7 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
                 ws.removeChangeListener(listener);
             }
         }
-    }, [isListenerSet, isLoading, saveEditor, tabId]);
+    }, [isListenerSet, saveEditor, tabId]);
 
     return (
         <BlocklyWorkspace
