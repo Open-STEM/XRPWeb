@@ -24,6 +24,7 @@ import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
 import EditorMgr, { EdSearchParams } from '@/managers/editormgr';
 import Login from '@/widgets/login';
 import { UserProfile } from '@/services/google-auth';
+import CreateNodeDlg from './dialogs/create-node-dlg';
 
 type TreeProps = {
     treeData: string | null;
@@ -408,38 +409,42 @@ function FolderTree(treeProps: TreeProps) {
             return null;
         }
 
+        const parentPath = (parentNode?.data.name === '/' || parentNode?.data.name === Constants.XRPCODE)
+            ? parentNode.data.path : (isLogin) ? `${parentNode?.data.path}${parentNode?.data.name}/` :
+            `${parentNode?.data.path}/${parentNode?.data.name}/`;
+
+        // Ask for filename using a promise-based modal
+        const name = await new Promise<string | null>((resolve) => {
+            setDialogContent(
+                <CreateNodeDlg
+                    type={type}
+                    parentPath={parentPath}
+                    onConfirm={(newName) => {
+                        toggleDialog();
+                        resolve(newName);
+                    }}
+                    onCancel={() => {
+                        toggleDialog();
+                        resolve(null);
+                    }}
+                />
+            );
+            toggleDialog();
+        });
+
+        if (!name) return null;
+
         // Generate a unique ID for the new node
         const newId = uniqueId(parentNode?.data.name || `node`);
 
         // Create the new node object
         const newNode: FolderItem = {
             id: newId,
-            name: type === 'internal' ? t('newFolder') : t('newFile'),
+            name: name,
             isReadOnly: false,
             children: type === 'internal' ? [] : null,
-            path: `${parentNode?.data.path}/${parentNode?.data.name}/`,
+            path: parentPath,
         };
-
-        // Update the tree data
-        setTreeData((prevTreeData) => {
-            if (!prevTreeData) return prevTreeData;
-
-            const rootNode = prevTreeData.at(0);
-            if (!rootNode) return prevTreeData;
-
-            if (parentNode) {
-                const found = findItem(rootNode, parentNode.data.id);
-                if (found) {
-                    found.children = found.children || [];
-                    found.children.splice(index, 0, newNode);
-                }
-            } else {
-                rootNode.children = rootNode.children || [];
-                rootNode.children.splice(index, 0, newNode);
-            }
-
-            return [...prevTreeData];
-        });
 
         if (newNode) {
             let parentFileId = null;
@@ -453,7 +458,7 @@ function FolderTree(treeProps: TreeProps) {
                 if (isLogin) {
                     await AppMgr.getInstance().driveService?.createFolder(newNode.name,  parentFileId ?? undefined).then((data) => {
                         newNode.fileId = data?.id;
-                    });               
+                    });
                 } else if (isConnected) {
                     // create the actual file in XRP
                     await CommandToXRPMgr.getInstance().buildPath(
@@ -482,7 +487,39 @@ function FolderTree(treeProps: TreeProps) {
             }
         }
 
-        return newNode;
+        // Update the tree data
+        setTreeData((prevTreeData) => {
+            if (!prevTreeData) return prevTreeData;
+
+            const rootNode = prevTreeData.at(0);
+            if (!rootNode) return prevTreeData;
+
+            if (parentNode) {
+                const found = findItem(rootNode, parentNode.data.id);
+                if (found) {
+                    found.children = found.children || [];
+                    found.children.splice(index, 0, newNode);
+                }
+            } else {
+                rootNode.children = rootNode.children || [];
+                rootNode.children.splice(index, 0, newNode);
+            }
+
+            return [...prevTreeData];
+        });
+
+        if (isLogin) {
+            const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
+            if (username) {
+                // refresh the Google Drive tree
+                fireGoogleUserTree(username);
+            }
+        } else if (isConnected) {
+            // refresh the XRP onboard tree
+            CommandToXRPMgr.getInstance().getOnBoardFSTree();
+        }
+
+        return null;
     };
 
     // const onMove = ({ dragIds, dragNodes, parentId, parentNode, index }: { dragIds: string[], dragNodes: NodeApi<FolderItem>[], parentId: string | null, parentNode: NodeApi<FolderItem> | null, index: number }) => {
