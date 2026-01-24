@@ -1,8 +1,6 @@
 import type { GridStack, GridStackOptions, GridStackWidget } from "gridstack";
 import { createContext, useContext } from "react";
 
-
-
 export const GridStackContext = createContext<{
   initialOptions: GridStackOptions;
   gridStack: GridStack | null;
@@ -15,6 +13,7 @@ export const GridStackContext = createContext<{
     ) => Omit<GridStackWidget, "id">
   ) => void;
   saveOptions: () => GridStackOptions | GridStackWidget[] | undefined;
+  clearStoredConfig?: () => boolean;
 
   _gridStack: {
     value: GridStack | null;
@@ -25,7 +24,6 @@ export const GridStackContext = createContext<{
     set: React.Dispatch<React.SetStateAction<Map<string, GridStackWidget>>>;
   };
 } | null>(null);
-
 
 export function useGridStackContext() {
   const context = useContext(GridStackContext);

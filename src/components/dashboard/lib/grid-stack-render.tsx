@@ -13,7 +13,7 @@ export interface ComponentDataType<T = object> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ComponentMap = Record<string, ComponentType<any>>;
 
-function parseWeightMetaToComponentData(
+function parseWidgetMetaToComponentData(
   meta: GridStackWidget
 ): ComponentDataType & { error: unknown } {
   let error = null;
@@ -30,6 +30,7 @@ function parseWeightMetaToComponentData(
     }
   } catch (e) {
     error = e;
+    console.error('[GridStackRender] Error parsing widget content:', e, meta.content);
   }
   return {
     name,
@@ -45,14 +46,28 @@ export function GridStackRender(props: { componentMap: ComponentMap }) {
   return (
     <>
       {Array.from(_rawWidgetMetaMap.value.entries()).map(([id, meta]) => {
-        const componentData = parseWeightMetaToComponentData(meta);
+        const componentData = parseWidgetMetaToComponentData(meta);
+
+        // Skip widgets with parse errors
+        if (componentData.error) {
+          console.error(`[GridStackRender] Skipping widget ${id} due to parse error`);
+          return null;
+        }
 
         const WidgetComponent = props.componentMap[componentData.name];
 
+        // Skip widgets with unknown component names
+        if (!WidgetComponent) {
+          console.error(`[GridStackRender] Unknown component: "${componentData.name}" for widget ${id}`);
+          return null;
+        }
+
         const widgetContainer = getWidgetContainer(id);
 
+        // Skip widgets without containers (they may not be ready yet)
         if (!widgetContainer) {
-          throw new Error(`Widget container not found for id: ${id}`);
+          console.warn(`[GridStackRender] Container not found for widget ${id}, skipping`);
+          return null;
         }
 
         return (

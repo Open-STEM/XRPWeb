@@ -11,10 +11,11 @@ import {
   GridStackProvider,
   GridStackRender,
   GridStackRenderProvider,
+  useGridStackContext,
 } from "./lib";
 // import "gridstack/dist/gridstack.css";
-// import { ComponentProps, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FaUndo } from "react-icons/fa";
 
 const CELL_HEIGHT = 50;
 const BREAKPOINTS = [
@@ -34,7 +35,6 @@ const COMPONENT_MAP = {
   Rangefinder: () => <Rangefinder />
 };
 
-
 const gridOptions: GridStackOptions = {
   acceptWidgets: true,
   cellHeight: CELL_HEIGHT,
@@ -47,39 +47,58 @@ const gridOptions: GridStackOptions = {
   },
   margin: 3,
   draggable: {
-    // handle: '.grid-stack-item-content', // Drag handle
-    scroll: true,                  // Allow scrolling while dragging
-    // containment: 'parent'          // Constrains dragging to parent container
+    scroll: true,
   },
   float: true,
-  children: [
-
-
-  ],
+  children: [],
 };
 
+// Separate component to access GridStack context
+function DashboardHeader() {
+  const { t } = useTranslation();
+  const { clearStoredConfig } = useGridStackContext();
+
+  const handleReset = () => {
+    if (window.confirm(t('reset-dashboard-confirm') || 'Are you sure you want to reset the dashboard to default? This will remove all widgets and reload the page.')) {
+      clearStoredConfig?.();
+    }
+  };
+
+  return (
+    <div className="flex justify-between items-center mb-2 pt-2">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-600 dark:text-gray-300">{t('sensors')}</h1>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleReset}
+          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors duration-200"
+          title={t('reset-dashboard') || 'Reset Dashboard'}
+        >
+          <FaUndo size={18} />
+        </button>
+        <AddWidgets />
+      </div>
+    </div>
+  );
+}
 
 export default function XRPDashboard() {
-  const { t } = useTranslation();
   return (
     <div className="mx-auto px-4 pb-10 bg-slate-100 min-h-screen dark:bg-mountain-mist-950">
-      <GridStackProvider initialOptions={gridOptions}>
-        <div className="flex justify-between items-center mb-2 pt-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-600 dark:text-gray-300">{t('sensors')}</h1>
-          </div>
-          <AddWidgets />
-        </div>
+      <GridStackProvider
+        initialOptions={gridOptions}
+        enablePersistence={true}
+        storageKey="xrp-dashboard-config"
+      >
+        <DashboardHeader />
 
         <div className="relative top-35 border-t-4 border-gray-300">
-
           <GridStackRenderProvider>
             <GridStackRender componentMap={COMPONENT_MAP} />
           </GridStackRenderProvider>
         </div>
       </GridStackProvider>
     </div>
-
   );
 }
-
