@@ -1,4 +1,4 @@
-# Version 2.0.9
+# Version 2.0.10
 
 #### Bluetooth support
 <img height="10%" width="10%" src="src/assets/images/Bluetooth_FM_Black.png"/></img>
@@ -32,3 +32,12 @@
 * Third-party drivers can now be added to XRPCode
 * Theming support for light and dark modes
 * Support the New Puppet Protocol for communication with the XRP Bluetooth (advanced users) [See XPP](https://xrpcode.io/docs/puppet_protocol)
+
+#### Bug Fixes
+* Fixed various bugs with the Block Editor where the change indicator would not show
+* [New File button on Folder Tree](https://github.com/Open-STEM/XRPWeb/issues/195)
+* [New Directory button on Folder Tree](https://github.com/Open-STEM/XRPWeb/issues/194)
+* [Monaco Editor not resize properly](https://github.com/Open-STEM/XRPWeb/issues/186)
+* [Rename file in File System Tree doesn't reflect the changes in the open tab](https://github.com/Open-STEM/XRPWeb/issues/185)
+* [Change AI Chat to Code Buddy on the Tab title](https://github.com/Open-STEM/XRPWeb/issues/183)
+* [If a program is loaded into the editor after Web browser refresh, and if the file was edited on the XRP, this program won't run](https://github.com/Open-STEM/XRPWeb/issues/176)
