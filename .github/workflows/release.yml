@@ -11,6 +11,9 @@ jobs:
   release:
     name: Release pushed tag
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20]
     
     steps:
       - name: Checkout
@@ -31,7 +34,11 @@ jobs:
         with:
           type: 'zip'
           directory: './dist'
-          filename: xrpweb-v${{ github.run_number }}.zip
+          filename: ../xrpweb-v${{ github.run_number }}.zip
+      - name: Debug - List files
+        run: |
+          ls -la
+          ls -la dist/
       - name: Create Release
         id: create_new_release
         uses: softprops/action-gh-release@v2.3.3
@@ -45,6 +52,6 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: xrpweb-v${{ github.run_number }}.zip
-          asset_name: xrpweb-v${{ github.run_number }}.zip
+          asset_name: artifacts.zip
           tag: ${{ github.ref }}
           overwrite: true
