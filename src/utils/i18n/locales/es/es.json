@@ -58,6 +58,7 @@
     "user-folder": "Nombre de Carpeta de Usuario",
     "google-drive-folder": "Nombre de Carpeta de Google Drive",
     "not-google-drive-file": "¡Este archivo no se puede guardar en Google Drive porque no se asocia con Google Drive! Por favor intente guardar el archivo en XRP!",
+    "googleDriveNotification": "Cuando se utiliza el modo Google Drive, todas las carpetas y archivos creados serán propiedad de la cuenta de Google que haya iniciado sesión. Si agrega carpetas o archivos de Google Drive directamente a través de su cuenta de Google Drive, estos archivos no serán visibles en XRP.",
     "userfoldername": "Nombre de Carpeta de Usuario",
     "goouserfoldername": "Nombre de Carpeta de Usuario de Google",
     "chooseFolder": "Elija una Carpeta",
