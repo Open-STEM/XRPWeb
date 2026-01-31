@@ -60,6 +60,7 @@
     "googleLoginTooltip": "Sign in with your Google account to access files stored in Google Drive.",
     "googlogoutTooltip": "Sign out of your Google account.",
     "not-google-drive-file": "This file can not be saved to Google Drive because it was not associated with Google Drive! Please try savinging it to XRP!",
+    "googleDriveNotification": "When using Google Drive mode, all folders and files created will be owned by the Google account that is logged in. If you add Google Drive folders or files directly through your Google Drive account, these files are not visible in XRP.",
     "userfoldername": "User Folder Name",
     "goouserfoldername": "Google User Folder Name",
     "chooseFolder": "Choose a Folder",

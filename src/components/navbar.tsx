@@ -459,13 +459,20 @@ function NavBar({ layoutref }: NavBarProps) {
         console.log(t('exportToPC'));
         const session = EditorMgr.getInstance().getEditorSession(activeTab);
         if (session) {
-            CommandToXRPMgr.getInstance()
-                .getFileContents(session.path)
-                .then((content) => {
-                    const data: string = new TextDecoder().decode(new Uint8Array(content));
-                    const blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
-                    FileSaver.saveAs(blob, session.name);
+            if (authService.isLogin) {
+                // download the file from Google Drive and save to PC
+                driveService.getFileContents(session.gpath || '').then((fileContent) => {
+                    FileSaver.saveAs(new Blob([fileContent || '']), session.name);
                 });
+            } else if (isConnected) {
+                CommandToXRPMgr.getInstance()
+                    .getFileContents(session.path)
+                    .then((content) => {
+                        const data: string = new TextDecoder().decode(new Uint8Array(content));
+                        const blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
+                        FileSaver.saveAs(blob, session.name);
+                    });
+            }
         } else {
             setDialogContent(
                 <AlertDialog alertMessage={t('no-activetab')} toggleDialog={toggleDialog} />,
