@@ -90,8 +90,15 @@ export interface ChatSession {
     updatedAt: Date;
 }
 
+export enum UserMode {
+    SYSTEM = 0,
+    USER = 1,
+    GOOGLE_USER = 2,
+}
+
 export type AdminData = {
     name: string;
     email: string;
     isAmin: boolean;
+    mode: UserMode;
 };

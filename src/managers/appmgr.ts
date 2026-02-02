@@ -1,10 +1,12 @@
 import connecionMgr from '@/managers/connectionmgr';
 import mitt from 'mitt';
 import Connection from '@/connections/connection';
-import { ConnectionType, EditorType, FolderItem } from '@/utils/types';
+import { ConnectionType, EditorType, FolderItem, AdminData, UserMode } from '@/utils/types';
+import { Constants } from '@/utils/constants';
 import { BluetoothConnection } from '@/connections/bluetoothconnection';
 import GoogleAuthService from '@/services/google-auth';
 import GoogleDriveService from '@/services/google-drive';
+import { CommandToXRPMgr } from './commandstoxrpmgr';
 
 export enum Themes {
     DARK = 'dark',
@@ -51,6 +53,7 @@ export enum EventType {
     EVENT_SHOWBLUETOOTH_CONNECTING = 'show-bluetooth-connecting', // Show Bluetooth connecting dialog
     EVENT_HIDE_BLUETOOTH_CONNECTING = 'hide-bluetooth-connecting', // Hide Bluetooth connecting dialog
     EVENT_EDITOR_NAME_CHANGED = 'editor-name-changed', // Editor name changed
+    EVENT_USERMODE_CHANGED = 'usermode-changed', // User mode changed event
 }
 
 type Events = {
@@ -88,6 +91,7 @@ type Events = {
     [EventType.EVENT_SHOWBLUETOOTH_CONNECTING]: string;
     [EventType.EVENT_HIDE_BLUETOOTH_CONNECTING]: string;
     [EventType.EVENT_EDITOR_NAME_CHANGED]: string;
+    [EventType.EVENT_USERMODE_CHANGED]: UserMode;
 };
 
 /**
@@ -105,6 +109,7 @@ export default class AppMgr {
     private _folderDataJson : string | null = null;
     private _authService: GoogleAuthService = new GoogleAuthService();
     private _driveService: GoogleDriveService = new GoogleDriveService();
+    private _adminData: AdminData | null = null; // Add this line
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
@@ -131,6 +136,52 @@ export default class AppMgr {
      */
     public get driveService(): GoogleDriveService {
         return this._driveService;
+    }
+
+    /**
+     * Get the AdminData object
+     */
+    public get adminData(): AdminData | null {
+        return this._adminData;
+    }
+
+    /**
+     * Set the AdminData object
+     * @param adminData
+     */
+    public set adminData(adminData: AdminData | null) {
+        this._adminData = adminData;
+    }
+
+    /**
+     * Get the current UserMode
+     * @returns UserMode
+     */
+    public getUserMode(): UserMode {
+        return this._adminData?.mode ?? UserMode.SYSTEM;
+    }
+
+    /**
+     * Set the current UserMode and persist it to admin.json on the XRP device.
+     * @param mode The new UserMode to set.
+     */
+    public async setUserMode(mode: UserMode): Promise<void> {
+        if (this._adminData) {
+            this._adminData.mode = mode;
+            const adminFilePath = '/' + Constants.ADMIN_FILE;
+            const content = JSON.stringify(this._adminData);
+            try {
+                await CommandToXRPMgr.getInstance().uploadFile(
+                    adminFilePath,
+                    content ?? '',
+                );
+                this._emitter.emit(EventType.EVENT_USERMODE_CHANGED, mode);
+            } catch (error) {
+                console.error('Failed to update admin.json with new user mode:', error);
+            }
+        } else {
+            console.warn('AdminData is not available. Cannot set user mode.');
+        }
     }
 
     /**
@@ -376,5 +427,26 @@ export default class AppMgr {
         }
 
         return userlist;
+    }
+
+    /**
+     * getFilteredFolderList - return a list of folders filtered by the current user mode.
+     */
+    public getFilteredFolderList(): FolderItem[] | null {
+        const currentUserMode = this.getUserMode();
+        switch (currentUserMode) {
+            case UserMode.SYSTEM:
+                return this.getFolderList();
+            case UserMode.USER:
+                return this.getUserFolderList();
+            case UserMode.GOOGLE_USER:
+                // For Google User mode, the folder data comes from Google Drive,
+                // which is handled by fireGoogleUserTree in google-utils.tsx.
+                // This method should return null or an empty array, and the UI
+                // should react to the Google Drive specific folder tree being emitted.
+                return null; 
+            default:
+                return this.getFolderList();
+        }
     }
 }

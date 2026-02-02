@@ -3,7 +3,7 @@ import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
 import { UserProfile } from '@/services/google-auth';
 import { Constants } from '@/utils/constants';
 import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
-import { AdminData } from '@/utils/types';
+import { AdminData, UserMode } from '@/utils/types';
 import Login from '@/widgets/login';
 import DialogFooter from '@components/dialogs/dialog-footer';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +33,7 @@ function GoogleLoginDlg({ toggleDialog }: LoginDgProps) {
                         if (jsondata.length > 0) {
                             const json = new TextDecoder().decode(new Uint8Array(jsondata));
                             const adminData = JSON.parse(json) as AdminData;
+                            AppMgr.getInstance().adminData = adminData;
                             if (adminData.email === data.email) {
                                 authService.isAdmin = true;
                             }
@@ -47,6 +48,7 @@ function GoogleLoginDlg({ toggleDialog }: LoginDgProps) {
                 const content = JSON.stringify({
                     name: data.name,
                     email: data.email,
+                    mode: UserMode.SYSTEM, // Set default mode to SYSTEM
                 });
                 await CommandToXRPMgr.getInstance().uploadFile(
                     adminFilePath,
