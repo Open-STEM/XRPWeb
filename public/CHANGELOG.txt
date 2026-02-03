@@ -1,4 +1,4 @@
-# Version 2.0.11
+# Version 2.0.12
 
 #### Bluetooth support
 <img height="10%" width="10%" src="src/assets/images/Bluetooth_FM_Black.png"/></img>
