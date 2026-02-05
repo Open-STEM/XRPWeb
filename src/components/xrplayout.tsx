@@ -104,13 +104,13 @@ let layoutRef: React.RefObject<Layout> = {
 const factory = (node: TabNode) => {
     const component = node.getComponent();
     if (component == 'editor') {
-        return <MonacoEditor name={node.getName()} width="100vw" height="100vh" />;
+        return <MonacoEditor tabId={node.getId()} tabname={node.getName()} width="100vw" height="100vh" />;
     } else if (component == 'xterm') {
         return <XRPShell />;
     } else if (component == 'folders') {
         return <FolderTree treeData={null} theme="rct-dark" isHeader={true} />;
     } else if (component == 'blockly') {
-        return <BlocklyEditor name={node.getName()} />;
+        return <BlocklyEditor tabId={node.getId()} tabName={node.getName()} />;
     } else if (component == 'dashboard') {
         return <XRPDashboard />;
     } else if (component == 'aichat') {
@@ -216,8 +216,9 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                 const editorStores: EditorStore[] = JSON.parse(editors);
                 editorStores.forEach((store: EditorStore) => {
                     const fileData: NewFileData = {
+                        id: store.id,
                         parentId: '',
-                        name: store.id,
+                        name: store.name,
                         path: store.path,
                         gpath: store.gpath,
                         filetype: store.isBlockly ? FileType.BLOCKLY : FileType.PYTHON,
@@ -231,7 +232,7 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                     } else {
                         content = store.content;
                     }
-                    const loadContent = { name: store, content: content };
+                    const loadContent = { name: store.name, path: store.path, content: content };
                     AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
                     if (!store.isSavedToXRP) {
                         // update the editor session and update the tab dirty status
@@ -317,9 +318,9 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                     return undefined;
                 }
 
-                const id = EditorMgr.getInstance().RemoveEditor(action.data.node);
-                if (id) {
-                    setActiveTab(id);
+                const name = EditorMgr.getInstance().RemoveEditor(action.data.node);
+                if (name) {
+                    setActiveTab(name);
                 }
             }
             break;
@@ -345,7 +346,7 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
             renderValues.leading = <img src={ShellIcon} alt="icon" style={{ width: '16px', height: '16px', marginRight: '0px' }} />;
         }
         renderValues.content = t(node.getName());
-        if (EditorMgr.getInstance().hasSessionChanged(node.getName())) {
+        if (EditorMgr.getInstance().hasSessionChanged(node.getId())) {
             renderValues.buttons.push(<div className='w-2 h-2 bg-shark-800 dark:bg-shark-200 rounded-full' />)
         }
         return renderValues;

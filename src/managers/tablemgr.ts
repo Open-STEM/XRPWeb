@@ -81,10 +81,38 @@ private tableNames: any = {
     "voltage": 17
 };
 
-private readonly TypeInt: number = 0;
-private readonly TypeFloat: number = 1;
+// XPP Protocol Constants
+private readonly XPP_MSG_TYPE_VAR_DEF: number = 1;
+private readonly XPP_MSG_TYPE_VAR_UPDATE: number = 2;
+private readonly VAR_TYPE_INT: number = 1;
+private readonly VAR_TYPE_FLOAT: number = 2;
+private readonly VAR_TYPE_BOOL: number = 3;
 
-private buffer: Uint8Array = new Uint8Array();
+// Mapping from XPP variable IDs (20-37) to table array indices
+// Standard variables: IMU (20-25), Encoders (26-29), Current (30-33), Other (34-37)
+private readonly xppVarIdToTableIndex: Map<number, number> = new Map([
+    [20, 0],  // $imu.yaw -> yaw
+    [21, 1],  // $imu.roll -> roll
+    [22, 2],  // $imu.pitch -> pitch
+    [23, 3],  // $imu.acc_x -> accX
+    [24, 4],  // $imu.acc_y -> accY
+    [25, 5],  // $imu.acc_z -> accZ
+    [26, 6],  // $encoder.left -> encL
+    [27, 7],  // $encoder.right -> encR
+    [28, 8],  // $encoder.3 -> enc3
+    [29, 9],  // $encoder.4 -> enc4
+    [30, 11], // $current.left -> currL
+    [31, 10], // $current.right -> currR
+    [32, 12], // $current.3 -> curr3
+    [33, 13], // $current.4 -> curr4
+    [34, 14], // $rangefinder.distance -> dist
+    [35, 15], // $reflectance.left -> reflectanceL
+    [36, 16], // $reflectance.right -> reflectanceR
+    [37, 17], // $voltage -> voltage
+]);
+
+// Map for custom variables (ID >= 38) defined via Variable Definition messages
+private customVarIdToTableIndex: Map<number, number> = new Map();
 
     constructor() {
         // Bind the context of 'this' for the interval callback
@@ -138,79 +166,136 @@ private buffer: Uint8Array = new Uint8Array();
             return null;
     }
 
-    public readFromDevice(data: Uint8Array){
-        // need to handle if this is multiple commands in one array.
-        this.buffer = this.concatUint8(this.buffer, data);
+    /**
+     * Reads XPP packet from device and processes it.
+     * Assumes packet is a valid complete XPP packet: [0xAA 0x55] [Type] [Length] [Payload] [0x55 0xAA]
+     * @param packet - Complete XPP packet
+     */
+    public readFromDevice(packet: Uint8Array){
+        // Assume valid XPP packet format: [0xAA 0x55] [Type] [Length] [Payload] [0x55 0xAA]
+        // Extract type and length (bytes 2 and 3 after start sequence)
+        const messageType = packet[2];
+        const payloadLength = packet[3];
+        
+        // Extract payload (between length and end sequence)
+        const payload = packet.subarray(4, 4 + payloadLength);
 
-        let offset = 0;
+        switch(messageType){
+            case this.XPP_MSG_TYPE_VAR_DEF:
+                this.processVariableDefinition(payload);
+                break;
+            case this.XPP_MSG_TYPE_VAR_UPDATE:
+                this.processVariableUpdate(payload);
+                // Emit dashboard data after processing updates
+                AppMgr.getInstance().emit(EventType.EVENT_DASHBOARD_DATA, JSON.stringify(this.getTable()));
+                break;
+            default:
+                // Ignore other message types
+                break;
+        }
+    }
 
-        while(offset + 2 <= this.buffer.length){
-            if(this.buffer[0] >= 0x45 && this.buffer[0] <= 0x47){
-                const lengthField = this.buffer[offset + 1];
-                const packetLen = lengthField + 2;
-                if(offset + packetLen > this.buffer.length){
-                    break; //not enough left must be coming in the next packet
-                }
-                const chunk = this.buffer.subarray(offset, offset + packetLen);
-                if(offset + packetLen == this.buffer.length){
-                    this.buffer = new Uint8Array()
-                }
-                else{
-                    this.buffer = this.buffer.subarray(offset + packetLen);
-                }
-                offset = 0;
-                this.processBuffer(chunk);
+    /**
+     * Processes XPP Variable Definition message (Type 1).
+     * Payload: name_len(1) name(name_len) type(1) permissions(1) var_id(1)
+     */
+    private processVariableDefinition(payload: Uint8Array): void {
+        if (payload.length < 1) {
+            return; // Need at least name_len
+        }
+
+        const nameLen = payload[0];
+        if (payload.length < 4 + nameLen) {
+            return; // Need name_len + name + type + permissions + var_id
+        }
+
+        // Extract variable name
+        const nameBytes = payload.subarray(1, 1 + nameLen);
+        const name = new TextDecoder().decode(nameBytes);
+        
+        const type = payload[1 + nameLen];
+        // const permissions = payload[2 + nameLen]; // Not used currently
+        const varId = payload[3 + nameLen];
+
+        // Add to table array
+        const newIndex = this.tableArray.length;
+        this.tableArray.push(0.0);
+        
+        // Store mapping
+        this.tableNames[name] = newIndex;
+        this.customVarIdToTableIndex.set(varId, newIndex);
+
+        this.tableLogger.info(`New variable defined: ${name} (ID: ${varId}, Type: ${type}, Index: ${newIndex})`);
+    }
+
+    /**
+     * Processes XPP Variable Update message (Type 2).
+     * Payload: count(1) [var_id(1) type(1) value(type-dependent)] * count
+     */
+    private processVariableUpdate(payload: Uint8Array): void {
+        if (payload.length < 1) {
+            return; // Need at least count
+        }
+
+        const count = payload[0];
+        let offset = 1;
+
+        for (let i = 0; i < count && offset < payload.length; i++) {
+            if (offset + 2 > payload.length) {
+                break; // Not enough data for var_id and type
             }
-            
-        }
 
-        // this.tableLogger.debug("table data: " + JSON.stringify(this.getTable()));
-        AppMgr.getInstance().emit(EventType.EVENT_DASHBOARD_DATA, JSON.stringify(this.getTable()));
-    }
+            const varId = payload[offset++];
+            const varType = payload[offset++];
 
-     private processBuffer(data: Uint8Array){
-        switch(data[0]){
-            case 0x45: //new values. assume one value at a time for now
-                if(data.length == data[1] + 2){
-                    let i = 2;
-                    while(i < data.length){
-                        if(data[i] == this.TypeInt){
-                            this.tableArray[data[i + 1]] = data[i+2];
-                            i += 3;
-                        }
-                        else if (data[i] == this.TypeFloat) {
-                            const buff = data.buffer;
-                            const view =  new DataView(buff, data.byteOffset+i+2, 4);
-                            const val1 = view.getFloat32(0, true);
-                            //const val = Math.round(view.getFloat32(0, true) * 1e4) / 1e4;
-                            this.tableArray[data[i+1]] = val1;
-                            i += 6
-                        } 
-                    }
+            // Find table index for this variable ID
+            let tableIndex: number | undefined = this.xppVarIdToTableIndex.get(varId);
+            if (tableIndex === undefined) {
+                // Check custom variables
+                tableIndex = this.customVarIdToTableIndex.get(varId);
+            }
+
+            if (tableIndex === undefined) {
+                // Unknown variable ID, skip it
+                // Skip the value bytes
+                if (varType === this.VAR_TYPE_BOOL) {
+                    offset += 1; // Bool is 1 byte
+                } else {
+                    offset += 4; // Float and int are 4 bytes
                 }
-                break;
-            case 0x46: //start dashboard session
-                this.tableLogger.info("starting dashboard");
-                break;
-            case 0x47: { //declare new table entry
-                    this.tableLogger.info("new table entry");
-                    const newIndex = this.tableArray.push(0.0);
-                    //convert the string to the name
-                    const newName = "error";
-                    this.tableNames[newName] = newIndex + 1;
-                    break; 
+                continue;
+            }
+
+            // Extract value based on type
+            if (varType === this.VAR_TYPE_INT) {
+                if (offset + 4 > payload.length) {
+                    break; // Not enough data
                 }
+                const view = new DataView(payload.buffer, payload.byteOffset + offset, 4);
+                const value = view.getInt32(0, true); // little-endian
+                this.tableArray[tableIndex] = value;
+                offset += 4;
+            } else if (varType === this.VAR_TYPE_FLOAT) {
+                if (offset + 4 > payload.length) {
+                    break; // Not enough data
+                }
+                const view = new DataView(payload.buffer, payload.byteOffset + offset, 4);
+                const value = view.getFloat32(0, true); // little-endian
+                this.tableArray[tableIndex] = value;
+                offset += 4;
+            } else if (varType === this.VAR_TYPE_BOOL) {
+                if (offset >= payload.length) {
+                    break; // Not enough data
+                }
+                const value = payload[offset] !== 0 ? 1 : 0;
+                this.tableArray[tableIndex] = value;
+                offset += 1;
+            } else {
+                // Unknown type, assume 4 bytes (int/float size) and skip
+                offset += 4;
+            }
         }
     }
-
-        /** Helper to concat two Uint8Arrays into a new one */
-    private concatUint8(a: Uint8Array, b: Uint8Array): Uint8Array {
-        const c = new Uint8Array(a.length + b.length);
-        c.set(a, 0);
-        c.set(b, a.length);
-        return c;
-    }
-    
 }
 
 export default TableMgr;

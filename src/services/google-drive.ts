@@ -427,6 +427,37 @@ class GoogleDriveService {
     }
 
     /**
+     * Retrieves a folder name from Google Drive API
+     * @param folderId - The unique ID of the folder
+     * @param accessToken - A valid OAuth2 access token
+     */
+    async getFolderName(folderId: string): Promise<string | null> {
+    const url = `https://www.googleapis.com/drive/v3/files/${folderId}?fields=name`;
+
+    try {
+        const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${this._accessToken}`,
+            'Accept': 'application/json',
+        },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Error ${response.status}: ${errorData.error?.message || 'Unknown error'}`);
+        }
+
+        const data = await response.json();
+        return data.name;
+        
+    } catch (error) {
+        console.error("Failed to fetch folder name:", error);
+        return null;
+    }
+    }
+
+    /**
      * Uploads a Blob from memory to a specified Google Drive folder.
      *
      * @param fileBlob The Blob object representing the file content.

@@ -21,9 +21,11 @@ import Dialog from './dialogs/dialog';
 import ConfirmationDlg from './dialogs/confirmdlg';
 import AlertDialog from './dialogs/alertdlg';
 import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
-import EditorMgr from '@/managers/editormgr';
+import EditorMgr, { EdSearchParams } from '@/managers/editormgr';
 import Login from '@/widgets/login';
 import { UserProfile } from '@/services/google-auth';
+import CreateNodeDlg from './dialogs/create-node-dlg';
+import { StorageKeys } from '@/utils/localstorage';
 
 type TreeProps = {
     treeData: string | null;
@@ -52,6 +54,7 @@ function FolderTree(treeProps: TreeProps) {
     const [dialogContent, setDialogContent] = useState<React.ReactNode>(null);
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [hasSubscribed, setHasSubscribed] = useState<boolean>(false);
+    const [isTreeLoaded, setIsTreeLoaded] = useState(false);
 
     useEffect(() => {
         // If treeData is passed as a prop, build the tree
@@ -115,6 +118,23 @@ function FolderTree(treeProps: TreeProps) {
     }, [isConnected]);
 
     /**
+     * Auto select and open the root node when the tree data is loaded
+     */
+    useEffect(() => {
+        if (treeData && treeData.length > 0 && !isTreeLoaded && treeRef.current) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            treeRef.current.select(treeData[0].id);
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            treeRef.current.open(treeData[0].id);
+            setIsTreeLoaded(true);
+        } else if (!treeData) {
+            setIsTreeLoaded(false);
+        }
+    }, [treeData, isTreeLoaded]);
+
+    /**
      * toggleDialog - toggle the dialog open/close state
      */
     const toggleDialog = () => {
@@ -165,6 +185,22 @@ function FolderTree(treeProps: TreeProps) {
         );
     }
 
+    /**
+     * getFilePath - construct the file path
+     * @param node
+     * @returns filepath
+     */
+    function getFilePath(node: FolderItem) {
+        const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
+        const path = node.path.includes('/XRPCode/')
+            ? node.path.replace('/XRPCode/', Constants.GUSERS_FOLDER + `${username}/`)
+            : node.path === '/' ?  node.path : node.path + '/';
+        const filePath = path === '/'
+            ? path + node.name
+            : path + node.name;
+        return filePath;
+    }    
+
     /**     
      * Node component for rendering each tree node
      * @param param0
@@ -191,20 +227,22 @@ function FolderTree(treeProps: TreeProps) {
                     if (node.isInternal) node.toggle();
                     if (!(e.detail % 2) && !isRunning) {
                         if (node.children === null) {
-                            const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
-                            const path = node.data.path.includes('/XRPCode/')
-                                ? node.data.path.replace('/XRPCode/', Constants.GUSERS_FOLDER + `${username}/`)
-                                : node.data.path + '/';
-                            const filePath =
-                                path === '/'
-                                    ? path + node.data.name
-                                    : path + node.data.name;
+                            const filePath = getFilePath(node.data);
                             const filePathData = {
                                 xrpPath: filePath,
                                 gPath: node.data.fileId,
                                 gparentId: node.data.gparentId
                             };
                             AppMgr.getInstance().emit(EventType.EVENT_OPEN_FILE, JSON.stringify(filePathData));
+                        }
+                    } else {
+                        if (node.children === null) {
+                            const filePath = getFilePath(node.data);
+                            const seachParams: EdSearchParams = {
+                                name: node.data.name,
+                                path: filePath,
+                            }
+                            EditorMgr.getInstance().SelectEditorTabByName(seachParams);
                         }
                     }
                 }}
@@ -297,10 +335,14 @@ function FolderTree(treeProps: TreeProps) {
 
                 // remove the node from the tab and editor manager
                 const editorMgr = EditorMgr.getInstance();
-                const editorSession = editorMgr.getEditorSession(found.name);
+                const searchParams : EdSearchParams = {
+                    name: found.name,
+                    path: getFilePath(found),
+                }
+                const editorSession = editorMgr.getEditorSessionByName(searchParams);
                 if (editorSession) {
-                    editorMgr.RemoveEditor(found.name);
-                    editorMgr.RemoveEditorTab(found.name);
+                    editorMgr.RemoveEditorTabByName(searchParams);
+                    editorMgr.RemoveEditorByName(searchParams);
                 }
             }
         };
@@ -350,6 +392,12 @@ function FolderTree(treeProps: TreeProps) {
                 await CommandToXRPMgr.getInstance().renameFile(found.path + '/' + found.name, name);
             }
 
+            const searchParams : EdSearchParams = {
+                name: found.name,
+                path: getFilePath(node.data),
+            }
+            EditorMgr.getInstance().RenameEditorTab(searchParams, name);
+
             // update the name field
             found.name = name;
         }
@@ -380,38 +428,42 @@ function FolderTree(treeProps: TreeProps) {
             return null;
         }
 
+        const parentPath = (parentNode?.data.name === '/' || parentNode?.data.name === Constants.XRPCODE)
+            ? parentNode.data.path : (isLogin) ? `${parentNode?.data.path}${parentNode?.data.name}/` :
+            `${parentNode?.data.path}/${parentNode?.data.name}/`;
+
+        // Ask for filename using a promise-based modal
+        const name = await new Promise<string | null>((resolve) => {
+            setDialogContent(
+                <CreateNodeDlg
+                    type={type}
+                    parentPath={parentPath}
+                    onConfirm={(newName) => {
+                        toggleDialog();
+                        resolve(newName);
+                    }}
+                    onCancel={() => {
+                        toggleDialog();
+                        resolve(null);
+                    }}
+                />
+            );
+            toggleDialog();
+        });
+
+        if (!name) return null;
+
         // Generate a unique ID for the new node
         const newId = uniqueId(parentNode?.data.name || `node`);
 
         // Create the new node object
         const newNode: FolderItem = {
             id: newId,
-            name: type === 'internal' ? t('newFolder') : t('newFile'),
+            name: name,
             isReadOnly: false,
             children: type === 'internal' ? [] : null,
-            path: `${parentNode?.data.path}/${parentNode?.data.name}/`,
+            path: parentPath,
         };
-
-        // Update the tree data
-        setTreeData((prevTreeData) => {
-            if (!prevTreeData) return prevTreeData;
-
-            const rootNode = prevTreeData.at(0);
-            if (!rootNode) return prevTreeData;
-
-            if (parentNode) {
-                const found = findItem(rootNode, parentNode.data.id);
-                if (found) {
-                    found.children = found.children || [];
-                    found.children.splice(index, 0, newNode);
-                }
-            } else {
-                rootNode.children = rootNode.children || [];
-                rootNode.children.splice(index, 0, newNode);
-            }
-
-            return [...prevTreeData];
-        });
 
         if (newNode) {
             let parentFileId = null;
@@ -425,7 +477,7 @@ function FolderTree(treeProps: TreeProps) {
                 if (isLogin) {
                     await AppMgr.getInstance().driveService?.createFolder(newNode.name,  parentFileId ?? undefined).then((data) => {
                         newNode.fileId = data?.id;
-                    });               
+                    });
                 } else if (isConnected) {
                     // create the actual file in XRP
                     await CommandToXRPMgr.getInstance().buildPath(
@@ -454,7 +506,39 @@ function FolderTree(treeProps: TreeProps) {
             }
         }
 
-        return newNode;
+        // Update the tree data
+        setTreeData((prevTreeData) => {
+            if (!prevTreeData) return prevTreeData;
+
+            const rootNode = prevTreeData.at(0);
+            if (!rootNode) return prevTreeData;
+
+            if (parentNode) {
+                const found = findItem(rootNode, parentNode.data.id);
+                if (found) {
+                    found.children = found.children || [];
+                    found.children.splice(index, 0, newNode);
+                }
+            } else {
+                rootNode.children = rootNode.children || [];
+                rootNode.children.splice(index, 0, newNode);
+            }
+
+            return [...prevTreeData];
+        });
+
+        if (isLogin) {
+            const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
+            if (username) {
+                // refresh the Google Drive tree
+                fireGoogleUserTree(username);
+            }
+        } else if (isConnected) {
+            // refresh the XRP onboard tree
+            CommandToXRPMgr.getInstance().getOnBoardFSTree();
+        }
+
+        return null;
     };
 
     // const onMove = ({ dragIds, dragNodes, parentId, parentNode, index }: { dragIds: string[], dragNodes: NodeApi<FolderItem>[], parentId: string | null, parentNode: NodeApi<FolderItem> | null, index: number }) => {
@@ -502,6 +586,14 @@ function FolderTree(treeProps: TreeProps) {
         }
 
         fireGoogleUserTree(username ?? '');
+
+        const firstTimeLogin = localStorage.getItem(StorageKeys.GOOGLE_FIRST_TIME_LOGIN) === null || localStorage.getItem(StorageKeys.GOOGLE_FIRST_TIME_LOGIN) === 'true';
+        if (firstTimeLogin) {
+            localStorage.setItem(StorageKeys.GOOGLE_FIRST_TIME_LOGIN, 'false');
+            // put up a dialog to inform user that the Google Drive notification about owner created folder and files
+            setDialogContent(<AlertDialog toggleDialog={toggleDialog} alertMessage={t('googleDriveNotification')} />);
+            toggleDialog();
+        }
     }
 
     /**
@@ -535,7 +627,7 @@ function FolderTree(treeProps: TreeProps) {
     }
 
     return (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 h-full">
             {treeProps.isHeader && (
                 <div className='flex flex-col items-center p-1 gap-1 bg-mountain-mist-100 dark:bg-mountain-mist-950'>
                     <Login onSuccess={onGoogleLoginSuccess} logoutCallback={onGoogleLogout}/>
@@ -548,7 +640,7 @@ function FolderTree(treeProps: TreeProps) {
                     storageCapacity={capacity}
                 />
             )}
-            <div ref={ref} style={{ height: treeProps.treeData ? '40vh' : '100vh' }}>
+            <div ref={ref} className="flex-1 min-h-0">
                 <Tree
                     ref={treeRef}
                     className="text-md border border-shark-200 bg-mountain-mist-100 text-shark-900 dark:border-shark-950 dark:bg-mountain-mist-950 dark:text-shark-200"

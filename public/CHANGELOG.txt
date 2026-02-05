@@ -1,4 +1,4 @@
-# Version 2.0.6
+# Version 2.0.12
 
 #### Bluetooth support
 <img height="10%" width="10%" src="src/assets/images/Bluetooth_FM_Black.png"/></img>
@@ -31,3 +31,9 @@
 * Google Drive integration is now available to save and load files
 * Third-party drivers can now be added to XRPCode
 * Theming support for light and dark modes
+* Support the New Puppet Protocol for communication with the XRP Bluetooth (advanced users) [See XPP](https://xrpcode.io/docs/puppet_protocol)
+
+#### Bug Fixes
+* [File SaveAs dialog not using name](https://github.com/Open-STEM/XRPWeb/issues/205)
+* [Google Drive Export to PC resulted with zero bytes](https://github.com/Open-STEM/XRPWeb/issues/206)
+* [Google Drive Onetime notification](https://github.com/Open-STEM/XRPWeb/issues/198)

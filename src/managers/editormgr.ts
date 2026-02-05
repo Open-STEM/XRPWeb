@@ -14,6 +14,7 @@ import { GoogleDriveFile } from "@/services/google-drive";
 
 export type EditorSession = {
     id: string;
+    name: string;
     path: string;
     gpath?: string,
     gparentId?: string,
@@ -27,9 +28,20 @@ export type EditorSession = {
 };
 
 /**
+ * EdSearchParams - editor session search parameters by name and path
+ * @property {string} name - editor name or filename
+ * @property {string} path - file path (should be unique)
+ */
+export type EdSearchParams = {
+    name: string;
+    path: string;
+};
+
+/**
  * EditorStore - editor session localstorage object
  * @typedef {Object} EditorStore
  * @property {string} id - editor session id
+ * @property {string} name - editor session name
  * @property {string} path - editor session path
  * @property {string} content - editor content
  * @property {boolean} isBlockly - editor is blockly
@@ -37,6 +49,7 @@ export type EditorSession = {
  */
 export type EditorStore = {
     id: string;
+    name: string,
     path: string;
     gpath?: string;
     isBlockly: boolean;
@@ -49,6 +62,7 @@ export type EditorStore = {
  */
 export type LiveEditorContent = {
     id: string;
+    name: string,
     type: EditorType;
     path: string;
     content: string;
@@ -138,6 +152,45 @@ export default class EditorMgr {
     }
 
     /**
+     * RemoveEditorByName - Remove an editor session by name
+     * @param searchParams - Editor session search parameters
+     */
+    public RemoveEditorByName(searchParams: EdSearchParams): string | undefined{
+        for (const session of this.editorSessions.values()) {
+            if (session.name === searchParams.name && session.path === searchParams.path) {
+                return this.RemoveEditor(session.id);
+            }
+        };
+        return undefined;
+    }
+
+    /**
+     * RemoveEditorTabByName - Remove an editor Tab by name
+     * @param searchParams - Editor session search parameters
+     * @returns 
+     */
+    public RemoveEditorTabByName(searchParams: EdSearchParams) {
+        for (const session of this.editorSessions.values()) {
+            if (session.name === searchParams.name && session.path === searchParams.path) {
+                return this.RemoveEditorTab(session.id);
+            }
+        };
+    }
+
+    /**
+     * SelectEditorTabByName
+     * @param searchParams - Editor session search parameters
+     * @returns 
+     */
+    public SelectEditorTabByName(searchParams: EdSearchParams) {
+        for (const session of this.editorSessions.values()) {
+            if (session.name === searchParams.name && session.path === searchParams.path) {
+                return this.SelectEditorTab(session.id);
+            }
+        };
+    }
+
+    /**
      * SelectEditorTab - select the editor tab in the layout
      * @param id
      */
@@ -154,6 +207,36 @@ export default class EditorMgr {
     }
 
     /**
+     * RenameEditorTab - rename editor tab
+     * @param searchParams - Editor session search parameters
+     * @param newId 
+     */
+    public RenameEditorTab(searchParams: EdSearchParams, newId: string) {
+        const oldId = searchParams.name;
+        const session = this.getEditorSessionByName(searchParams);
+        if (session) {
+            // update the session id
+            session.name = newId;
+            // update the session XRP path
+            if (session.path) {
+                session.path = session.path.replace(oldId, newId);
+            }
+            // update the tab name
+            this.layoutModel?.doAction(Actions.renameTab(session.id, newId));
+            // remove the old session from localstorage
+            this.RemoveFromLocalStorage(session.id);
+            // save the new session to localstorage
+            this.SaveToLocalStorage(session, session.content || '');
+
+            const names = {
+                oldId: oldId,
+                newId: newId
+            };
+            AppMgr.getInstance().emit(EventType.EVENT_EDITOR_NAME_CHANGED, JSON.stringify(names));
+        }
+    }
+
+    /**
      * getEditorSession - Get an editor session
      * @param id 
      * @returns EditorSession | undefined
@@ -163,12 +246,39 @@ export default class EditorMgr {
     }
 
     /**
+     * getEditorSessionByName - Get an editor session by name
+     * @param searchParams - Editor session search parameters
+     */
+    public getEditorSessionByName(searchParams: EdSearchParams): EditorSession | undefined {
+        for (const session of this.editorSessions.values()) {
+            if (session.name === searchParams.name && session.path === searchParams.path) {
+                return session;
+            }
+        }
+        return undefined;
+    }
+
+    /**
      * hasEditorSession - Check if an editor session exists
      * @param id - Editor session id
      * @returns true if the editor session exists
      */
     public hasEditorSession(id: string): boolean {
         return this.editorSessions.has(id);
+    }
+
+    /**
+     * hasEditorSessionByName - Check if an editor session exists by name
+     * @param searchParams - Editor session search parameters
+     * @returns 
+     */
+    public hasEditorSessionByName(searchParams: EdSearchParams): boolean {
+        for (const session of this.editorSessions.values()) {
+            if (session.name === searchParams.name && session.path === searchParams.path) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -255,7 +365,7 @@ export default class EditorMgr {
                     const filename = session.path.split('/').pop();
 
                     AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
-                    AppMgr.getInstance().driveService.upsertFileToGoogleDrive(blob, filename ?? '', mineType, session.gpath).then(() => {
+                    await AppMgr.getInstance().driveService.upsertFileToGoogleDrive(blob, filename ?? '', mineType, session.gpath).then(() => {
                         session.isModified = false;
                         AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');
                         AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
@@ -278,6 +388,7 @@ export default class EditorMgr {
         // save the session to local storage
         const editorStore: EditorStore = {
             id: session.id,
+            name: session.name,
             path: session.path,
             gpath: session.gpath,
             isBlockly: session.type === EditorType.BLOCKLY,
@@ -359,6 +470,7 @@ export default class EditorMgr {
             if (session.content !== undefined) {
                 contents.push({
                     id,
+                    name: session.name,
                     type: session.type,
                     path: session.path,
                     content: session.content || '',
@@ -402,7 +514,7 @@ export default class EditorMgr {
                 const { id, session } = unsavedSessions[i];
                 
                 // Update progress item name
-                const fileName = session.path.split('/').pop() || id;
+                const fileName = session.path.split('/').pop() || session.name;
                 AppMgr.getInstance().emit(EventType.EVENT_PROGRESS_ITEM, fileName);
                 
                 try {

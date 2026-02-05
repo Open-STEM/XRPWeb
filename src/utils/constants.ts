@@ -17,6 +17,7 @@ export class Constants {
     static readonly CONNECTED = "Connected";
     static readonly DISCONNECTED = "Disconnected";
     static readonly REGEX_FILENAME = /^[a-zA-Z0-9](?:[a-zA-Z0-9 ._-]*[a-zA-Z0-9])?\.[a-zA-Z0-9_-]+$/;
+    static readonly REGEX_DIRNAME = /^[a-zA-Z0-9](?:[a-zA-Z0-9 _-]*[a-zA-Z0-9])?$/;
     static readonly XRP_PROCESSOR_BETA = "RPI-RP2"
     static readonly LASTSAVETIME_CONFG = '1';
 }
