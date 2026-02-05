@@ -13,7 +13,7 @@ import convert from '@assets/images/convert.svg';
 import dashboard from '@assets/images/dashboard.svg';
 import drivers from '@assets/images/drivers.svg';
 import forum from '@assets/images/forum.svg';
-import cirriculum from '@assets/images/cirriculum.svg';
+import curriculum from '@assets/images/curriculum.svg';
 import changelog from '@assets/images/changelog.svg';
 import settings from '@assets/images/settings.svg';
 import chatbot from '@assets/images/chatbot.svg';
@@ -1149,8 +1149,8 @@ function NavBar({ layoutref }: NavBarProps) {
                     link: 'https://open-stem.github.io/XRP_MicroPython/',
                 },
                 {
-                    label: t('cirriculum'),
-                    iconImage: cirriculum,
+                    label: t('curriculum'),
+                    iconImage: curriculum,
                     link: 'https://introtoroboticsv2.readthedocs.io/en/latest/',
                 },
                 {

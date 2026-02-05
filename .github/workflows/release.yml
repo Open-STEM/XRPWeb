@@ -29,10 +29,15 @@ jobs:
         run: npm run test
       - name: Build
         run: npm run build
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_DEVELOPER_KEY: ${{ secrets.GOOGLE_DEVELOPER_KEY }}
+          GOOGLE_REDIRECT_URI: ${{ vars.GOOGLE_REDIRECT_URI }}
       - name: Archive site content
         uses: thedoctor0/zip-release@master
         with:
-          type: 'zip'
+          type: 'tar'
           directory: './dist'
           filename: ../xrpweb-v${{ github.run_number }}.zip
       - name: Debug - List files
