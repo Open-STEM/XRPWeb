@@ -60,9 +60,9 @@ thirdparty -->rd
 @enduml
 ```
 
-## AI Assistant (XRP Code Buddy)
+## AI Assistant (XRP Buddy)
 
-The XRP Web Development Application integrates an educational AI Assistant, "XRP Code Buddy," powered by the Gemini API. This assistant is designed to guide students through robotics programming challenges using best teaching practices rather than simply providing solutions.
+The XRP Web Development Application integrates an educational AI Assistant, "XRP Buddy," powered by the Gemini API. This assistant is designed to guide students through robotics programming challenges using best teaching practices rather than simply providing solutions.
 
 ### AI Interaction Workflow
 

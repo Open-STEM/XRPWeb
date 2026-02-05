@@ -1,7 +1,7 @@
 import { ChatMessage } from './types';
 
 /**
- * Simplified Gemini client for XRP Code Buddy
+ * Simplified Gemini client for XRP Buddy
  * All AI configuration and teaching guidelines are now handled by the backend
  */
 export class GeminiClient {
@@ -67,12 +67,12 @@ export class GeminiClient {
             const response = await fetch(`${this.backendUrl}/model-info`);
             if (response.ok) {
                 const data = await response.json();
-                return data.model_name || 'XRPCode Buddy';
+                return data.model_name || 'XRP Buddy';
             }
         } catch (error) {
             console.warn('Failed to fetch model name from backend:', error);
         }
-        return 'XRPCode Buddy'; // Fallback
+        return 'XRP Buddy'; // Fallback
     }
 
     /**
