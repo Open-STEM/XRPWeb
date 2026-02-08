@@ -19,7 +19,8 @@ export default defineConfig(({ mode }) => {
             },
         },
         define: {
-            rootDirectory: JSON.stringify(__dirname)
+            rootDirectory: JSON.stringify(__dirname),
+            global: 'globalThis',
         },
         plugins: [react(), visualizer() as PluginOption, viteStaticCopy({
             targets: [
@@ -57,6 +58,7 @@ export default defineConfig(({ mode }) => {
             format: 'es',
         },
         optimizeDeps: {
+            include: ['vscode-textmate', 'vscode-oniguruma'],
             esbuildOptions: {
                 tsconfig: './tsconfig.json',
                 plugins: [
@@ -90,7 +92,7 @@ export default defineConfig(({ mode }) => {
                             id.includes('react-arborist') ||
                             id.includes('react-dom') ||
                             id.includes('react-hotkeys-hook') ||
-                            id.includes('eact-i18next') ||
+                            id.includes('react-i18next') ||
                             id.includes('react-icons') ||
                             id.includes('react-xtermjs')
                         ) {

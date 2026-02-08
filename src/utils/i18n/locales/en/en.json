@@ -74,6 +74,7 @@
     "settingDescription": "Application settings can be changed here to your needs!",
     "filesToUpload": "Files to Upload",
     "fileExists": "Filename is used or invalid, please choose a different name!",
+    "file-exists-error-multi": "A file(s) or folder(s) with the named '{{ filenames }}' already exists in the destination folder. Please choose a different destination.",
     "directoryExists": "Folder name is used or invalid, please choose a different name!",
     "power-switch-title": "XRP Power Switch",
     "power-switch-alerts": "The power switch on the XRP is not on. Motors and Servos will not work properly. Please turn on the switch before continuing!",

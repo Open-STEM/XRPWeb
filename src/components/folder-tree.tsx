@@ -276,29 +276,26 @@ function FolderTree(treeProps: TreeProps) {
         );
     }
 
-    /**
-     * Find the item in the tree
-     * @param node
-     * @param id
-     * @returns
-     *      Parent node
-     *      found item
-     */
-    const findItem = (node: FolderItem | undefined, id: string): FolderItem | null => {
-        if (!node) return null;
-        if (node.id === id) return node as FolderItem;
-        if (node.children) {
-            for (const child of node.children) {
-                const found = findItem(child, id);
-                if (found) {
-                    // the parent node infor is for deleting the node
-                    if (found.parent === undefined) {
-                        found.parent = node;
-                    }
-                    return found;
-                }
+    const findNode = (nodes: FolderItem[], id: string): FolderItem | null => {
+        for (const node of nodes) {
+            if (node.id === id) return node;
+            if (node.children) {
+                const found = findNode(node.children, id);
+                if (found) return found;
             }
-            return null;
+        }
+        return null;
+    };
+
+    const findParent = (nodes: FolderItem[], id: string): FolderItem | null => {
+        for (const node of nodes) {
+            if (node.children?.some(child => child.id === id)) {
+                return node;
+            }
+            if (node.children) {
+                const found = findParent(node.children, id);
+                if (found) return found;
+            }
         }
         return null;
     };
@@ -309,8 +306,10 @@ function FolderTree(treeProps: TreeProps) {
      */
     const onDelete = async ({ ids, nodes }: { ids: string[]; nodes: NodeApi<FolderItem>[] }) => {
         folderLogger.debug(`Deleting nodes with ids: ${ids.join(', ')}`);
-        const rootNode = treeData?.at(0);
-        const found = findItem(rootNode, nodes[0].data.id);
+        const rootNodes = treeData ? [...treeData] : [];
+        if (rootNodes.length === 0) return;
+
+        const found = findNode(rootNodes, nodes[0].data.id);
 
         /**
          * handleOnDeleteConfirmation - handle the delete confirmation
@@ -330,7 +329,7 @@ function FolderTree(treeProps: TreeProps) {
                     }
                 } else if (isConnected) {
                     // delete the actual file in XRP
-                    await CommandToXRPMgr.getInstance().deleteFileOrDir(found.path + '/' + found.name);
+                    await CommandToXRPMgr.getInstance().deleteFileOrDir(getFilePath(found));
                 }
 
                 // remove the node from the tab and editor manager
@@ -367,8 +366,10 @@ function FolderTree(treeProps: TreeProps) {
         node: NodeApi<FolderItem>;
     }) => {
         folderLogger.debug(`Renaming node with id: ${id}, name: ${name} node: ${node.data}`);
-        const rootNode = treeData?.at(0);
-        const found = findItem(rootNode, node.data.id);
+        const rootNodes = treeData ? [...treeData] : [];
+        if (rootNodes.length === 0) return;
+
+        const found = findNode(rootNodes, node.data.id);
 
         if (found) {
             // Preserve file extension if user omits it
@@ -389,7 +390,7 @@ function FolderTree(treeProps: TreeProps) {
                 }
             } else if (isConnected) {
                 // rename the actual file in XRP
-                await CommandToXRPMgr.getInstance().renameFile(found.path + '/' + found.name, name);
+                await CommandToXRPMgr.getInstance().renameFile(getFilePath(found), found.path + '/' + name);
             }
 
             const searchParams : EdSearchParams = {
@@ -514,7 +515,7 @@ function FolderTree(treeProps: TreeProps) {
             if (!rootNode) return prevTreeData;
 
             if (parentNode) {
-                const found = findItem(rootNode, parentNode.data.id);
+                const found = findNode([rootNode], parentNode.data.id);
                 if (found) {
                     found.children = found.children || [];
                     found.children.splice(index, 0, newNode);
@@ -540,10 +541,6 @@ function FolderTree(treeProps: TreeProps) {
 
         return null;
     };
-
-    // const onMove = ({ dragIds, dragNodes, parentId, parentNode, index }: { dragIds: string[], dragNodes: NodeApi<FolderItem>[], parentId: string | null, parentNode: NodeApi<FolderItem> | null, index: number }) => {
-    //     console.log('Moved nodes:', dragIds, 'to parent:', parentId, 'at index:', index);
-    // };{
 
     const onSelected = (nodes: NodeApi<FolderItem>[]) => {
         const selectedItems: FolderItem[] = [];
@@ -626,6 +623,99 @@ function FolderTree(treeProps: TreeProps) {
         );
     }
 
+    /**
+     * onMove - move tree item callback
+     * @param args
+     */
+    async function onMove(args: {
+        dragIds: string[];
+        dragNodes: NodeApi<FolderItem>[];
+        parentId: string | null;
+        parentNode: NodeApi<FolderItem> | null;
+        index: number;
+    }) {
+        const { dragNodes, parentNode } = args;
+
+        if (!parentNode) {
+            folderLogger.warn('Moving to root is not supported');
+            return;
+        }
+
+        if (parentNode.isLeaf) {
+            return;
+        }
+
+        const validDragNodes: NodeApi<FolderItem>[] = [];
+        const collisionErrors: string[] = [];
+
+        for (const dragNode of dragNodes) {
+            // Prevent dropping a node into its own descendant
+            let current: NodeApi<FolderItem> | null = parentNode;
+            let isInvalidMove = false;
+            while (current) {
+                if (current.id === dragNode.id) {
+                    isInvalidMove = true;
+                    break;
+                }
+                current = current.parent;
+            }
+
+            if (isInvalidMove) {
+                continue; // Skip this node, it's an invalid move (e.g. dropping a folder into itself)
+            }
+
+            // Check for name collision, but only if it's not a reorder in the same folder
+            const isReorder = dragNode.parent?.id === parentNode.id;
+            if (!isReorder && parentNode.data.children?.some(child => child.name === dragNode.data.name)) {
+                collisionErrors.push(dragNode.data.name);
+                continue; // This node will cause a collision, skip it
+            }
+
+            validDragNodes.push(dragNode);
+        }
+
+        // If there were any collisions, inform the user but proceed with the valid moves.
+        if (collisionErrors.length > 0) {
+            const message = t('file-exists-error-multi', { filenames: collisionErrors.join(', ') });
+            setDialogContent(<AlertDialog toggleDialog={toggleDialog} alertMessage={message} />);
+            toggleDialog();
+        }
+
+        // If no nodes can be moved, we're done.
+        if (validDragNodes.length === 0) {
+            return;
+        }
+
+        // Backend updates for valid nodes
+        for (const dragNode of validDragNodes) {
+            if (isLogin) {
+                const fileId = dragNode.data.fileId;
+                const oldParent = findParent(treeData || [], dragNode.id);
+                const oldParentId = oldParent?.fileId;
+                const newParentId = parentNode?.data.fileId;
+
+                if (fileId && newParentId && oldParentId) {
+                    await AppMgr.getInstance().driveService?.moveFile(fileId, oldParentId, newParentId);
+                }
+            } else if (isConnected) {
+                const oldPath = getFilePath(dragNode.data);
+                const newPath = getFilePath(parentNode.data) + '/' + dragNode.data.name;
+                await CommandToXRPMgr.getInstance().renameFile(oldPath, newPath);
+            }
+        }
+
+        if (isLogin) {
+            const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
+            if (username) {
+                // refresh the Google Drive tree
+                fireGoogleUserTree(username);
+            }
+        } else if (isConnected) {
+            // refresh the XRP onboard tree
+            CommandToXRPMgr.getInstance().getOnBoardFSTree();
+        }
+    }
+
     return (
         <div className="flex flex-col gap-1 h-full">
             {treeProps.isHeader && (
@@ -657,6 +747,7 @@ function FolderTree(treeProps: TreeProps) {
                     onRename={onRename}
                     onSelect={onSelected}
                     onCreate={onCreate}
+                    onMove={onMove}
                 >
                     {Node}
                 </Tree>
