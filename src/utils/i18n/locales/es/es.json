@@ -72,6 +72,7 @@
     "settingDescription": "¡La configuración de la aplicación se puede cambiar aquí según sus necesidades!",
     "filesToUpload": "Archivos para Subir",
     "fileExists": "¡El nombre del archivo está en uso o es inválido, por favor elija un nombre diferente!",
+    "file-exists-error-multi": "Un archivo o carpeta con el nombre '{{ filenames }}' ya existe en la carpeta de destino. Por favor elija una carpeta diferente.",
     "directoryExists": "¡El nombre de la carpeta ya existe o es inválido, por favor elija un nombre diferente!",
     "power-switch-title": "Interruptor de Encendido XRP",
     "power-switch-alerts": "¡El interruptor de encendido del XRP no está activado. Los motores y servos no funcionarán correctamente. Por favor encienda el interruptor antes de continuar!",

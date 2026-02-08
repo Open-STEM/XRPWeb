@@ -51,7 +51,7 @@ async function readZipFile(url: string) {
 }
 
 export const initializedAndStartLanguageClient = async () => {
-    console.log('Initialized and Start Langulage Client');
+    console.log('Initialized and Start Language Client');
 
     let files1: { [id: string]: string } = {};
     let files2: { [id: string]: string } = {};
