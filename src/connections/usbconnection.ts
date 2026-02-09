@@ -3,6 +3,7 @@ import ConnectionMgr from '@/managers/connectionmgr';
 import i18n from '@/utils/i18n';
 import { ConnectionType } from '@/utils/types';
 import Connection, { ConnectionState } from '@connections/connection';
+import TableMgr from '@/managers/tablemgr';
 
 /**
  * USB Connection - establish USB serial connection to the XRP Robot
@@ -12,6 +13,7 @@ export class USBConnection extends Connection {
     private port: SerialPort | undefined = undefined;
     private reader: ReadableStreamDefaultReader<Uint8Array> | undefined = undefined; // Reference to serial port reader, only one can be locked at a time
     private writer: WritableStreamDefaultWriter<Uint8Array> | undefined = undefined; // Reference to serial port writer, only one can be locked at a time
+    private Table: TableMgr | undefined = undefined;
 
     // Define USB connection constants
     readonly USB_VENDOR_ID_BETA: number = 11914; // For filtering ports during auto or manual selection
@@ -23,6 +25,9 @@ export class USBConnection extends Connection {
         super();
         this.connMgr = connMgr;
         this.isManualConnection = false;
+        this.Table = new TableMgr();
+        if(this.joyStick)
+            this.joyStick.writeToDevice = this.writeToDevice.bind(this);
 
         // setup USB connection listeners
         // Check if browser can use WebSerial
@@ -85,7 +90,19 @@ export class USBConnection extends Connection {
                             this.reader.releaseLock();
                             break;
                         }
-                        this.readData(value);
+                        
+                        // Extract XPP packets and regular data from the incoming stream
+                        const { packets, regularData } = this.extractCompleteXPPPackets(value);
+                        
+                        // Process complete XPP packets
+                        for (const packet of packets) {
+                            this.processXPPPacket(packet, this.Table);
+                        }
+                        
+                        // Pass any regular (non-XPP) data to readData for normal processing
+                        if (regularData.length > 0) {
+                            this.readData(regularData);
+                        }
                     }
                 }
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -39,11 +39,6 @@ export class BluetoothConnection extends Connection {
 
     private  Table: TableMgr | undefined = undefined;
 
-    // XPP Protocol constants for packet detection
-    private readonly XPP_START_SEQ: number[] = [0xAA, 0x55];
-    private readonly XPP_END_SEQ: number[] = [0x55, 0xAA];
-    private xppBuffer: Uint8Array = new Uint8Array(0); // Buffer for incomplete XPP packets
-
     constructor(connMgr: ConnectionMgr) {
         super();
         this.connMgr = connMgr;
@@ -181,72 +176,6 @@ export class BluetoothConnection extends Connection {
     }
 
 
-    /**
-     * Extracts complete XPP packets from the buffer and returns them.
-     * XPP packet format: [0xAA 0x55] [Type] [Length] [Payload] [0x55 0xAA]
-     * @param data - New data to add to the buffer
-     * @returns Array of complete XPP packets
-     */
-    private extractCompleteXPPPackets(data: Uint8Array): Uint8Array[] {
-        // Add new data to buffer
-        this.xppBuffer = this.concatUint8Arrays(this.xppBuffer, data);
-        
-        const completePackets: Uint8Array[] = [];
-        
-        while (this.xppBuffer.length >= 4) { // Minimum packet size is 4 bytes (start + type + length + end)
-            // Look for start sequence [0xAA 0x55]
-            const startIndex = this.xppBuffer.findIndex((val, idx) => 
-                idx < this.xppBuffer.length - 1 && 
-                val === this.XPP_START_SEQ[0] && 
-                this.xppBuffer[idx + 1] === this.XPP_START_SEQ[1]
-            );
-            
-            if (startIndex === -1) {
-                // No start sequence found, clear buffer
-                this.xppBuffer = new Uint8Array(0);
-                break;
-            }
-            
-            // Remove any data before the start sequence
-            if (startIndex > 0) {
-                this.xppBuffer = this.xppBuffer.subarray(startIndex);
-            }
-            
-            // Check if we have enough data for type and length (at least 4 bytes: start + type + length)
-            if (this.xppBuffer.length < 4) {
-                break; // Need more data
-            }
-            
-            // Extract length (byte 3 after start sequence)
-            // Type is at byte 2, but we don't need it for packet extraction
-            const payloadLength = this.xppBuffer[3];
-            
-            // Calculate total packet size: start(2) + type(1) + length(1) + payload + end(2)
-            const totalPacketSize = 2 + 1 + 1 + payloadLength + 2;
-            
-            // Check if we have the complete packet
-            if (this.xppBuffer.length < totalPacketSize) {
-                break; // Need more data
-            }
-            
-            // Verify end sequence
-            const endIndex = totalPacketSize - 2;
-            if (this.xppBuffer[endIndex] === this.XPP_END_SEQ[0] && 
-                this.xppBuffer[endIndex + 1] === this.XPP_END_SEQ[1]) {
-                // Complete packet found
-                const completePacket = this.xppBuffer.subarray(0, totalPacketSize);
-                completePackets.push(completePacket);
-                
-                // Remove processed packet from buffer
-                this.xppBuffer = this.xppBuffer.subarray(totalPacketSize);
-            } else {
-                // Invalid end sequence, skip this start sequence and continue
-                this.xppBuffer = this.xppBuffer.subarray(2);
-            }
-        }
-        
-        return completePackets;
-    }
 
     /**
      * readWorker - this worker read data from the XRP robot
@@ -266,11 +195,10 @@ export class BluetoothConnection extends Connection {
                         valuesD = await this.get2BLEData();
                         if(valuesD != undefined) {
                             // Extract complete XPP packets and only process those
-                            const completePackets = this.extractCompleteXPPPackets(valuesD);
-                            for (const packet of completePackets) {
-                                this.joyStick?.handleXPPMessage(packet);
-                                this.Table?.readFromDevice(packet);
-                                //NOTE: if there is one more of these then we should switch to a subscription model.
+                            // Note: regularData is ignored since bleDataReader only receives XPP packets
+                            const { packets } = this.extractCompleteXPPPackets(valuesD);
+                            for (const packet of packets) {
+                                this.processXPPPacket(packet, this.Table);
                             }
                         }
                     }

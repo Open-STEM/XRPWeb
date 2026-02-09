@@ -1,6 +1,7 @@
 import ConnectionMgr from "@/managers/connectionmgr";
 import logger from "@/utils/logger";
 import Joystick from '@/managers/joystickmgr';
+import TableMgr from '@/managers/tablemgr';
 
 
 /**
@@ -49,6 +50,11 @@ abstract class Connection {
     readonly CTRL_CMD_SOFTRESET: string = '\x04'; // ctrl-D (soft reset the board, required after a command is entered in raw!)
 
     readonly XRP_SEND_BLOCK_SIZE: number = 250; // wired can handle 255 bytes, but BLE 5.0 is only 250
+
+    // XPP Protocol constants for packet detection
+    protected readonly XPP_START_SEQ: number[] = [0xAA, 0x55];
+    protected readonly XPP_END_SEQ: number[] = [0x55, 0xAA];
+    protected xppBuffer: Uint8Array = new Uint8Array(0); // Buffer for incomplete XPP packets
 
     joyStick: Joystick | undefined;
 
@@ -106,6 +112,162 @@ abstract class Connection {
         result.set(b, a.length);
         return result;
     }
+
+    /**
+     * Extracts complete XPP packets from the buffer and returns them.
+     * XPP packet format: [0xAA 0x55] [Type] [Length] [Payload] [0x55 0xAA]
+     * @param data - New data to add to the buffer
+     * @returns Array of complete XPP packets
+     * 
+     * regularData anything that is not part of a XPP packet
+     * packets are the complete XPP packets
+     * anything before start sequence is regular data
+     * anything after an end with no other start sequence is regular data
+     * 
+     */
+    protected extractCompleteXPPPackets(data: Uint8Array): { packets: Uint8Array[], regularData: Uint8Array } {
+        // Add new data to buffer
+        this.xppBuffer = this.concatUint8Arrays(this.xppBuffer, data);
+        let regularData: Uint8Array = new Uint8Array(0);
+              
+        const completePackets: Uint8Array[] = [];
+        
+        // Process buffer to extract packets and regular data
+        while (this.xppBuffer.length > 0) {
+            // If buffer is too small to be a complete packet, check if we can pass through regular data
+            if (this.xppBuffer.length < 4) {
+                // Check if buffer could potentially start an XPP packet
+                if (this.xppBuffer.length === 1) {
+                    // Single byte: if it's 0xAA, might be start of XPP, keep it
+                    // Otherwise, it's definitely regular data
+                    if (this.xppBuffer[0] !== this.XPP_START_SEQ[0]) {
+                        regularData = this.concatUint8Arrays(regularData, this.xppBuffer);
+                        this.xppBuffer = new Uint8Array(0);
+                    }
+                    break; // Need more data to determine
+                } else if (this.xppBuffer.length === 2) {
+                    // Two bytes: check if it's [0xAA, 0x55]
+                    if (this.xppBuffer[0] === this.XPP_START_SEQ[0] && 
+                        this.xppBuffer[1] === this.XPP_START_SEQ[1]) {
+                        // Could be start of XPP packet, keep it
+                        break; // Need more data
+                    } else if (this.xppBuffer[0] === this.XPP_START_SEQ[0]) {
+                        // First byte is 0xAA but second isn't 0x55, pass first byte as regular data
+                        regularData = this.concatUint8Arrays(regularData, this.xppBuffer.subarray(0, 1));
+                        this.xppBuffer = this.xppBuffer.subarray(1);
+                        // Continue processing the remaining byte
+                    } else {
+                        // First byte is not 0xAA, both bytes are regular data
+                        regularData = this.concatUint8Arrays(regularData, this.xppBuffer);
+                        this.xppBuffer = new Uint8Array(0);
+                        break;
+                    }
+                } else if (this.xppBuffer.length === 3) {
+                    // Three bytes: check if it starts with [0xAA, 0x55]
+                    if (this.xppBuffer[0] === this.XPP_START_SEQ[0] && 
+                        this.xppBuffer[1] === this.XPP_START_SEQ[1]) {
+                        // Could be start of XPP packet, keep it
+                        break; // Need more data
+                    } else if (this.xppBuffer[0] === this.XPP_START_SEQ[0]) {
+                        // First byte is 0xAA but second isn't 0x55, pass first byte as regular data
+                        regularData = this.concatUint8Arrays(regularData, this.xppBuffer.subarray(0, 1));
+                        this.xppBuffer = this.xppBuffer.subarray(1);
+                        // Continue processing the remaining 2 bytes
+                    } else {
+                        // First byte is not 0xAA, check if second byte is 0xAA (could be start of XPP)
+                        if (this.xppBuffer[1] === this.XPP_START_SEQ[0]) {
+                            // Second byte might be start, pass first byte as regular data
+                            regularData = this.concatUint8Arrays(regularData, this.xppBuffer.subarray(0, 1));
+                            this.xppBuffer = this.xppBuffer.subarray(1);
+                            // Continue processing the remaining 2 bytes
+                        } else {
+                            // No potential XPP start, pass all as regular data
+                            regularData = this.concatUint8Arrays(regularData, this.xppBuffer);
+                            this.xppBuffer = new Uint8Array(0);
+                            break;
+                        }
+                    }
+                }
+                continue; // Re-check buffer after modifications
+            }
+            
+            // Buffer has at least 4 bytes, look for start sequence [0xAA 0x55]
+            const startIndex = this.xppBuffer.findIndex((val, idx) => 
+                idx < this.xppBuffer.length - 1 && 
+                val === this.XPP_START_SEQ[0] && 
+                this.xppBuffer[idx + 1] === this.XPP_START_SEQ[1]
+            );
+            
+            if (startIndex === -1) {
+                // No start sequence found
+                // Check if last byte is 0xAA (might be start of next XPP packet)
+                const lastByte = this.xppBuffer[this.xppBuffer.length - 1];
+                if (lastByte === this.XPP_START_SEQ[0]) {
+                    // Keep last byte in buffer, pass rest as regular data
+                    regularData = this.concatUint8Arrays(regularData, this.xppBuffer.subarray(0, this.xppBuffer.length - 1));
+                    this.xppBuffer = this.xppBuffer.subarray(this.xppBuffer.length - 1);
+                } else {
+                    // No potential XPP start, clear buffer
+                    regularData = this.concatUint8Arrays(regularData, this.xppBuffer);
+                    this.xppBuffer = new Uint8Array(0);
+                }
+                break;
+            }
+            
+            // Remove any data before the start sequence
+            if (startIndex > 0) {
+                regularData = this.concatUint8Arrays(regularData, this.xppBuffer.subarray(0, startIndex));
+                this.xppBuffer = this.xppBuffer.subarray(startIndex);
+            }
+            
+            // Check if we have enough data for type and length (at least 4 bytes: start + type + length)
+            if (this.xppBuffer.length < 4) {
+                break; // Need more data
+            }
+            
+            // Extract length (byte 3 after start sequence)
+            // Type is at byte 2, but we don't need it for packet extraction
+            const payloadLength = this.xppBuffer[3];
+            
+            // Calculate total packet size: start(2) + type(1) + length(1) + payload + end(2)
+            const totalPacketSize = 2 + 1 + 1 + payloadLength + 2;
+            
+            // Check if we have the complete packet
+            if (this.xppBuffer.length < totalPacketSize) {
+                break; // Need more data
+            }
+            
+            // Verify end sequence
+            const endIndex = totalPacketSize - 2;
+            if (this.xppBuffer[endIndex] === this.XPP_END_SEQ[0] && 
+                this.xppBuffer[endIndex + 1] === this.XPP_END_SEQ[1]) {
+                // Complete packet found
+                const completePacket = this.xppBuffer.subarray(0, totalPacketSize);
+                completePackets.push(completePacket);
+                
+                // Remove processed packet from buffer
+                this.xppBuffer = this.xppBuffer.subarray(totalPacketSize);
+            } else {
+                // Invalid end sequence, skip this start sequence and continue
+                regularData = this.concatUint8Arrays(regularData, this.xppBuffer.subarray(0, 2));
+                this.xppBuffer = this.xppBuffer.subarray(2);
+            }
+        }
+        
+        return { packets: completePackets, regularData };
+    }
+
+    /**
+     * Processes a complete XPP packet by routing it to the appropriate handlers.
+     * @param packet - Complete XPP packet
+     * @param tableMgr - Optional TableMgr instance for handling table-related XPP messages
+     */
+    protected processXPPPacket(packet: Uint8Array, tableMgr?: TableMgr): void {
+        this.joyStick?.handleXPPMessage(packet);
+        tableMgr?.readFromDevice(packet);
+    }
+
+    
 
     /**
      * readData - read data from the XRP connection
