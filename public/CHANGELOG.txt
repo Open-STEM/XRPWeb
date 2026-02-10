@@ -1,4 +1,4 @@
-# Version 2.0.12
+# Version 2.0.13
 
 #### Bluetooth support
 <img height="10%" width="10%" src="src/assets/images/Bluetooth_FM_Black.png"/></img>
@@ -37,3 +37,5 @@
 * [File SaveAs dialog not using name](https://github.com/Open-STEM/XRPWeb/issues/205)
 * [Google Drive Export to PC resulted with zero bytes](https://github.com/Open-STEM/XRPWeb/issues/206)
 * [Google Drive Onetime notification](https://github.com/Open-STEM/XRPWeb/issues/198)
+* [Scroll in a .py file](https://github.com/Open-STEM/XRPWeb/issues)
+* [No way to move files](https://github.com/Open-STEM/XRPWeb/issues/179)
