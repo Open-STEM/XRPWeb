@@ -115,17 +115,24 @@ function NavBar({ layoutref }: NavBarProps) {
     const driveService = AppMgr.getInstance().driveService;
     const dropdownRef = useRef<HTMLDivElement>(null);
     const stoppingRef = useRef(false);
+    const browserCheckRef = useRef(false);
 
+    // Check for Web Serial API support once on component mount.
     useEffect(() => {
-        // Check if the user is using Firefox browser
+        if (browserCheckRef.current) return;
+        browserCheckRef.current = true;
+
         const parser = new UAParser();
         const browser = parser.getResult().browser;
-        if (browser.name !== "Chrome" && browser.name !== "Edge" && browser.name !== "Safari") {
-            setDialogContent(<AlertDialog alertMessage={t('firefox-not-supported')} toggleDialog={toggleDialog} />);
+        if (!("serial" in navigator)) {
+            setDialogContent(<AlertDialog alertMessage={t('firefox-not-supported', { browser: browser.name })} toggleDialog={toggleDialog} />);
             toggleDialog();
         }
+    }, [t]);
+
+    useEffect(() => {
         stoppingRef.current = isStopping;
-    }, [isStopping, t]);
+    }, [isStopping]);
 
     useEffect(() => {
         if (!hasSubscribed) {
