@@ -2,7 +2,7 @@
     "_commentXRP": "Esta línea no necesita ser traducida; agregar traducción específica de XRP a continuación",
     "file": "Archivo",
     "file-exists-on-python-convert": "El archivo de Python {{ filename }} ya existe. Cámbiele el nombre antes de realizar la conversión.",
-    "firefox-not-supported": "El navegador que está utilizando no es compatible. Por favor use un navegador diferente como Chrome, Edge o Safari para acceder a toda la funcionalidad del IDE Web de XRP.",
+    "firefox-not-supported": "El navegador ({{ browser }}) que está utilizando no es compatible. Por favor use un navegador diferente como Chrome o Edge para acceder a toda la funcionalidad del IDE Web de XRP.",
     "view": "Ver",
     "help": "Ayuda",
     "folders": "Carpetas",
