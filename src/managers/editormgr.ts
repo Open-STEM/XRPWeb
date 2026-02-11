@@ -21,6 +21,7 @@ export type EditorSession = {
     type: EditorType;
     isSubscribed: boolean;
     isModified: boolean;
+    hasBeenLoaded?: boolean;
     fontsize: number;
     content?: string;
     workspace?: Workspace;

@@ -66,6 +66,7 @@ import XRPDriverInstallDlg from './dialogs/driver-installs';
 import powerswitch_standard from '@assets/images/XRP-nonbeta-controller-power.jpg';
 import powerswitch_beta from '@assets/images/XRP_Controller-Power.jpg';
 import BusyDialog from './dialogs/busydlg';
+import { UAParser } from "ua-parser-js";
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -113,6 +114,18 @@ function NavBar({ layoutref }: NavBarProps) {
     const authService = AppMgr.getInstance().authService;
     const driveService = AppMgr.getInstance().driveService;
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const stoppingRef = useRef(false);
+
+    useEffect(() => {
+        // Check if the user is using Firefox browser
+        const parser = new UAParser();
+        const browser = parser.getResult().browser;
+        if (browser.name !== "Chrome" && browser.name !== "Edge" && browser.name !== "Safari") {
+            setDialogContent(<AlertDialog alertMessage={t('firefox-not-supported')} toggleDialog={toggleDialog} />);
+            toggleDialog();
+        }
+        stoppingRef.current = isStopping;
+    }, [isStopping, t]);
 
     useEffect(() => {
         if (!hasSubscribed) {
@@ -865,10 +878,12 @@ function NavBar({ layoutref }: NavBarProps) {
 
         const resetRunButtonStates = () => {
             AppMgr.getInstance().on(EventType.EVENT_PROGRAM_EXECUTED, () => {
+                if (stoppingRef.current === true) {
+                    toggleDialog();
+                }
                 setRunning(false);
                 setIsStopping(false);
                 broadcastRunningState(false);
-                toggleDialog();
                 AppMgr.getInstance().eventOff(EventType.EVENT_PROGRAM_EXECUTED);
             });
         }
@@ -926,8 +941,8 @@ function NavBar({ layoutref }: NavBarProps) {
                                             await CommandToXRPMgr.getInstance()
                                                 .updateMainFile(session.path)
                                                 .then(async (lines) => {
-                                                    await CommandToXRPMgr.getInstance().executeLines(lines);
                                                     resetRunButtonStates();
+                                                    await CommandToXRPMgr.getInstance().executeLines(lines);
                                                 });
                                         });
                                     });
@@ -935,8 +950,8 @@ function NavBar({ layoutref }: NavBarProps) {
                                     await CommandToXRPMgr.getInstance()
                                         .updateMainFile(session.path)
                                         .then(async (lines) => {
-                                            await CommandToXRPMgr.getInstance().executeLines(lines);
                                             resetRunButtonStates();
+                                            await CommandToXRPMgr.getInstance().executeLines(lines);
                                         });
                                 }
                             }

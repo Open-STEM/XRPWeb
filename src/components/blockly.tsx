@@ -159,6 +159,13 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
     }, [isLoading]);
 
     /**
+     * useEffect - setup a reference to the editor name
+     */
+    useEffect(() => {
+        nameRef.current = name;
+    }, [name]);    
+
+    /**
      * handleOnInject
      */
     function handleOnInject(ws: Workspace) {
@@ -193,13 +200,6 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
         saveEditor();
     });
 
-    /**
-     * useEffect - setup a reference to the editor name
-     */
-    useEffect(() => {
-        nameRef.current = name;
-    }, [name]);
-
     useEffect(() => {
         if (
             EditorMgr.getInstance().hasEditorSession(tabId) &&
@@ -221,12 +221,12 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
                 const session: EditorSession | undefined =
                     EditorMgr.getInstance().getEditorSession(tabId);
                 if (loadContent.name !== nameRef.current || loadContent.path !== session?.path) return;
-
-                const ws = EditorMgr.getInstance().getEditorSession(tabId)?.workspace;
-                if (ws) {
+                const ws = session?.workspace;
+                if (ws && session?.hasBeenLoaded !== true) {
                     try {
                         Blockly.Events.disable();
                         Blockly.serialization.workspaces.load(JSON.parse(loadContent.content), ws);
+                        session.hasBeenLoaded = true;
                         // @ts-expect-error - it is a valid function
                         ws.scrollCenter();
                         // @ts-expect-error - it is a valid function
@@ -244,16 +244,15 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
 
             AppMgr.getInstance().on(EventType.EVENT_EDITOR, (type) => {
                 if (type === EditorType.BLOCKLY) {
-                    const ws = EditorMgr.getInstance().getEditorSession(tabId)?.workspace;
-                    if (ws) {
-                        console.log('rescrolling to center!')
-                        // @ts-expect-error - it is a valid function
-                        ws.scrollCenter();
-                        setTimeout(() => {
+                    setTimeout(() => {
+                        const ws = EditorMgr.getInstance().getEditorSession(tabId)?.workspace;
+                        if (ws) {
                             // @ts-expect-error - it is a valid function
                             ws.scrollCenter();
-                        }, 200)
-                    }                                     
+                            // @ts-expect-error - it is a valid function
+                            ws.zoomToFit();
+                        }
+                    }, 100);
                 }
             });
 
@@ -368,6 +367,7 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
         return () => {
             // Cleanup listener on unmount
             if (ws && changeListener) {
+                console.log('Removing workspace change listener for tab:', tabId);
                 ws.removeChangeListener(changeListener);
             }
         }

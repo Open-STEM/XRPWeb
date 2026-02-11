@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FitAddon } from '@xterm/addon-fit';
 import { useXTerm } from 'react-xtermjs';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
 import Connection, { ConnectionState } from '@/connections/connection';
 import TerminalMgr from '@/managers/terminalmgr';
 import { useTranslation } from 'react-i18next';
+import { IDisposable } from '@xterm/xterm';
 
 const TERMINAL_ID = 'xrp-shell';
 
@@ -81,6 +82,7 @@ function XRPShell() {
     const { t } = useTranslation();
     const { instance, ref } = useXTerm();
     const [isConnected, setIsConnected] = useState(false);
+    const listenerRef = useRef<IDisposable | null>(null);
 
     useEffect(() => {
         const fitAddon = new FitAddon();
@@ -126,6 +128,8 @@ function XRPShell() {
                 } else if (state === ConnectionState.Disconnected.toString()) {
                     instance?.clear();
                     instance?.writeln(t('disconnectXterm'));
+                    listenerRef.current?.dispose();
+                    listenerRef.current = null;
                     
                     // Update terminal content after disconnect message
                     setTimeout(() => {
@@ -152,7 +156,7 @@ function XRPShell() {
                     }
                 }
                 // can only be subscribed to once
-                instance?.onData((data) => {
+                listenerRef.current = instance?.onData((data) => {
                     const activeConn: Connection | null = AppMgr.getInstance().getConnection();
                     if (activeConn) {
                         if (activeConn.isBusy()) {
