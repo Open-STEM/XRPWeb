@@ -153,6 +153,7 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
     const [name, setName] = useState<string>(tabName);
     const nameRef = useRef(name);
     const isLoadingRef = useRef(isLoading);
+    const [workspace, setWorkspace] = useState<Workspace | null>(null);
 
     useEffect(() => {
         isLoadingRef.current = isLoading;
@@ -174,6 +175,7 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
         if (editorSession) {
             editorSession.workspace = ws;
         }
+        setWorkspace(ws);
     }
     
     /**
@@ -335,43 +337,38 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
         // Call setupLanguage to initialize Blockly locale
         setupLanguage();
 
-        // Set up workspace change listener for live content tracking
-        const ws = Blockly.getMainWorkspace();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let changeListener: ((event: any) => void) | null = null;
+    }, [saveEditor, tabId]);
 
-        if (ws) {
-            // Listen for workspace changes
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            changeListener = (event: any) => {
-                if (event.type === Blockly.Events.FINISHED_LOADING) {
-                    setIsLoading(false);
-                    isLoadingRef.current = false;
-                    return;
-                }
-                if (isLoadingRef.current) { return; }
-                if (event.type === Blockly.Events.VIEWPORT_CHANGE || event.isUiEvent) { return; }
-                try {
-                    console.log('Workspace changed, saving session:', nameRef.current);
-                    EditorMgr.getInstance().updateEditorSessionChange(tabId, true);
-                    const code = blocklyToPython(ws);
-                    EditorMgr.getInstance().SaveToLocalStorage(EditorMgr.getInstance().getEditorSession(tabId) as EditorSession, code);
-                } catch (e) {
-                    console.warn('Failed to serialize Blockly workspace:', e);
-                }
-            };
-            
-            ws.addChangeListener(changeListener);
-        }
+    useEffect(() => {
+        if (!workspace) return;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const changeListener = (event: any) => {
+            if (event.type === Blockly.Events.FINISHED_LOADING) {
+                setIsLoading(false);
+                isLoadingRef.current = false;
+                return;
+            }
+            if (isLoadingRef.current) { return; }
+            if (event.type === Blockly.Events.VIEWPORT_CHANGE || event.isUiEvent) { return; }
+            try {
+                console.log('Workspace changed, saving session:', nameRef.current);
+                EditorMgr.getInstance().updateEditorSessionChange(tabId, true);
+                const code = blocklyToPython(workspace);
+                EditorMgr.getInstance().SaveToLocalStorage(EditorMgr.getInstance().getEditorSession(tabId) as EditorSession, code);
+            } catch (e) {
+                console.warn('Failed to serialize Blockly workspace:', e);
+            }
+        };
+        
+        workspace.addChangeListener(changeListener);
 
         return () => {
             // Cleanup listener on unmount
-            if (ws && changeListener) {
-                console.log('Removing workspace change listener for tab:', tabId);
-                ws.removeChangeListener(changeListener);
-            }
-        }
-    }, [saveEditor, tabId]);
+            console.log('Removing workspace change listener for tab:', tabId);
+            workspace.removeChangeListener(changeListener);
+        };
+    }, [workspace, tabId]);
 
     return (
         <BlocklyWorkspace
