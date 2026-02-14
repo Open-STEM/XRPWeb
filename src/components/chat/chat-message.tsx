@@ -133,7 +133,7 @@ const ChatMessageComponent: React.FC<ChatMessageProps> = ({ message }) => {
             {message.role === 'user' ? 'U' : 'XRP'}
           </div>
           <span className="text-xs font-medium text-mountain-mist-600">
-            {message.role === 'user' ? 'You' : 'XRP Code Buddy'}
+            {message.role === 'user' ? 'You' : 'XRP Buddy'}
           </span>
         </div>
       </div>

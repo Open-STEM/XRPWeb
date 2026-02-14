@@ -197,7 +197,7 @@ export default function AIChat() {
                 role: 'assistant',
                 content: `Error: ${error instanceof Error ? error.message : 'Failed to get response'}`,
                 timestamp: new Date(),
-                model: modelName || 'XRPCode Buddy',
+                model: modelName || 'XRP Buddy',
             };
 
             setMessages(prev => [...prev, errorMessage]);
