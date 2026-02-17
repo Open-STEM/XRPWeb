@@ -145,9 +145,9 @@ export default class EditorMgr {
                     EventType.EVENT_EDITOR,
                     session.type === EditorType.BLOCKLY ? EditorType.BLOCKLY : EditorType.PYTHON,
                 );
-                this.layoutModel?.doAction(Actions.selectTab(session.id));       
+                this.layoutModel?.doAction(Actions.selectTab(session.id));     
+                return session?.id;
             }
-            return session?.id;
         }
         return undefined;
     }
