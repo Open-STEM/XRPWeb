@@ -1,102 +1,89 @@
 import { ChatMessage } from './types';
 
-/**
- * Simplified Gemini client for XRP Code Buddy
- * All AI configuration and teaching guidelines are now handled by the backend
- */
 export class GeminiClient {
     private backendUrl: string;
+    private handshakeToken: string | null = null;
 
     constructor() {
         this.backendUrl = '/api';
     }
 
     /**
-     * Check if combined documentation has been loaded on the backend for this session
+     * Initializes the security handshake with the backend.
+     * Must be called before other requests or internally.
      */
+    private async ensureHandshake(): Promise<string> {
+        if (this.handshakeToken) return this.handshakeToken;
+
+        try {
+            const response = await fetch(`${this.backendUrl}/handshake`);
+            if (!response.ok) throw new Error('Handshake failed');
+            const data = await response.json();
+            this.handshakeToken = data.handshake_token;
+            return this.handshakeToken!;
+        } catch (error) {
+            console.error('Critical Security Error: Could not establish handshake', error);
+            throw error;
+        }
+    }
+
+    private async getHeaders(): Promise<HeadersInit> {
+        const token = await this.ensureHandshake();
+        return {
+            'Content-Type': 'application/json',
+            'X-Handshake-Token': token
+        };
+    }
+
     async getDocsStatus(sessionId: string): Promise<{ loaded: boolean; uri?: string }> {
         try {
             const response = await fetch(`${this.backendUrl}/docs/status`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: await this.getHeaders(),
                 body: JSON.stringify({ session_id: sessionId })
             });
-            if (!response.ok) {
-                throw new Error(`Failed to get docs status: ${response.statusText}`);
-            }
             const data = await response.json();
             return { loaded: !!data.loaded, uri: data.uri };
         } catch (error) {
-            console.warn('Failed to fetch docs status from backend:', error);
             return { loaded: false };
         }
     }
 
-    /**
-     * Request backend to load combined documentation into model context for this session
-     */
     async loadDocs(sessionId: string): Promise<{ success: boolean; status: string; uri?: string }> {
         try {
             const response = await fetch(`${this.backendUrl}/docs/load`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: await this.getHeaders(),
                 body: JSON.stringify({ session_id: sessionId })
             });
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                throw new Error(err.detail || response.statusText);
-            }
             const data = await response.json();
             return { success: !!data.success, status: data.status, uri: data.uri };
         } catch (error) {
-            console.error('Failed to load docs on backend:', error);
             return { success: false, status: 'error' };
         }
     }
 
-    /**
-     * Get the model name for display purposes
-     * Note: This now fetches from backend to maintain single source of truth
-     */
     async getModelName(): Promise<string> {
         try {
             const response = await fetch(`${this.backendUrl}/model-info`);
-            if (response.ok) {
-                const data = await response.json();
-                return data.model_name || 'XRPCode Buddy';
-            }
-        } catch (error) {
-            console.warn('Failed to fetch model name from backend:', error);
+            const data = await response.json();
+            return data.model_name || 'XRPCode Buddy';
+        } catch {
+            return 'XRPCode Buddy';
         }
-        return 'XRPCode Buddy'; // Fallback
     }
 
-    /**
-     * Clean up a session on the backend
-     */
     async cleanupSession(sessionId: string): Promise<void> {
         try {
-            const response = await fetch(`${this.backendUrl}/session/${sessionId}`, {
-                method: 'DELETE'
+            await fetch(`${this.backendUrl}/session/${sessionId}`, {
+                method: 'DELETE',
+                headers: await this.getHeaders()
             });
-            if (response.ok) {
-                const data = await response.json();
-                console.log(`Session ${sessionId.substring(0, 8)}... cleaned up:`, data.message);
-            } else {
-                console.warn(`Failed to cleanup session ${sessionId.substring(0, 8)}...`);
-            }
         } catch (error) {
-            console.warn('Failed to cleanup session on backend:', error);
+            console.warn('Cleanup failed', error);
         }
     }
 
-    /**
-     * Send a simplified chat request with user message and context
-     */
     async chatWithContext(
         sessionId: string,
         userMessage: string,
@@ -108,12 +95,6 @@ export class GeminiClient {
         signal?: AbortSignal
     ): Promise<string> {
         try {
-            // Check if already aborted
-            if (signal?.aborted) {
-                throw new DOMException('Request was aborted', 'AbortError');
-            }
-
-            // Prepare simplified request payload
             const payload = {
                 session_id: sessionId,
                 user_message: userMessage,
@@ -126,63 +107,39 @@ export class GeminiClient {
                 language: language
             };
 
-            console.log('Sending simplified chat request to backend');
-
             const response = await fetch(`${this.backendUrl}/chat`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: await this.getHeaders(),
                 body: JSON.stringify(payload),
                 signal: signal
             });
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(`Chat request failed: ${errorData.detail || response.statusText}`);
+                throw new Error(errorData.detail || 'Chat request failed');
             }
 
-            if (onStream) {
-                // Handle streaming response
-                return await this.handleStreamingResponse(response, onStream, signal);
-            } else {
-                // Handle non-streaming response (though streaming is preferred)
-                return await this.handleNonStreamingResponse(response);
-            }
+            return await this.handleStreamingResponse(response, onStream || (() => {}), signal);
         } catch (error) {
-            // Re-throw abort errors as-is
-            if (error instanceof DOMException && error.name === 'AbortError') {
-                throw error;
-            }
-            
-            console.error('Chat completion error:', error);
-            throw new Error(`Failed to get response from backend: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            if (error instanceof DOMException && error.name === 'AbortError') throw error;
+            throw error;
         }
     }
 
-    /**
-     * Handle streaming response from the simplified chat endpoint
-     */
     private async handleStreamingResponse(
         response: Response,
         onStream: (content: string) => void,
         signal?: AbortSignal
     ): Promise<string> {
         const reader = response.body?.getReader();
-        if (!reader) {
-            throw new Error('No response body available');
-        }
+        if (!reader) throw new Error('No response body');
 
         let fullContent = '';
         const decoder = new TextDecoder();
 
         try {
             while (true) {
-                // Check for abortion
-                if (signal?.aborted) {
-                    throw new DOMException('Request was aborted', 'AbortError');
-                }
-
+                if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
                 const { done, value } = await reader.read();
                 if (done) break;
 
@@ -199,100 +156,13 @@ export class GeminiClient {
                             } else if (data.type === 'error') {
                                 throw new Error(data.error);
                             }
-                        } catch (parseError) {
-                            console.warn('Failed to parse streaming data:', parseError);
-                        }
+                        } catch (e) {}
                     }
                 }
             }
         } finally {
             reader.releaseLock();
         }
-
         return fullContent;
-    }
-
-    /**
-     * Handle non-streaming response (fallback)
-     */
-    private async handleNonStreamingResponse(response: Response): Promise<string> {
-        const reader = response.body?.getReader();
-        if (!reader) {
-            throw new Error('No response body available');
-        }
-
-        let fullContent = '';
-        const decoder = new TextDecoder();
-
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n');
-
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const data = JSON.parse(line.substring(6));
-                            if (data.type === 'content') {
-                                fullContent += data.content;
-                            } else if (data.type === 'error') {
-                                throw new Error(data.error);
-                            }
-                        } catch (parseError) {
-                            console.warn('Failed to parse streaming data:', parseError);
-                        }
-                    }
-                }
-            }
-        } finally {
-            reader.releaseLock();
-        }
-
-        return fullContent;
-    }
-
-    /**
-     * Legacy method for backward compatibility
-     * @deprecated Use chatWithContext instead
-     */
-    async chatCompletion(
-        messages: ChatMessage[],
-        onStream?: (content: string) => void,
-        _contextFile?: unknown, // Ignored - context now handled by backend
-        signal?: AbortSignal
-    ): Promise<string> {
-        console.warn('chatCompletion is deprecated, use chatWithContext instead');
-
-        if (messages.length === 0) {
-            throw new Error('No messages provided');
-        }
-
-        // Generate a temporary session ID for legacy calls
-        const randomArray = new Uint32Array(2);
-        void (typeof window !== 'undefined' && window.crypto
-            ? window.crypto.getRandomValues(randomArray)
-            : (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function'
-                ? crypto.getRandomValues(randomArray)
-                : (() => { throw new Error('No secure random generator available'); })()
-            )
-        );
-        const randomString = Array.from(randomArray).map(n => n.toString(36)).join('').substr(0, 9);
-        const tempSessionId = `legacy-${Date.now()}-${randomString}`;
-        const userMessage = messages[messages.length - 1].content;
-        const conversationHistory = messages.slice(0, -1);
-
-        return this.chatWithContext(
-            tempSessionId,
-            userMessage,
-            conversationHistory,
-            '', // No editor context in legacy mode
-            '', // No terminal context in legacy mode
-            'en', // Default language for legacy mode
-            onStream,
-            signal
-        );
     }
 }
