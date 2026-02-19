@@ -3,7 +3,7 @@ import TerminalMgr from '@/managers/terminalmgr';
 import { EditorType } from './types';
 
 /**
- * Simplified context loader for XRP Code Buddy
+ * Simplified context loader for XRP Buddy
  * Only handles gathering dynamic context (editor/terminal) since documentation is loaded at backend startup
  */
 export class GeminiContextLoader {

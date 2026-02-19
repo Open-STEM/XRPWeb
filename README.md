@@ -34,7 +34,7 @@ The XRP software platform is an integrated development environment where you can
 
 ### Backend Setup (AI Assistant)
 
-The backend provides the XRPCode Buddy AI assistant functionality through a secure FastAPI proxy.
+The backend provides the XRP Buddy AI assistant functionality through a secure FastAPI proxy.
 
 1. **Navigate to backend directory**
    ```bash
@@ -88,9 +88,9 @@ source venv/bin/activate  # or venv\Scripts\activate on Windows
 python main.py
 ```
 
-## 🤖 XRPCode Buddy - AI Assistant
+## 🤖 XRP Buddy - AI Assistant
 
-XRP Web includes **XRPCode Buddy**, an intelligent AI assistant powered by Google Gemini that provides contextual help with your robotics projects. The AI automatically has access to:
+XRP Web includes **XRP Buddy**, an intelligent AI assistant powered by Google Gemini that provides contextual help with your robotics projects. The AI automatically has access to:
 
 - **📚 Complete XRP Documentation** - All API references, tutorials, and programming guides
 - **💻 Your Current Code** - Both Python files and Blockly visual programs you have open
@@ -116,7 +116,7 @@ XRP Web includes **XRPCode Buddy**, an intelligent AI assistant powered by Googl
 
 ### AI Model & Architecture
 
-**XRPCode Buddy** uses:
+**XRP Buddy** uses:
 - **Model**: Gemini 2.5 Flash - Google's latest fast and efficient model optimized for real-time conversations and code assistance
 - **Architecture**: FastAPI backend proxy with specialized educational prompts
 - **Security**: API keys stored server-side, not exposed to browser

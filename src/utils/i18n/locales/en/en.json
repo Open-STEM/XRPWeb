@@ -55,8 +55,8 @@
     "selectUserOption": "Select a User",
     "myview": "My View",
     "settings": "Settings",
-    "ai-chat": "AI Buddy",
-    "ai-chat-help": "Chat with XRPCode Buddy",
+    "ai-chat": "XRP Buddy",
+    "ai-chat-help": "Chat with XRP Buddy",
     "user-folder": "User Folder Name",
     "google-drive-folder": "Google Drive Folder Name",
     "googleLoginTooltip": "Sign in with your Google account to access files stored in Google Drive.",
@@ -166,18 +166,18 @@
     "stop": "STOP",
     "stopRunningProgram": "Stop Running Program...",
     "aiChat": {
-        "buddyName": "XRPCode Buddy",
+        "buddyName": "XRP Buddy",
         "poweredBy": "Powered by Gemini",
         "docsLoaded": "Documentation loaded",
         "loadingDocs": "Loading docs...",
         "failedToLoadDocs": "Failed to load docs",
         "noContext": "No context",
         "startConversation": "Start a conversation",
-        "startConversationHelper": "Ask questions, get help with code, or learn XRP robotics with XRPCode Buddy.",
-        "placeholder": "Message XRPCode Buddy...",
+        "startConversationHelper": "Ask questions, get help with code, or learn XRP robotics with XRP Buddy.",
+        "placeholder": "Message XRP Buddy...",
         "stopGeneration": "Stop generation",
         "sendMessage": "Send message",
-        "buddyTyping": "XRPCode Buddy is typing..."
+        "buddyTyping": "XRP Buddy is typing..."
     },
     "editor": {
         "saveconnect": "To save your file, please connect to your XRP or login to your Google Drive account."
