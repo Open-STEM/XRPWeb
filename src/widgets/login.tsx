@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useGoogleLogin } from '@react-oauth/google';
-import Button from './button';
 import AppMgr from '@/managers/appmgr';
 import logger from '@/utils/logger';
 import { UserProfile } from '@/services/google-auth';
 import { useTranslation } from 'react-i18next';
-import { Constants } from '@/utils/constants';
 import GoogleLogo from '@assets/images/google-logo.svg';
 
 type LoginProps = {
@@ -15,15 +12,7 @@ type LoginProps = {
 
 function Login({ logoutCallback, onSuccess }: LoginProps) {
     const { t } = useTranslation();
-    const initUserProperties = {
-        access_token: '',
-        refresh_token: '',
-        expire_in: 0,
-        id_token: '',
-        scope: '',
-        token_type: '',
-    };
-
+    
     const initUserProfle = {
         email: '',
         veried_email: '',
@@ -36,122 +25,70 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
         picture: '',
     };
 
-    const [user, setUser] = useState(initUserProperties);
     const [isLogin, setIsLogin] = useState<boolean>(false);
     const [userProfile, setUserProfile] = useState<UserProfile>(initUserProfle);
-    const [tooltip, setTooltip] = useState<string>('');
     const authService = AppMgr.getInstance().authService;
-    const driveService = AppMgr.getInstance().driveService;
     const loginLogger = logger.child({ module: 'login' });
 
-    const SCOPE = 'https://www.googleapis.com/auth/drive.file';
+    const googleSignIn = () => {
+        loginLogger.info('Initiating Google Sign-In...');
+        console.log('Initiating Google Sign-In...');
+        authService.initiateGoogleSignIn();
+    };
 
-    const googleSignIn = useGoogleLogin({
-        scope: SCOPE,
-        flow: 'auth-code',
-        onSuccess: (codeResponse) => {
-            setIsLogin(true);
-            authService.isLogin = true;
-            new Promise<void>((resolve) => {
-                authService.setCode(codeResponse.code);
-                authService.getRefreshToken().then(async (token) => {
-                    setUser((prev) => ({
-                        ...prev,
-                        access_token: token.access_token,
-                        refresh_token: token.refresh_token,
-                        expire_in: token.expires_in,
-                    }));
-                    driveService.setAccessToken(token.access_token);
-                    resolve();
-                });
-            }).then(() => {
-                setTimeout(() => {
-                    authService.getAccessToken().then((token) => {
-                        loginLogger.debug('Access Token:', token);
-                    });
-                }, 1000);
-            });
-        },
-        onError: (error) => {
-            if (error instanceof Error) {
-                loginLogger.error(`Login Failed:' ${error.stack ?? error.message}`);
-            } else {
-                loginLogger.error(`Login Failed: ${String(error)}`);
-            }
-        },
-    });
-
-    /**
-     * googleLogut - logout the current Google user
-     */
     const googleLogout = () => {
+        loginLogger.info('Initiating Google Sign-Out...');
+        console.log('Initiating Google Sign-Out...');
         authService.logOut().then(() => {
             setIsLogin(false);
+            authService.isLogin = false;
             authService.userProfile = initUserProfle;
+            setUserProfile(initUserProfle);
+            logoutCallback();
         });
-        setUser(initUserProperties);
-        setUserProfile(initUserProfle);
-        logoutCallback();
     }
 
     useEffect(() => {
-        if (user.access_token && userProfile.email === '') {
-            fetch(
-                `https://www.googleapis.com/drive/v3/about?fields=user`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${user.access_token}`,
-                        Accept: 'application/json',
-                    },
-                },
-            )
-                .then((res) => res.json())
-                .then(async (data) => {
-                    // Map Drive About API response to UserProfile format
-                    const profile: UserProfile = {
-                        id: data.user?.permissionId || data.user?.emailAddress || '',
-                        email: data.user?.emailAddress || '',
-                        name: data.user?.displayName || '',
-                        picture: data.user?.photoLink || '',
-                        verified_email: true, // Drive API doesn't provide this, assume verified
-                    };
-                    setUserProfile(profile);
-                    authService.userProfile = profile;
-                        // check if XRPCode folder exists, if not create it
-                        try {
-                            const folder = await driveService.findFolderByName(Constants.XRPCODE);
-                            if (!folder) {
-                                await driveService.createFolder(Constants.XRPCODE);
-                            }
-                        } catch (error) {
-                            if (error instanceof Error) {
-                                loginLogger.error(`Error checking or creating XRPCode folder: ${error.stack ?? error.message}`);
-                            } else {
-                                loginLogger.error(`Error checking or creating XRPCode folder: ${String(error)}`);
-                            }   
-                        }
-                    onSuccess(profile);
-                })
-                .catch((err) => loginLogger.error('Error fetching user profile:', err));
-        }
-    }, [user.access_token, userProfile.email]);
+        loginLogger.info('Login component mounted. Checking user session...');
+        console.log('Login component mounted. Checking user session...');
+        // On component mount, check if there's an active session with the backend
+        const checkUserSession = async () => {
+            try {
+                const response = await fetch('http://localhost:8000/api/auth/google/user', { credentials: 'include' });
+                loginLogger.info(`User session check response: ${response}`);
+                console.log('User session check response:', response);
+                if (response.ok) {
+                    const profile: UserProfile = await response.json();
+                    loginLogger.info(`User session active. Profile: ${profile}`);
+                    console.log('User session active. Profile:', profile);
+                    if (profile && profile.id) {
+                        setIsLogin(true);
+                        authService.isLogin = true;
+                        setUserProfile(profile);
+                        authService.userProfile = profile;
+                        onSuccess(profile);
+                    }
+                } else {
+                    loginLogger.info(`User session not active or response not ok. Status: ${response.status}`);
+                    console.log('User session not active or response not ok. Status:', response.status);
+                    setIsLogin(false);
+                    authService.isLogin = false;
+                }
+            } catch (error) {
+                loginLogger.error(`Error checking user session: ${error}`);
+                console.error('Error checking user session:', error);
+                setIsLogin(false);
+                authService.isLogin = false;
+            }
+        };
 
-    useEffect(() => {
-        if (authService.isLogin) {
-            setIsLogin(true);
-            setUserProfile(authService.userProfile);
-            setTooltip('googlogoutTooltip');
-        } else {
-            setIsLogin(false);
-            setTooltip('googleLoginTooltip');
-        }
-    }, [authService.isLogin, authService.userProfile])
+        checkUserSession();
+    }, []);
 
     return (
         <>
             {isLogin && (
                 <div className="flex flex-col">
-                    {/* <label className="text-mountain-mist-900 dark:text-curious-blue-100">{t('userprofile')}</label> */}
                     <div className="border-1 flex flex-row items-center gap-1 rounded-md bg-mountain-mist-100 p-1 dark:bg-shark-500">
                         <img
                             className="h-10 w-10 rounded-full"
@@ -166,10 +103,13 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
                 </div>
             )}
             <div className="flex flex-col items-end gap-1">
-                <Button onClicked={isLogin ? googleLogout : googleSignIn} tooltip={t(tooltip)}>
+                <button 
+                    onClick={isLogin ? googleLogout : googleSignIn}
+                    className="bg-matisse-600 text-curious-blue-50 hover:bg-matisse-500 dark:bg-shark-600 dark:hover:bg-shark-500 dark:border-shark-500 flex h-10 w-auto items-center rounded-3xl border px-8 py-2 text-lg"
+                >
                     <img src={GoogleLogo} className='h-8 w-8' />
                     {isLogin ? t('gooSignOut') : t('gooSignIn')}
-                </Button>
+                </button>
             </div>
         </>
     );

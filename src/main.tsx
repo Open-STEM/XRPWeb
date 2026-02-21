@@ -1,15 +1,9 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import '@/index.css'
 import '@/utils/i18n';
 import '@/utils/blockly-global'; // Expose Blockly globally for external plugins
 import App from '@/App.tsx'
-import { GoogleOAuthProvider } from '@react-oauth/google';
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <GoogleOAuthProvider clientId={import.meta.env.GOOGLE_CLIENT_ID}>
-      <App />
-    </GoogleOAuthProvider>
-  </StrictMode>,
+  <App />
 )

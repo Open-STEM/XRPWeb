@@ -1,4 +1,4 @@
-import { defineConfig, type PluginOption, loadEnv } from 'vite';
+import { defineConfig, type PluginOption } from 'vite';
 import react from '@vitejs/plugin-react';
 import importMetaUrlPlugin from '@codingame/esbuild-import-meta-url-plugin';
 import { visualizer } from "rollup-plugin-visualizer";
@@ -7,9 +7,9 @@ import { fileURLToPath, URL } from 'url';
 import { resolve } from 'path';
 import flowbiteReact from "flowbite-react/plugin/vite";
 
-// https://vite.dev/config/
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, process.cwd(), '');
+// https://vitejs.dev/config/
+export default defineConfig(() => {
+
     return {
         base: './',
         esbuild: {
@@ -69,7 +69,11 @@ export default defineConfig(({ mode }) => {
         server: {
             port: 3000,
             proxy: {
-                '/api': env.GOOGLE_CHATAPI_PROXY_TARGET
+                '/api': {
+                    target: 'http://localhost:8000',
+                    changeOrigin: true,
+                    secure: false, // Set to true for HTTPS targets
+                }
             }
         },
         build: {

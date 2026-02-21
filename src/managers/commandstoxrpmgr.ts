@@ -52,8 +52,19 @@ export class CommandToXRPMgr {
      * getLibVersion - get the XRP library version
      */
     async getLibVersion(){
-        const response = await fetch("lib/package.json"); // do we need to cache bust? + "?version=" + showChangelogVersion //need an await?
+        const url = "lib/package.json";
+        this.cmdLogger.info(`Fetching library version from: ${url}`);
+        console.log(`Fetching library version from: ${url}`);
+        const response = await fetch(url);
+        this.cmdLogger.info(`Response status for ${url}: ${response.status}`);
+        console.log(`Response status for ${url}: ${response.status}`);
+        this.cmdLogger.info(`Response content-type for ${url}: ${response.headers.get('Content-Type')}`);
+        console.log(`Response content-type for ${url}: ${response.headers.get('Content-Type')}`);
+        
         const responseTxt = await response.text();
+        this.cmdLogger.info(`Raw response text for ${url}: ${responseTxt.substring(0, 200)}`); // Log first 200 chars
+        console.log(`Raw response text for ${url}: ${responseTxt.substring(0, 200)}`); // Log first 200 chars
+
         const jresp = JSON.parse(responseTxt);
         const v = jresp.version
         // This should match what is in /lib/XRPLib/version.py as '__version__'
@@ -64,8 +75,19 @@ export class CommandToXRPMgr {
      * getMicropythonVersion - get the micropython version
      */
     async getMicropythonVersion(){
-        const response = await fetch("micropython/package.json"); 
+        const url = "micropython/package.json";
+        this.cmdLogger.info(`Fetching MicroPython version from: ${url}`);
+        console.log(`Fetching MicroPython version from: ${url}`);
+        const response = await fetch(url); 
+        this.cmdLogger.info(`Response status for ${url}: ${response.status}`);
+        console.log(`Response status for ${url}: ${response.status}`);
+        this.cmdLogger.info(`Response content-type for ${url}: ${response.headers.get('Content-Type')}`);
+        console.log(`Response content-type for ${url}: ${response.headers.get('Content-Type')}`);
+        
         const responseTxt = await response.text();
+        this.cmdLogger.info(`Raw response text for ${url}: ${responseTxt.substring(0, 200)}`); // Log first 200 chars
+        console.log(`Raw response text for ${url}: ${responseTxt.substring(0, 200)}`); // Log first 200 chars
+
         const jresp = JSON.parse(responseTxt);
         const v = jresp.version
         this.mpVersion = v.split(".");
