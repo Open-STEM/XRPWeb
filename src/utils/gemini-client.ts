@@ -6,9 +6,28 @@ import { ChatMessage } from './types';
  */
 export class GeminiClient {
     private backendUrl: string;
+    private handshakeToken: string | null = null; // Store the token here
 
     constructor() {
-        this.backendUrl = '/api';
+        this.backendUrl = 'http://localhost:8000/api'; // Hardcoded AI proxy URL
+    }
+
+    // NEW METHOD: Must be called before anything else
+    async performHandshake(): Promise<string> {
+        try {
+            const response = await fetch(`${this.backendUrl}/handshake`, {
+                credentials: 'include'
+            });
+            if (!response.ok) {
+                throw new Error(`Handshake failed: ${response.statusText}`);
+            }
+            const data = await response.json();
+            this.handshakeToken = data.handshake_token;
+            return data.handshake_token;
+        } catch (error) {
+            console.error("Error during AI backend handshake:", error);
+            throw error;
+        }
     }
 
     /**
@@ -20,8 +39,10 @@ export class GeminiClient {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-Handshake-Token': this.handshakeToken || '', // SEND THE TOKEN
                 },
-                body: JSON.stringify({ session_id: sessionId })
+                body: JSON.stringify({ session_id: sessionId }),
+                credentials: 'include' // Include cookies in cross-origin requests
             });
             if (!response.ok) {
                 throw new Error(`Failed to get docs status: ${response.statusText}`);
@@ -29,7 +50,7 @@ export class GeminiClient {
             const data = await response.json();
             return { loaded: !!data.loaded, uri: data.uri };
         } catch (error) {
-            console.warn('Failed to fetch docs status from backend:', error);
+            console.error('Failed to fetch docs status from backend:', error);
             return { loaded: false };
         }
     }
@@ -43,8 +64,10 @@ export class GeminiClient {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-Handshake-Token': this.handshakeToken || '', // SEND THE TOKEN
                 },
-                body: JSON.stringify({ session_id: sessionId })
+                body: JSON.stringify({ session_id: sessionId }),
+                credentials: 'include' // Include cookies in cross-origin requests
             });
             if (!response.ok) {
                 const err = await response.json().catch(() => ({}));
@@ -64,13 +87,18 @@ export class GeminiClient {
      */
     async getModelName(): Promise<string> {
         try {
-            const response = await fetch(`${this.backendUrl}/model-info`);
+            const response = await fetch(`${this.backendUrl}/model-info`, {
+                headers: {
+                    'X-Handshake-Token': this.handshakeToken || '', // SEND THE TOKEN
+                },
+                credentials: 'include' // Include cookies in cross-origin requests
+            });
             if (response.ok) {
                 const data = await response.json();
                 return data.model_name || 'XRPCode Buddy';
             }
         } catch (error) {
-            console.warn('Failed to fetch model name from backend:', error);
+            console.error('Failed to fetch model name from backend:', error);
         }
         return 'XRPCode Buddy'; // Fallback
     }
@@ -81,16 +109,19 @@ export class GeminiClient {
     async cleanupSession(sessionId: string): Promise<void> {
         try {
             const response = await fetch(`${this.backendUrl}/session/${sessionId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: {
+                    'X-Handshake-Token': this.handshakeToken || '', // SEND THE TOKEN
+                },
+                credentials: 'include' // Include cookies in cross-origin requests
             });
             if (response.ok) {
                 const data = await response.json();
-                console.log(`Session ${sessionId.substring(0, 8)}... cleaned up:`, data.message);
             } else {
-                console.warn(`Failed to cleanup session ${sessionId.substring(0, 8)}...`);
+                console.error(`Failed to cleanup session ${sessionId.substring(0, 8)}...`);
             }
         } catch (error) {
-            console.warn('Failed to cleanup session on backend:', error);
+            console.error('Failed to cleanup session on backend:', error);
         }
     }
 
@@ -126,15 +157,15 @@ export class GeminiClient {
                 language: language
             };
 
-            console.log('Sending simplified chat request to backend');
-
             const response = await fetch(`${this.backendUrl}/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-Handshake-Token': this.handshakeToken || '', // SEND THE TOKEN
                 },
                 body: JSON.stringify(payload),
-                signal: signal
+                signal: signal,
+                credentials: 'include' // Include cookies in cross-origin requests
             });
 
             if (!response.ok) {
@@ -200,7 +231,7 @@ export class GeminiClient {
                                 throw new Error(data.error);
                             }
                         } catch (parseError) {
-                            console.warn('Failed to parse streaming data:', parseError);
+                            console.error('Failed to parse streaming data:', parseError);
                         }
                     }
                 }
@@ -242,7 +273,7 @@ export class GeminiClient {
                                 throw new Error(data.error);
                             }
                         } catch (parseError) {
-                            console.warn('Failed to parse streaming data:', parseError);
+                            console.error('Failed to parse streaming data:', parseError);
                         }
                     }
                 }
@@ -264,8 +295,6 @@ export class GeminiClient {
         _contextFile?: unknown, // Ignored - context now handled by backend
         signal?: AbortSignal
     ): Promise<string> {
-        console.warn('chatCompletion is deprecated, use chatWithContext instead');
-
         if (messages.length === 0) {
             throw new Error('No messages provided');
         }
