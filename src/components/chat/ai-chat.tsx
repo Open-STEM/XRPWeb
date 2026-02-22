@@ -31,19 +31,29 @@ export default function AIChat() {
 
         // Generate a unique session ID for this chat session
         const newSessionId = uuidv4();
-        console.log(`[AIChat] Generated new session ID: ${newSessionId}`);
         setSessionId(newSessionId);
 
         // Ensure documentation is loaded via backend when chat opens
         const initDocs = async () => {
             if (!geminiClient.current || !newSessionId) return;
-            setContextStatus('loading');
-            const status = await geminiClient.current.getDocsStatus(newSessionId);
-            if (!status.loaded) {
-                const res = await geminiClient.current.loadDocs(newSessionId);
-                setContextStatus(res.success ? 'loaded' : 'error');
-            } else {
-                setContextStatus('loaded');
+            
+            try {
+                setContextStatus('loading');
+                
+                // STEP 1: Perform the handshake first!
+                await geminiClient.current.performHandshake();
+                
+                // STEP 2: Now that we have the cookie and token, check docs
+                const status = await geminiClient.current.getDocsStatus(newSessionId);
+                if (!status.loaded) {
+                    const res = await geminiClient.current.loadDocs(newSessionId);
+                    setContextStatus(res.success ? 'loaded' : 'error');
+                } else {
+                    setContextStatus('loaded');
+                }
+            } catch (err) {
+                console.error("Handshake/Init failed", err);
+                setContextStatus('error');
             }
         };
         initDocs();
@@ -51,7 +61,6 @@ export default function AIChat() {
         // Cleanup function when component unmounts (user closes chat or leaves IDE)
         return () => {
             if (geminiClient.current && newSessionId) {
-                console.log(`[AIChat] Component unmounting, cleaning up session ${newSessionId.substring(0, 8)}...`);
                 geminiClient.current.cleanupSession(newSessionId);
             }
         };
@@ -64,7 +73,6 @@ export default function AIChat() {
                 // Use sendBeacon for more reliable cleanup on page unload (uses POST)
                 const url = `/api/session/${sessionId}`;
                 navigator.sendBeacon(url);
-                console.log(`[AIChat] Page unloading, sent cleanup beacon for session ${sessionId.substring(0, 8)}...`);
             }
         };
 
@@ -159,7 +167,6 @@ export default function AIChat() {
             
             // Use the new simplified chat API - all teaching guidelines are now in backend
             const currentLanguage = i18n.language || 'en';
-            console.log(`[AIChat] Sending message with session ${sessionId.substring(0, 8)}... (history: ${messages.length} messages, language: ${currentLanguage})`);
             await geminiClient.current.chatWithContext(
                 sessionId,
                 userMessage.content,
@@ -186,7 +193,7 @@ export default function AIChat() {
         } catch (error) {
             // Handle abort gracefully
             if (error instanceof Error && error.name === 'AbortError') {
-                console.log('Generation was stopped by user');
+                console.log('Generation was stopped by user'); // Keep this for user feedback on abort
                 return;
             }
 
@@ -344,4 +351,4 @@ export default function AIChat() {
             </div>
         </div>
     );
-} 
+}
