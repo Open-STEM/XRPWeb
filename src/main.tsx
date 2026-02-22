@@ -8,7 +8,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 
 function Root() {
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
-  const googleAuthBackendUrl = 'http://localhost:8001'; // Hardcoded as per previous instruction
+  const googleAuthBackendUrl = import.meta.env.VITE_GOOGLE_AUTH_URL;
 
   useEffect(() => {
     const fetchClientId = async () => {

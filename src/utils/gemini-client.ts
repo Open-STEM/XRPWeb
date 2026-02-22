@@ -9,7 +9,7 @@ export class GeminiClient {
     private handshakeToken: string | null = null; // Store the token here
 
     constructor() {
-        this.backendUrl = 'http://localhost:8000/api'; // Hardcoded AI proxy URL
+        this.backendUrl = import.meta.env.VITE_GOOGLE_CHATAPI_PROXY_TARGET + '/api';
     }
 
     // NEW METHOD: Must be called before anything else

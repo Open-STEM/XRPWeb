@@ -38,7 +38,7 @@ class GoogleAuthService {
     
 
     constructor() {
-        this._googleAuthBackendUrl = 'http://localhost:8001';
+        this._googleAuthBackendUrl = import.meta.env.VITE_GOOGLE_AUTH_URL;
         this._userProfile = { id: '', email: '', name: '', picture: '' };
         this.initHandshake(); // Initiate handshake on service creation
     }
