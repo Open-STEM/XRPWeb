@@ -26,7 +26,7 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
 
     const initUserProfle = {
         email: '',
-        veried_email: '',
+        verified_email: false,
         family_name: '',
         given_name: '',
         id: '',
@@ -52,24 +52,22 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
         onSuccess: (codeResponse) => {
             setIsLogin(true);
             authService.isLogin = true;
-            new Promise<void>((resolve) => {
-                authService.setCode(codeResponse.code);
-                authService.getRefreshToken().then(async (token) => {
-                    setUser((prev) => ({
-                        ...prev,
-                        access_token: token.access_token,
-                        refresh_token: token.refresh_token,
-                        expire_in: token.expires_in,
-                    }));
-                    driveService.setAccessToken(token.access_token);
-                    resolve();
-                });
-            }).then(() => {
-                setTimeout(() => {
-                    authService.getAccessToken().then((token) => {
-                        loginLogger.debug('Access Token:', token);
-                    });
-                }, 1000);
+            authService.setCode(codeResponse.code);
+            authService.getRefreshToken().then(async (token) => {
+                setUser((prev) => ({
+                    ...prev,
+                    access_token: token.access_token,
+                    refresh_token: token.refresh_token,
+                    expire_in: token.expires_in,
+                }));
+                driveService.setAccessToken(token.access_token);
+
+            }).catch((error) => {
+                if (error instanceof Error) {
+                    loginLogger.error(`Error during token exchange:' ${error.stack ?? error.message}`);
+                } else {
+                    loginLogger.error(`Error during token exchange: ${String(error)}`);
+                }
             });
         },
         onError: (error) => {
