@@ -43,7 +43,6 @@ function FolderTree(treeProps: TreeProps) {
     const { t } = useTranslation();
     const [isConnected, setConnected] = useState(false);
     const [isLogin, setIsLogin] = useState(false);
-    const [capacity, setCapacity] = useState<string>('0/0');
     const [treeData, setTreeData] = useState<FolderItem[] | undefined>(undefined);
     const [, setSelectedItems] = useState<FolderItem[] | undefined>(undefined);
     const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -74,6 +73,8 @@ function FolderTree(treeProps: TreeProps) {
             appMgrRef.current.on(EventType.EVENT_CONNECTION_STATUS, (state: string) => {
                 if (state === ConnectionState.Connected.toString()) {
                     setConnected(true);
+                } else {
+                    setConnected(false);
                 }
             });
 
@@ -104,13 +105,6 @@ function FolderTree(treeProps: TreeProps) {
                     }
                     setTreeData(undefined);
                 }
-            });
-
-            AppMgr.getInstance().on(EventType.EVENT_FILESYS_STORAGE, (storageCapacity: string) => {
-                // Update the storage capacity state here
-                folderLogger.debug(`Storage capacity changed to: ${storageCapacity}`);
-                const storage = JSON.parse(storageCapacity);
-                setCapacity(storage.used + '/' + storage.total);
             });
 
             setHasSubscribed(true);
@@ -727,7 +721,6 @@ function FolderTree(treeProps: TreeProps) {
                 <FolderHeader
                     newFileCallback={onNewFile}
                     newFolderCallback={onNewFolder}
-                    storageCapacity={capacity}
                 />
             )}
             <div ref={ref} className="flex-1 min-h-0">
