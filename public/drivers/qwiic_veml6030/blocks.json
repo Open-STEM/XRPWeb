@@ -1,0 +1,10 @@
+[
+  {
+    "kind": "BLOCK",
+    "type": "light_intensity_connect"
+  },
+  {
+    "kind": "BLOCK",
+    "type": "light_intensity_read"
+  }
+]
