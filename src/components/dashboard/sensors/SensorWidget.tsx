@@ -52,13 +52,6 @@ function DefaultNumberView<TData>({
 
 /**
  * Generic sensor widget that handles all shared UI logic:
- * - Widget deletion (via GridStackWidgetContext — no DOM traversal)
- * - Sensor data subscription + history accumulation
- * - Graph / Number view toggle
- * - Settings dropdown + delete button
- * - Chart rendering with configurable channels
- *
- * Individual sensors only need to provide a SensorConfig.
  */
 function SensorWidget<TData, THistoryEntry>({
   config,

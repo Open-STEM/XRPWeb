@@ -31,13 +31,7 @@ interface CustomXPPSensorProps {
 }
 
 /**
- * A props-driven sensor widget for custom XPP variables.
- *
- * On mount, auto-registers a parser into the parserRegistry so that
- * useSensorData can extract the data. On unmount, cleans up.
- *
- * Used by GridStackRender when it encounters a "CustomSensor" component
- * with a sensorName prop — no manual COMPONENT_MAP entry needed per sensor.
+ * A props-driven sensor widget for custom XPP variables
  */
 const CustomXPPSensor: React.FC<CustomXPPSensorProps> = ({
   sensorName,
