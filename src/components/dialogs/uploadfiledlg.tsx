@@ -77,7 +77,9 @@ function UploadFileDlg({ files, toggleDialog }: UploadFileDlgProps) {
                 <h1 className="text-lg font-bold text-mountain-mist-700 dark:text-mountain-mist-300">{t('uploadFiles')}</h1>
             </div>
             <hr className="w-full border-mountain-mist-600 dark:border-mountain-mist-200" />
-            <FolderTree treeData={JSON.stringify(folderItem)} theme="" onSelected={handleFolderSelection} />
+            <div className='h-48 w-full overflow-y-auto border border-shark-300 dark:border-shark-600'>
+                <FolderTree treeData={JSON.stringify(folderItem)} theme="" onSelected={handleFolderSelection} />
+            </div>
             <label className="text-mountain-mist-700 dark:text-mountain-mist-300">{t('destFolder')}: {selectedFolder}</label>
             <label className="text-mountain-mist-700 dark:text-mountain-mist-300">{t('filesToUpload')}: {fileList?.length}</label>
             <ul className='flex flex-col gap-2'>

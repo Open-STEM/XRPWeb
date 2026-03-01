@@ -10,9 +10,9 @@ import getKeybindingsServiceOverride from '@codingame/monaco-vscode-keybindings-
 import getConfigurationServiceOverride, {
     updateUserConfiguration,
 } from '@codingame/monaco-vscode-configuration-service-override';
-import { ExtensionHostKind, registerExtension } from 'vscode/extensions';
 // we need to import this so monaco-languageclient can use vscode-api
 import 'vscode/localExtensionHost';
+import { ExtensionHostKind, registerExtension } from '@codingame/monaco-vscode-api/extensions';
 import { initializedAndStartLanguageClient } from '@components/lsp-client';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
 import { StorageKeys } from '@/utils/localstorage';
@@ -20,9 +20,9 @@ import EditorMgr, { EditorSession } from '@/managers/editormgr';
 import { FontSize } from '@/utils/types';
 import { Constants } from '@/utils/constants';
 import { useTranslation } from 'react-i18next';
+import { whenReady } from '@codingame/monaco-vscode-python-default-extension';
 
 const languageId = 'python';
-let isClientInitalized: boolean = false;
 
 export type WorkerLoader = () => Worker;
 const workerLoaders: Partial<Record<string, WorkerLoader>> = {
@@ -48,55 +48,101 @@ window.MonacoEnvironment = {
     },
 };
 
-await initialize({
-    ...getThemeServiceOverride(),
-    ...getTextMateServiceOverride(),
-    ...getConfigurationServiceOverride(),
-    ...getKeybindingsServiceOverride(),
-    ...getLanguagesServiceOverride(),
-});
+let initPromise: Promise<void> | null = null;
 
-// extension configuration derived from:
-// https://github.com/microsoft/pyright/blob/main/packages/vscode-pyright/package.json
-// only a minimum is required to get pyright working
-const extension = {
-    name: 'python-client',
-    publisher: 'monaco-languageclient-project',
-    version: '1.0.0',
-    engines: {
-        vscode: '^1.78.0',
-    },
-    contributes: {
-        languages: [
-            {
-                id: languageId,
-                aliases: ['Python'],
-                extensions: ['.py', '.pyi'],
+const ensureMonacoInitialized = () => {
+    if (initPromise) {
+        return initPromise;
+    }
+
+    initPromise = (async () => {
+        if (typeof window !== 'undefined') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const monacoInstance = (monaco as any).default ?? monaco;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (window as any).monaco = monacoInstance;
+            console.log('[MonacoEditor] window.monaco:', monacoInstance);
+            if (!monacoInstance) {
+                throw new Error('monaco instance is null or undefined');
+            } else if (!monacoInstance.languages) {
+                throw new Error('monaco.languages is undefined');
+            }
+        }
+        try {
+            console.log('[MonacoEditor] Calling initialize()');
+            await initialize({
+                ...getTextMateServiceOverride(),
+                ...getThemeServiceOverride(),
+                ...getConfigurationServiceOverride(),
+                ...getKeybindingsServiceOverride(),
+                ...getLanguagesServiceOverride(),
+            });
+            console.log('[MonacoEditor] initialize() completed');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (err: any) {
+            if (err?.message?.includes('already been initialized')) {
+                console.warn('[MonacoEditor] Monaco services already initialized. Ignoring.');
+            } else {
+                console.error('[MonacoEditor] Error initializing monaco services:', err);
+                throw err;
+            }
+        }
+        
+        await whenReady();
+
+        // extension configuration derived from:
+        // https://github.com/microsoft/pyright/blob/main/packages/vscode-pyright/package.json
+        // only a minimum is required to get pyright working
+        const extension = {
+            name: 'python-client',
+            publisher: 'monaco-languageclient-project',
+            version: '1.0.0',
+            engines: {
+                vscode: '^1.78.0',
             },
-        ],
-        commands: [
-            {
-                command: 'pyright.restartserver',
-                title: 'Pyright: Restart Server',
-                category: 'Pyright',
+            contributes: {
+                languages: [
+                    {
+                        id: languageId,
+                        aliases: ['Python'],
+                        extensions: ['.py', '.pyi'],
+                    },
+                ],
+                commands: [
+                    {
+                        command: 'pyright.restartserver',
+                        title: 'Pyright: Restart Server',
+                        category: 'Pyright',
+                    },
+                    {
+                        command: 'pyright.organizeimports',
+                        title: 'Pyright: Organize Imports',
+                        category: 'Pyright',
+                    },
+                ],
+                keybindings: [
+                    {
+                        key: 'ctrl+k',
+                        command: 'pyright.organizeimports',
+                        when: 'editorTextFocus',
+                    },
+                ],
             },
-            {
-                command: 'pyright.organizeimports',
-                title: 'Pyright: Organize Imports',
-                category: 'Pyright',
-            },
-        ],
-        keybindings: [
-            {
-                key: 'ctrl+k',
-                command: 'pyright.organizeimports',
-                when: 'editorTextFocus',
-            },
-        ],
-    },
+        };
+
+        registerExtension(extension, ExtensionHostKind.LocalProcess);
+        console.log('[MonacoEditor] Extension registered');
+
+        // start web socket lsp client to the Web Worker python server
+        initializedAndStartLanguageClient();
+    })().catch(err => {
+        // Reset promise on error so we can retry
+        initPromise = null;
+        throw err;
+    });
+
+    return initPromise;
 };
-
-registerExtension(extension, ExtensionHostKind.LocalProcess);
 
 type MonacoEditorProps = {
     /**
@@ -146,6 +192,20 @@ const MonacoEditor = ({
     const [childHeight, setChildHeight] = useState(height);
     const [name, setName] = useState<string>(tabname);
     const nameRef = useRef(name);
+    const [isReady, setIsReady] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+        console.log('[MonacoEditor] useEffect mounting');
+
+        ensureMonacoInitialized().then(() => {
+            console.log('[MonacoEditor] init() resolved');
+            if (mounted) setIsReady(true);
+        }).catch((err) => {
+            console.error('[MonacoEditor] init failed', err);
+        });
+        return () => { mounted = false; };
+    }, []);
 
     useEffect(() => {
         nameRef.current = name;
@@ -246,7 +306,7 @@ const MonacoEditor = ({
             EditorMgr.getInstance().setSubscription(tabId);
         }
 
-        if (editorRef.current) {
+        if (isReady && editorRef.current) {
             if (editor.current === null) {
                 updateUserConfiguration(`{
                     "editor.fontSize": ${Constants.DEFAULT_FONTSIZE},
@@ -296,15 +356,9 @@ const MonacoEditor = ({
                         }
                     },
                 });
-
-                if (!isClientInitalized) {
-                    // start web socket lsp client to the Web Worker python server
-                    initializedAndStartLanguageClient();
-                    isClientInitalized = true;
-                }
             }
         }
-    }, [language, value, t, childWidth, childHeight, tabId]);
+    }, [language, value, t, childWidth, childHeight, tabId, isReady]);
 
     return (
         <>

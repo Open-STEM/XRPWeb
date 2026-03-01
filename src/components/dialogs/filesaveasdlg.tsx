@@ -86,8 +86,8 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
             const session = EditorMgr.getInstance().getEditorSession(activeTab);
             if (session) {
                 setSelectedFolder('/' + session.path.split('/')[1]);
+                setFilename(session.name); 
             }
-            setFilename(activeTab);
         }
     }, [activeTab]);
 
@@ -111,11 +111,13 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
             <label className="text-mountain-mist-700 dark:text-mountain-mist-300">
                 {t('destFolder')}: {selectedFolder}
             </label>
-            <FolderTree
-                treeData={JSON.stringify(folderList)}
-                theme=""
-                onSelected={handleFolderSelection}
-            />
+            <div className='h-48 w-full overflow-y-auto border border-shark-300 dark:border-shark-600'>
+                <FolderTree
+                    treeData={JSON.stringify(folderList)}
+                    theme=""
+                    onSelected={handleFolderSelection}
+                />
+            </div>
             <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('filename')}</label>
             <div>
                 <input

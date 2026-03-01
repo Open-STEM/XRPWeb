@@ -717,6 +717,38 @@ class GoogleDriveService {
             }
         }
     }
+
+    /**
+     * Moves a file from one folder to another in Google Drive.
+     * @param fileId The ID of the file to move.
+     * @param oldParentId The ID of the current parent folder.
+     * @param newParentId The ID of the new parent folder.
+     */
+    async moveFile(fileId: string, oldParentId: string, newParentId: string): Promise<void> {
+        const url = `https://www.googleapis.com/drive/v3/files/${fileId}?addParents=${newParentId}&removeParents=${oldParentId}&fields=id,parents`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    Authorization: `Bearer ${this._accessToken}`,
+                },
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Google Drive API move file error: ${response.status} - ${errorData.error.message}`);
+            }
+
+            this._modeLogger.debug(`Successfully moved file ${fileId} to new parent ${newParentId}`);
+        } catch (err) {
+            if (err instanceof Error) {
+                this._modeLogger.error(`Google Drive file move error: ${err.stack ?? err.message}`);
+            }
+            // Re-throw the error so the caller can handle it if needed
+            throw err;
+        }
+    }
 }
 
 export default GoogleDriveService;

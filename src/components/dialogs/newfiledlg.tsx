@@ -178,7 +178,7 @@ function NewFileDlg(newFileProps: NewFileProps) {
     };
 
     return (
-        <div className="flex flex-col items-center gap-4 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
+        <div className="flex flex-col items-center gap-4 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950 w-96 max-h-[90vh] overflow-y-auto">
             <div className="flex w-[90%] flex-col items-center">
                 <h1 className="text-lg font-bold text-mountain-mist-700 dark:text-mountain-mist-300">{t('newFile')}</h1>
                 <p className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('chooseNewFile')}</p>
@@ -186,11 +186,13 @@ function NewFileDlg(newFileProps: NewFileProps) {
             <hr className="w-full border-mountain-mist-600" />
             <form id="fileOptionId" className="flex w-full flex-col gap-2">
                 <span className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('destFolder')}</span>
-                <FolderTree
-                    treeData={JSON.stringify(folderList)}
-                    theme=""
-                    onSelected={handleFolderSelection}
-                />
+                <div className='h-48 w-full overflow-y-auto border border-shark-300 dark:border-shark-600'>
+                    <FolderTree
+                        treeData={JSON.stringify(folderList)}
+                        theme=""
+                        onSelected={handleFolderSelection}
+                    />
+                </div>
                 <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300" htmlFor="filesId">
                     {t('fileType')}
                 </label>

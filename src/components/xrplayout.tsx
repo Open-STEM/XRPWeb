@@ -304,8 +304,8 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                     if (editorType !== undefined) {
                         AppMgr.getInstance().emit(EventType.EVENT_EDITOR, editorType);
                     }
+                    setActiveTab(action.data.tabNode);
                 } 
-                setActiveTab(action.data.tabNode);
             }
             break;
             case Actions.DELETE_TAB: {        
