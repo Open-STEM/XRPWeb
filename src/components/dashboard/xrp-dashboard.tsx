@@ -1,10 +1,16 @@
-import Accelerometer from "./sensors/Accelerometer";
-import Current from "./sensors/Current";
-import Encoder from "./sensors/Encoder";
-import Gyroscope from "./sensors/Gyroscope";
-import Rangefinder from "./sensors/Rangefinder";
-import Reflectance from "./sensors/Reflectance";
-import Voltage from "./sensors/Voltage";
+import { useState, useEffect, useRef } from "react";
+import {
+  Accelerometer,
+  Current,
+  Encoder,
+  Gyroscope,
+  Rangefinder,
+  Reflectance,
+  Voltage,
+} from "./sensors";
+import CustomXPPSensor from "./sensors/CustomXPPSensor";
+import CustomVariableWidget from "./sensors/CustomVariableWidget";
+import { getCustomSensor } from "./sensors/customRegistry";
 import { GridStackOptions } from "gridstack";
 import AddWidgets from "./AddWidget";
 import {
@@ -13,9 +19,13 @@ import {
   GridStackRenderProvider,
   useGridStackContext,
 } from "./lib";
-// import "gridstack/dist/gridstack.css";
 import { useTranslation } from "react-i18next";
-import { FaUndo } from "react-icons/fa";
+import { FaUndo, FaBug } from "react-icons/fa";
+import {
+  startSimulator,
+  stopSimulator,
+  isSimulatorRunning,
+} from "./utils/devSimulator";
 
 const CELL_HEIGHT = 50;
 const BREAKPOINTS = [
@@ -25,14 +35,39 @@ const BREAKPOINTS = [
   { c: 8, w: 1100 },
 ];
 
+// ─── Component Map ──────────────────────────────────────────────
+
 const COMPONENT_MAP = {
-  Current: () => <Current />,
   Accelerometer: () => <Accelerometer />,
   Gyroscope: () => <Gyroscope />,
+  Current: () => <Current />,
   Encoder: () => <Encoder />,
   Reflectance: () => <Reflectance />,
   Voltage: () => <Voltage />,
-  Rangefinder: () => <Rangefinder />
+  Rangefinder: () => <Rangefinder />,
+
+  CustomSensor: ({ sensorName }: { sensorName: string }) => {
+    const def = getCustomSensor(sensorName);
+    if (!def) {
+      return (
+        <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+          Unknown sensor: {sensorName}
+        </div>
+      );
+    }
+    return (
+      <CustomXPPSensor
+        sensorName={def.sensorName}
+        title={def.title}
+        channels={def.channels}
+        parser={def.parser}
+      />
+    );
+  },
+
+  CustomVariable: ({ initialVarName }: { initialVarName?: string }) => (
+    <CustomVariableWidget initialVarName={initialVarName} />
+  ),
 };
 
 const gridOptions: GridStackOptions = {
@@ -53,23 +88,59 @@ const gridOptions: GridStackOptions = {
   children: [],
 };
 
-// Separate component to access GridStack context
 function DashboardHeader() {
   const { t } = useTranslation();
-  const { clearStoredConfig } = useGridStackContext();
+  const { gridStack, removeWidget, _rawWidgetMetaMap } = useGridStackContext();
+  const [simRunning, setSimRunning] = useState(isSimulatorRunning());
 
   const handleReset = () => {
-    if (window.confirm(t('reset-dashboard-confirm') || 'Are you sure you want to reset the dashboard to default? This will remove all widgets and reload the page.')) {
-      clearStoredConfig?.();
+    if (!window.confirm(
+      t('reset-dashboard-confirm') ||
+      'Remove all widgets from the dashboard?'
+    )) return;
+
+    // Remove all widgets via GridStack
+    if (gridStack) {
+      const ids = Array.from(_rawWidgetMetaMap.value.keys());
+      for (const id of ids) {
+        removeWidget(id);
+      }
     }
   };
 
+  const handleToggleSim = () => {
+    if (simRunning) {
+      stopSimulator();
+      setSimRunning(false);
+    } else {
+      startSimulator();
+      setSimRunning(true);
+    }
+  };
+
+  const isDev = import.meta.env.DEV;
+
   return (
     <div className="flex justify-between items-center mb-2 pt-2">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-600 dark:text-gray-300">{t('sensors')}</h1>
-      </div>
+      <h1 className="text-2xl font-bold text-gray-600 dark:text-gray-300">
+        {t('sensors')}
+      </h1>
       <div className="flex items-center gap-2">
+        {/* Dev simulator toggle — only visible in dev builds */}
+        {isDev && (
+          <button
+            onClick={handleToggleSim}
+            className={`p-2 rounded transition-colors duration-200 ${simRunning
+              ? 'text-green-500 bg-green-50 hover:bg-green-100'
+              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            title={simRunning ? 'Stop simulator' : 'Start simulator (fake XPP data)'}
+          >
+            <FaBug size={18} />
+          </button>
+        )}
+
+        {/* Reset dashboard */}
         <button
           onClick={handleReset}
           className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors duration-200"
@@ -77,6 +148,7 @@ function DashboardHeader() {
         >
           <FaUndo size={18} />
         </button>
+
         <AddWidgets />
       </div>
     </div>
@@ -84,15 +156,35 @@ function DashboardHeader() {
 }
 
 export default function XRPDashboard() {
-  return (
-    <div className="mx-auto px-4 pb-10 bg-slate-100 min-h-screen dark:bg-mountain-mist-950">
-      <GridStackProvider
-        initialOptions={gridOptions}
-        enablePersistence={true}
-        storageKey="xrp-dashboard-config"
-      >
-        <DashboardHeader />
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    let parent = el.parentElement;
+    while (parent) {
+      if (parent.classList.contains('flexlayout__tab')) {
+        parent.style.overflow = 'auto';
+        break;
+      }
+      parent = parent.parentElement;
+    }
+
+    parent = el.parentElement;
+    while (parent) {
+      if (parent.classList.contains('flexlayout__tab_moveable')) {
+        parent.style.overflow = 'auto';
+        break;
+      }
+      parent = parent.parentElement;
+    }
+  }, []);
+
+  return (
+    <div ref={containerRef} className="mx-auto px-4 pb-10 bg-slate-100 min-h-full dark:bg-mountain-mist-950">
+      <GridStackProvider initialOptions={gridOptions}>
+        <DashboardHeader />
         <div className="relative top-35 border-t-4 border-gray-300">
           <GridStackRenderProvider>
             <GridStackRender componentMap={COMPONENT_MAP} />

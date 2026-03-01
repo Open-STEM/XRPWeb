@@ -2,167 +2,128 @@ import React from "react";
 import { useGridStackContext } from "./lib/grid-stack-context";
 import { Dropdown, DropdownItem } from "flowbite-react";
 import { MdSpeed } from 'react-icons/md';
-import { FaBatteryHalf, FaBolt, FaCog, FaEye, FaGlobe, FaPlus } from 'react-icons/fa';
+import { FaBatteryHalf, FaBolt, FaCog, FaEye, FaGlobe, FaPlug, FaPlus, FaSlidersH } from 'react-icons/fa';
 import { BsRulers } from 'react-icons/bs';
 import { FlowBiteConstants } from "@/utils/constants";
 import { useTranslation } from "react-i18next";
+import { getCustomSensors } from "./sensors/customRegistry";
 
-type ActionType = 'accelerometer' | 'current' | 'encoder' | 'gyroscope' | 'rangefinder' | 'reflectance' | 'voltage';
+
+interface BuiltinSensorDef {
+  action: string;
+  icon: React.ComponentType<{ size?: number }>;
+  titleKey: string;
+  gridH: number;
+  gridW: number;
+  minW: number;
+  minH: number;
+  componentName: string;
+}
+
+const BUILTIN_SENSORS: BuiltinSensorDef[] = [
+  { action: 'accelerometer', icon: MdSpeed, titleKey: 'accelerometer', gridH: 5, gridW: 4, minW: 2, minH: 5, componentName: 'Accelerometer' },
+  { action: 'current', icon: FaBolt, titleKey: 'current', gridH: 4, gridW: 4, minW: 1, minH: 5, componentName: 'Current' },
+  { action: 'gyroscope', icon: FaGlobe, titleKey: 'gyroscope', gridH: 4, gridW: 4, minW: 2, minH: 5, componentName: 'Gyroscope' },
+  { action: 'encoder', icon: FaCog, titleKey: 'encoders', gridH: 5, gridW: 4, minW: 1, minH: 4, componentName: 'Encoder' },
+  { action: 'reflectance', icon: FaEye, titleKey: 'reflectance', gridH: 5, gridW: 4, minW: 2, minH: 5, componentName: 'Reflectance' },
+  { action: 'rangefinder', icon: BsRulers, titleKey: 'rangefinder', gridH: 8, gridW: 4, minW: 2, minH: 8, componentName: 'Rangefinder' },
+  { action: 'voltage', icon: FaBatteryHalf, titleKey: 'voltage', gridH: 6, gridW: 4, minW: 2, minH: 6, componentName: 'Voltage' },
+];
 
 const AddWidgets: React.FC = () => {
   const { t } = useTranslation();
   const { addWidget } = useGridStackContext();
 
-  const handleAction = (action: ActionType) => {
-    switch (action) {
-      case 'accelerometer': {
-        const node = () => ({
-          // Remove custom id - let GridStack auto-generate
-          h: 5,
-          w: 4,
-          x: 0,
-          y: 2,
-          minW: 2,
-          minH: 5,
-          content: JSON.stringify({
-            name: 'Accelerometer',
-            props: {
-              isActive: true
-              // Remove widgetId - we'll get it from GridStack
-            },
-          }),
-        });
-        addWidget(node);
-        console.log('Accelerometer action triggered');
-        break;
-      }
-      case 'current': {
-        const node = () => ({
-          h: 4,
-          w: 4,
-          x: 0,
-          y: 2,
-          minW: 1,
-          minH: 5,
-          content: JSON.stringify({
-            name: 'Current',
-            props: {
-              isActive: true
-            },
-          }),
-        });
-        addWidget(node);
-        console.log('Current sensor action triggered');
-        break;
-      }
-      case 'gyroscope': {
-        const node = () => ({
-          h: 4,
-          w: 4,
-          x: 0,
-          y: 2,
-          minW: 2,
-          minH: 5,
-          content: JSON.stringify({
-            name: 'Gyroscope',
-            props: {
-              isActive: true
-            },
-          }),
-        });
-        addWidget(node);
-        console.log('Gyroscope action triggered');
-        break;
-      }
-      case 'encoder': {
-        const node = () => ({
-          h: 5,
-          w: 4,
-          x: 0,
-          y: 2,
-          minW: 1,
-          minH: 4,
-          content: JSON.stringify({
-            name: 'Encoder',
-            props: {
-              isActive: true
-            },
-          }),
-        });
-        addWidget(node);
-        console.log('Encoder action triggered');
-        break;
-      }
-      case 'reflectance': {
-        const node = () => ({
-          h: 5,
-          w: 4,
-          x: 0,
-          y: 2,
-          minW: 2,
-          minH: 5,
-          content: JSON.stringify({
-            name: 'Reflectance',
-            props: {
-              isActive: true
-            },
-          }),
-        });
-        addWidget(node);
-        console.log('Reflectance action triggered');
-        break;
-      }
-      case 'voltage': {
-        const node = () => ({
-          h: 6,
-          w: 4,
-          x: 0,
-          y: 2,
-          minW: 2,
-          minH: 6,
-          content: JSON.stringify({
-            name: 'Voltage',
-            props: {
-              isActive: true
-            },
-          }),
-        });
-        addWidget(node);
-        console.log('Voltage action triggered');
-        break;
-      }
-      case 'rangefinder': {
-        const node = () => ({
-          h: 8,
-          w: 4,
-          x: 0,
-          y: 2,
-          minW: 2,
-          minH: 8,
-          content: JSON.stringify({
-            name: 'Rangefinder',
-            props: {
-              isActive: true
-            },
-          }),
-        });
-        addWidget(node);
-        console.log('Rangefinder action triggered');
-        break;
-      }
-    }
+  const customSensors = getCustomSensors();
+
+  const handleAddBuiltin = (def: BuiltinSensorDef) => {
+    addWidget(() => ({
+      h: def.gridH,
+      w: def.gridW,
+      x: 0,
+      y: 2,
+      minW: def.minW,
+      minH: def.minH,
+      content: JSON.stringify({
+        name: def.componentName,
+        props: { isActive: true },
+      }),
+    }));
+  };
+
+  const handleAddCustom = (sensorName: string) => {
+    const def = customSensors.find(s => s.sensorName === sensorName);
+    if (!def) return;
+
+    const grid = def.gridDefaults ?? {};
+    addWidget(() => ({
+      h: grid.h ?? 5,
+      w: grid.w ?? 4,
+      x: 0,
+      y: 2,
+      minW: grid.minW ?? 2,
+      minH: grid.minH ?? 5,
+      content: JSON.stringify({
+        name: 'CustomSensor',
+        props: { sensorName: def.sensorName },
+      }),
+    }));
   };
 
   return (
     <div className="flex items-center mt-4 sm:mt-0">
-      <Dropdown label={<FaPlus size={20} />} inline={true} theme={FlowBiteConstants.DropdownTheme} className="flex items-center mt-4 sm:mt-0 ">
-        <DropdownItem icon={MdSpeed} onClick={() => handleAction('accelerometer')}>{t('accelerometer')}</DropdownItem>
-        <DropdownItem icon={FaBolt} onClick={() => handleAction('current')}>{t('current')}</DropdownItem>
-        <DropdownItem icon={FaGlobe} onClick={() => handleAction('gyroscope')}>{t('gyroscope')}</DropdownItem>
-        <DropdownItem icon={FaCog} onClick={() => handleAction('encoder')}>{t('encoders')}</DropdownItem>
-        <DropdownItem icon={FaEye} onClick={() => handleAction('reflectance')}>{t('reflectance')}</DropdownItem>
-        <DropdownItem icon={BsRulers} onClick={() => handleAction('rangefinder')}>{t('rangefinder')}</DropdownItem>
-        <DropdownItem icon={FaBatteryHalf} onClick={() => handleAction('voltage')}>{t('voltage')}</DropdownItem>
+      <Dropdown
+        label={<FaPlus size={20} />}
+        inline={true}
+        theme={FlowBiteConstants.DropdownTheme}
+        className="flex items-center mt-4 sm:mt-0"
+      >
+        {/* Built-in sensors */}
+        {BUILTIN_SENSORS.map((def) => (
+          <DropdownItem
+            key={def.action}
+            icon={def.icon}
+            onClick={() => handleAddBuiltin(def)}
+          >
+            {t(def.titleKey)}
+          </DropdownItem>
+        ))}
+
+        {/* Custom Variable (bidirectional XPP variable inspector/editor) */}
+        <hr className="my-1 border-gray-200" />
+        <DropdownItem
+          icon={FaSlidersH}
+          onClick={() => {
+            addWidget(() => ({
+              h: 5,
+              w: 4,
+              x: 0,
+              y: 2,
+              minW: 2,
+              minH: 4,
+              content: JSON.stringify({
+                name: 'CustomVariable',
+                props: {},
+              }),
+            }));
+          }}
+        >
+          {'Custom Variable'}
+        </DropdownItem>
+        {customSensors.length > 0 && (
+          <>
+            <hr className="my-1 border-gray-200" />
+            {customSensors.map((def) => (
+              <DropdownItem
+                key={def.sensorName}
+                icon={FaPlug}
+                onClick={() => handleAddCustom(def.sensorName)}
+              >
+                {def.title}
+              </DropdownItem>
+            ))}
+          </>
+        )}
       </Dropdown>
     </div>
   );
