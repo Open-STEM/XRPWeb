@@ -14,15 +14,6 @@ interface CustomVariableWidgetProps {
 
 /**
  * A bidirectional custom variable widget for XPP puppet protocol variables.
- *
- * Usage:
- *  1. Add from the "+" dropdown → "Custom Variable"
- *  2. Type the variable name (must match puppet.define_variable('name', ...) on the XRP)
- *  3. The widget auto-discovers the variable from the NetworkTable when data arrives
- *  4. Displays the live value from the XRP
- *  5. Type a new value and press Enter or click Send to push it back to the XRP
- *
- * No code changes needed to use — just add the widget and type the variable name.
  */
 const CustomVariableWidget: React.FC<CustomVariableWidgetProps> = ({
   initialVarName = '',
