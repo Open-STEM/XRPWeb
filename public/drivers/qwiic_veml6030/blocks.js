@@ -1,7 +1,7 @@
 import * as Blockly from 'blockly/core';
 import { pythonGenerator } from 'blockly/python';
 
-Blockly.Blocks['light_intensity_connect'] = {
+Blockly.Blocks['VEML6030_connect'] = {
   init: function() {
     this.appendDummyInput()
       .appendField("VEML6030 Connect")
@@ -39,7 +39,7 @@ Blockly.Blocks['light_intensity_connect'] = {
   }
 };
 
-Blockly.Blocks['light_intensity_read'] = {
+Blockly.Blocks['VEML6030_read'] = {
   init: function () {
     this.appendDummyInput().appendField("VEML6030 Read (lux)");
     this.setOutput(true, "Number");
@@ -64,7 +64,7 @@ function ensureVemlSetup(addressLiteral) {
 
 pythonGenerator.forBlock = pythonGenerator.forBlock || {};
 
-pythonGenerator.forBlock['light_intensity_connect'] = function (block) {
+pythonGenerator.forBlock['VEML6030_connect'] = function (block) {
   var address = block.getFieldValue('ADDRESS') || '0x48';
   var gain = block.getFieldValue('GAIN') || '1.0';
   var integ = block.getFieldValue('INTEG') || '100';
@@ -75,7 +75,7 @@ pythonGenerator.forBlock['light_intensity_connect'] = function (block) {
   );
 };
 
-pythonGenerator.forBlock['light_intensity_read'] = function (block) {
+pythonGenerator.forBlock['VEML6030_read'] = function (block) {
   ensureVemlSetup();
   var order = pythonGenerator.ORDER_FUNCTION_CALL || 0;
   return ['veml6030.read_light()', order];

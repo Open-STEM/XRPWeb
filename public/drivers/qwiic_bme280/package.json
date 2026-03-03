@@ -5,5 +5,17 @@
     "deps": [
       ["qwiic_i2c", "/drivers/qwiic_i2c/package.jsonster"]
     ],
+    "blocks": [
+      {"friendly_name": "BME280_connect", "blocks_url": "/drivers/qwiic_bme280/blocks.json", "script_url": "/drivers/qwiic_bme280/blocks.js"},
+      {"friendly_name": "BME280_set_reference_pressure", "blocks_url": "/drivers/qwiic_bme280/blocks.json", "script_url": "/drivers/qwiic_bme280/blocks.js"},
+      {"friendly_name": "BME280_read_temperature_c", "blocks_url": "/drivers/qwiic_bme280/blocks.json", "script_url": "/drivers/qwiic_bme280/blocks.js"},
+      {"friendly_name": "BME280_read_temperature_f", "blocks_url": "/drivers/qwiic_bme280/blocks.json", "script_url": "/drivers/qwiic_bme280/blocks.js"},
+      {"friendly_name": "BME280_read_humidity", "blocks_url": "/drivers/qwiic_bme280/blocks.json", "script_url": "/drivers/qwiic_bme280/blocks.js"},
+      {"friendly_name": "BME280_read_pressure_pa", "blocks_url": "/drivers/qwiic_bme280/blocks.json", "script_url": "/drivers/qwiic_bme280/blocks.js"},
+      {"friendly_name": "BME280_read_altitude_m", "blocks_url": "/drivers/qwiic_bme280/blocks.json", "script_url": "/drivers/qwiic_bme280/blocks.js"},
+      {"friendly_name": "BME280_read_altitude_ft", "blocks_url": "/drivers/qwiic_bme280/blocks.json", "script_url": "/drivers/qwiic_bme280/blocks.js"},
+      {"friendly_name": "BME280_read_dewpoint_c", "blocks_url": "/drivers/qwiic_bme280/blocks.json", "script_url": "/drivers/qwiic_bme280/blocks.js"},
+      {"friendly_name": "BME280_read_dewpoint_f", "blocks_url": "/drivers/qwiic_bme280/blocks.json", "script_url": "/drivers/qwiic_bme280/blocks.js"}
+    ],
     "version": "2.0.0"
 }

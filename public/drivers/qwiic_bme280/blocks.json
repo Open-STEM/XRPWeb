@@ -1,0 +1,42 @@
+[
+    {
+        "kind": "BLOCK",
+        "type": "BME280_connect"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "BME280_set_reference_pressure"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "BME280_read_temperature_c"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "BME280_read_temperature_f"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "BME280_read_humidity"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "BME280_read_pressure_pa"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "BME280_read_altitude_m"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "BME280_read_altitude_ft"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "BME280_read_dewpoint_c"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "BME280_read_dewpoint_f"
+    }
+]

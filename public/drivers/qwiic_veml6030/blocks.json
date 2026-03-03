@@ -1,10 +1,10 @@
 [
   {
     "kind": "BLOCK",
-    "type": "light_intensity_connect"
+    "type": "VEML6030_connect"
   },
   {
     "kind": "BLOCK",
-    "type": "light_intensity_read"
+    "type": "VEML6030_read"
   }
 ]

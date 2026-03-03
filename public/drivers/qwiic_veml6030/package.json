@@ -7,8 +7,8 @@
       ["qwiic_i2c", "/drivers/qwiic_i2c/package.json"]
     ],
     "blocks": [
-      {"friendly_name": "light_intensity_connect", "blocks_url": "/drivers/qwiic_veml6030/blocks.json", "script_url": "/drivers/qwiic_veml6030/blocks.js"},
-      {"friendly_name": "light_intensity_read", "blocks_url": "/drivers/qwiic_veml6030/blocks.json", "script_url": "/drivers/qwiic_veml6030/blocks.js"}
+      {"friendly_name": "VEML6030_connect", "blocks_url": "/drivers/qwiic_veml6030/blocks.json", "script_url": "/drivers/qwiic_veml6030/blocks.js"},
+      {"friendly_name": "VEML6030_read", "blocks_url": "/drivers/qwiic_veml6030/blocks.json", "script_url": "/drivers/qwiic_veml6030/blocks.js"}
     ],
     "version": "2.0.0"
 }
