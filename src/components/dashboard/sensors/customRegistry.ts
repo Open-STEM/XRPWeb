@@ -6,7 +6,7 @@ import { SensorParser } from './parserRegistry';
  * Used by CustomXPPSensor and the dynamic AddWidgets dropdown.
  */
 export interface CustomSensorDef {
-  /** Sensor name — must match the NetworkTable key published by the XRP */
+  /** Sensor name must match the NetworkTable key published by the XRP */
   sensorName: string;
   /** Display title */
   title: string;
