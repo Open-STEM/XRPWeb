@@ -1,4 +1,4 @@
-# Version 2.0.14
+# Version 2.0.17
 
 #### Bluetooth support
 <img height="10%" width="10%" src="src/assets/images/Bluetooth_FM_Black.png"/></img>
@@ -34,7 +34,4 @@
 * Support the New Puppet Protocol for communication with the XRP Bluetooth (advanced users) [See XPP](https://xrpcode.io/docs/puppet_protocol)
 
 #### Bug Fixes
-* [Blockly lost changelistener](https://github.com/Open-STEM/XRPWeb/issues/223)
-* [Check browser support](https://github.com/Open-STEM/XRPWeb/issues/220)
-* [Connect/Reconnect cause duplicate characters in shell](https://github.com/Open-STEM/XRPWeb/issues/219)
-* [Correct spelling in Curriculum help menu](https://github.com/Open-STEM/XRPWeb/issues/217)
+* [Secured Client credentials](https://github.com/Open-STEM/XRPWeb/issues/209)
