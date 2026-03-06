@@ -117,6 +117,7 @@ export class GeminiClient {
             });
             if (response.ok) {
                 const data = await response.json();
+                console.log('Session cleaned up successfully:', data);
             } else {
                 console.error(`Failed to cleanup session ${sessionId.substring(0, 8)}...`);
             }
