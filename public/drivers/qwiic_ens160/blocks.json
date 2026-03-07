@@ -1,0 +1,46 @@
+[
+    {
+        "kind": "BLOCK",
+        "type": "ENS160_connect"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "ENS160_set_temp_comp_c"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "ENS160_set_rh_comp"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "ENS160_read_aqi"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "ENS160_read_tvoc"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "ENS160_read_eco2"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "ENS160_read_etoh"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "ENS160_read_comp_temp_c"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "ENS160_read_comp_rh"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "ENS160_get_flags"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "ENS160_op_active"
+    }
+]
