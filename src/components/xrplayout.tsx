@@ -254,7 +254,11 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
             localStorage.setItem(StorageKeys.VERSION, currentVersion || '');
         };
 
-        window.addEventListener('load', handleWindowLoad);
+        if (document.readyState === 'complete') {
+            handleWindowLoad();
+        } else {
+            window.addEventListener('load', handleWindowLoad);
+        }
         return () => {
             window.removeEventListener('load', handleWindowLoad);
         }
@@ -304,8 +308,8 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                     if (editorType !== undefined) {
                         AppMgr.getInstance().emit(EventType.EVENT_EDITOR, editorType);
                     }
+                    setActiveTab(action.data.tabNode);
                 } 
-                setActiveTab(action.data.tabNode);
             }
             break;
             case Actions.DELETE_TAB: {        

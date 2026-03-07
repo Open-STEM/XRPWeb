@@ -21,6 +21,7 @@ export type EditorSession = {
     type: EditorType;
     isSubscribed: boolean;
     isModified: boolean;
+    hasBeenLoaded?: boolean;
     fontsize: number;
     content?: string;
     workspace?: Workspace;
@@ -144,9 +145,9 @@ export default class EditorMgr {
                     EventType.EVENT_EDITOR,
                     session.type === EditorType.BLOCKLY ? EditorType.BLOCKLY : EditorType.PYTHON,
                 );
-                this.layoutModel?.doAction(Actions.selectTab(session.id));       
+                this.layoutModel?.doAction(Actions.selectTab(session.id));     
+                return session?.id;
             }
-            return session?.id;
         }
         return undefined;
     }
@@ -491,6 +492,8 @@ export default class EditorMgr {
             return; // Can't save if not connected
         }
 
+        const isLogin = AppMgr.getInstance().authService.isLogin;
+
         // Get all unsaved editor sessions
         const unsavedSessions: Array<{ id: string; session: EditorSession }> = [];
         this.editorSessions.forEach((session, id) => {
@@ -522,6 +525,13 @@ export default class EditorMgr {
                     const content = session.content
                     
                     if (content) {
+                        if (isLogin && session.gpath) {
+                            // If Google user login, save to Google drive
+                            const mineType = session.type === EditorType.PYTHON ? 'text/x-python' : 'application/json';
+                            const blob = new Blob([content], { type: mineType});
+                            await AppMgr.getInstance().driveService.upsertFileToGoogleDrive(blob, fileName, mineType, session.gpath);
+                        }
+
                         // Save the editor
                         await CommandToXRPMgr.getInstance().uploadFile(session.path, content, true);
                         

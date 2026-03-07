@@ -13,7 +13,7 @@ import convert from '@assets/images/convert.svg';
 import dashboard from '@assets/images/dashboard.svg';
 import drivers from '@assets/images/drivers.svg';
 import forum from '@assets/images/forum.svg';
-import cirriculum from '@assets/images/cirriculum.svg';
+import curriculum from '@assets/images/curriculum.svg';
 import changelog from '@assets/images/changelog.svg';
 import settings from '@assets/images/settings.svg';
 import chatbot from '@assets/images/chatbot.svg';
@@ -66,6 +66,7 @@ import XRPDriverInstallDlg from './dialogs/driver-installs';
 import powerswitch_standard from '@assets/images/XRP-nonbeta-controller-power.jpg';
 import powerswitch_beta from '@assets/images/XRP_Controller-Power.jpg';
 import BusyDialog from './dialogs/busydlg';
+import { UAParser } from "ua-parser-js";
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -113,6 +114,25 @@ function NavBar({ layoutref }: NavBarProps) {
     const authService = AppMgr.getInstance().authService;
     const driveService = AppMgr.getInstance().driveService;
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const stoppingRef = useRef(false);
+    const browserCheckRef = useRef(false);
+
+    // Check for Web Serial API support once on component mount.
+    useEffect(() => {
+        if (browserCheckRef.current) return;
+        browserCheckRef.current = true;
+
+        const parser = new UAParser();
+        const browser = parser.getResult().browser;
+        if (!("serial" in navigator)) {
+            setDialogContent(<AlertDialog alertMessage={t('firefox-not-supported', { browser: browser.name })} toggleDialog={toggleDialog} />);
+            toggleDialog();
+        }
+    }, [t]);
+
+    useEffect(() => {
+        stoppingRef.current = isStopping;
+    }, [isStopping]);
 
     useEffect(() => {
         if (!hasSubscribed) {
@@ -865,10 +885,12 @@ function NavBar({ layoutref }: NavBarProps) {
 
         const resetRunButtonStates = () => {
             AppMgr.getInstance().on(EventType.EVENT_PROGRAM_EXECUTED, () => {
+                if (stoppingRef.current === true) {
+                    toggleDialog();
+                }
                 setRunning(false);
                 setIsStopping(false);
                 broadcastRunningState(false);
-                toggleDialog();
                 AppMgr.getInstance().eventOff(EventType.EVENT_PROGRAM_EXECUTED);
             });
         }
@@ -926,8 +948,8 @@ function NavBar({ layoutref }: NavBarProps) {
                                             await CommandToXRPMgr.getInstance()
                                                 .updateMainFile(session.path)
                                                 .then(async (lines) => {
-                                                    await CommandToXRPMgr.getInstance().executeLines(lines);
                                                     resetRunButtonStates();
+                                                    await CommandToXRPMgr.getInstance().executeLines(lines);
                                                 });
                                         });
                                     });
@@ -935,8 +957,8 @@ function NavBar({ layoutref }: NavBarProps) {
                                     await CommandToXRPMgr.getInstance()
                                         .updateMainFile(session.path)
                                         .then(async (lines) => {
-                                            await CommandToXRPMgr.getInstance().executeLines(lines);
                                             resetRunButtonStates();
+                                            await CommandToXRPMgr.getInstance().executeLines(lines);
                                         });
                                 }
                             }
@@ -1149,8 +1171,8 @@ function NavBar({ layoutref }: NavBarProps) {
                     link: 'https://open-stem.github.io/XRP_MicroPython/',
                 },
                 {
-                    label: t('cirriculum'),
-                    iconImage: cirriculum,
+                    label: t('curriculum'),
+                    iconImage: curriculum,
                     link: 'https://introtoroboticsv2.readthedocs.io/en/latest/',
                 },
                 {
