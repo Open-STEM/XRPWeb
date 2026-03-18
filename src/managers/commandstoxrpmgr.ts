@@ -1,3 +1,11 @@
+// Copyright (c) Experiential Inc. and other XRP contributors.
+// Open Source Software; you can modify and share it under the terms of the
+// GNU General Public License v.3.
+// See https://www.gnu.org/licenses/
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU General Public License for more details
 import Connection from '@/connections/connection';
 import { FolderItem, Versions } from '@/utils/types';
 import AppMgr, { EventType } from '@/managers/appmgr';
@@ -413,9 +421,9 @@ export class CommandToXRPMgr {
         return installedDrivers;
     }
 
-    async getOnBoardFSTree() {
+    async getOnBoardFSTree(notify: boolean = true) : Promise<string> {
         if (this.BUSY == true) {
-            return;
+            return "";
         }
         if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: in getOnBoardFSTree");
 
@@ -470,7 +478,13 @@ export class CommandToXRPMgr {
             const fsData = JSON.stringify(this.treeData);
             const szData = hiddenLines[1].split(' ');
             this.calculateAvaiableSpace(parseInt(szData[0]), parseInt(szData[1]), parseInt(szData[2]));
-            AppMgr.getInstance().emit(EventType.EVENT_FILESYS, fsData);
+            if (notify) {
+                AppMgr.getInstance().emit(EventType.EVENT_FILESYS, fsData);
+            } else {
+                await this.connection?.getToNormal(3);
+                this.BUSY = false;
+                return fsData;
+            }
         }
 
         //window.setPercent(65, "Fetching filesystem...");
@@ -482,6 +496,7 @@ export class CommandToXRPMgr {
         if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: out of getOnBoardFSTree");
         //window.setPercent(100);
         //window.resetPercentDelay();
+        return "";
     }
 
     calculateAvaiableSpace(blockSizeBytes: number, totalBlockCount: number, totalBlocksFree: number) {
