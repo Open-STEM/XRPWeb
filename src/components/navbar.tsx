@@ -1,3 +1,11 @@
+// Copyright (c) Experiential Inc. and other XRP contributors.
+// Open Source Software; you can modify and share it under the terms of the
+// GNU General Public License v.3.
+// See https://www.gnu.org/licenses/
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU General Public License for more details
 import logo from '@assets/images/xrpstickerbot.png';
 import fileadd from '@assets/images/file_add.svg';
 import fileupload from '@assets/images/upload_file.svg';
@@ -62,11 +70,15 @@ import { CreateEditorTab } from '@/utils/editorUtils';
 import ChangeLogDlg from '@components/dialogs/changelog';
 import { Actions, IJsonTabNode } from 'flexlayout-react';
 import { fireGoogleUserTree, getUsernameFromEmail } from '@/utils/google-utils';
-import XRPDriverInstallDlg from './dialogs/driver-installs';
+import XRPDriverInstallDlg from '@components/dialogs/driver-installs';
 import powerswitch_standard from '@assets/images/XRP-nonbeta-controller-power.jpg';
 import powerswitch_beta from '@assets/images/XRP_Controller-Power.jpg';
-import BusyDialog from './dialogs/busydlg';
+import BusyDialog from '@components/dialogs/busydlg';
 import { UAParser } from "ua-parser-js";
+import backup_restore from '@assets/images/backup_restore.svg';
+import BackupRestoreDlg from '@components/dialogs/backup-restoredlg';
+import BackupDlg from '@components/dialogs/backupdlg';
+import RestoreDlg from '@components/dialogs/restoredlg';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1090,6 +1102,34 @@ function NavBar({ layoutref }: NavBarProps) {
         else dialogRef.current.showModal();
     }
 
+    /**
+     * onBackup - handle the Backup button click event
+     */
+    function onBackup() {
+        toggleDialog();
+        // display the restore dialog to show the backup files process
+        setDialogContent(<BackupDlg toggleDialog={toggleDialog}/>);
+        toggleDialog();
+    }
+
+    /**
+     * onRestore - handle the Restore button click event
+     */
+    function onRestore() {
+        toggleDialog();
+        setDialogContent(<RestoreDlg toggleDialog={toggleDialog}/>);
+        toggleDialog();
+    }
+
+    /**
+     * onBackupRestoreClicked - handle the Backup/Restore button click event
+     */
+    function onBackupRestoreClicked() {
+        setMoreMenuOpen(false);
+        setDialogContent(<BackupRestoreDlg toggleDialog={toggleDialog} onBackup={onBackup} onRestore={onRestore}/>);
+        toggleDialog();
+    }
+
     const navItems: MenuDataItem[] = [
         {
             label: t('file'),
@@ -1206,6 +1246,11 @@ function NavBar({ layoutref }: NavBarProps) {
             clicked: onDriverClicked,
         },
         {
+            label: t('backup-restore.title'),
+            iconImage: backup_restore,
+            clicked: onBackupRestoreClicked,
+        },
+        {
             label: t('settings'),
             iconImage: settings,
             clicked: onSettingsClicked,
@@ -1311,7 +1356,7 @@ function NavBar({ layoutref }: NavBarProps) {
                         <MdMoreVert size={'1.5em'} />
                     </button>
                     {isMoreMenuOpen &&
-                        <div className="absolute right-0 top-11 w-40 z-[100] mx-auto flex flex-col bg-curious-blue-700 py-3 shadow-md transition-all dark:bg-mountain-mist-950 dark:group-hover:bg-mountain-mist-950">
+                        <div className="absolute right-0 top-11 w-48 z-[100] mx-auto flex flex-col bg-curious-blue-700 py-3 shadow-md transition-all dark:bg-mountain-mist-950 dark:group-hover:bg-mountain-mist-950">
                             <ul id="pythonId" className="flex cursor-pointer flex-col">
                                 {moreMenu.map((item, ci) => (
                                     <li

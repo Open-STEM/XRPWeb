@@ -1,3 +1,11 @@
+// Copyright (c) Experiential Inc. and other XRP contributors.
+// Open Source Software; you can modify and share it under the terms of the
+// GNU General Public License v.3.
+// See https://www.gnu.org/licenses/
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU General Public License for more details.
 export class Constants {
     static readonly APP_VERSION = '2.0.3';
     static readonly EDITOR_TABSET_ID = 'editorTabSetId';
@@ -13,6 +21,7 @@ export class Constants {
     static readonly ADMIN_FILE = 'admin.json';
     static readonly GUSERS_FOLDER = '/gusers/';
     static readonly XRPCODE = 'XRPCode';
+    static readonly XRPCODE_BACKUP = 'XRPCodeBackup';
     static readonly LIBDIR = '/lib/';
     static readonly CONNECTED = "Connected";
     static readonly DISCONNECTED = "Disconnected";
@@ -20,6 +29,7 @@ export class Constants {
     static readonly REGEX_DIRNAME = /^[a-zA-Z0-9](?:[a-zA-Z0-9 _-]*[a-zA-Z0-9])?$/;
     static readonly XRP_PROCESSOR_BETA = "RPI-RP2"
     static readonly LASTSAVETIME_CONFG = '1';
+    static readonly XRP_ROOT_FOLDER = '/';
 }
 
 export class FlowBiteConstants {

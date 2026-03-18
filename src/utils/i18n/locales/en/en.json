@@ -187,6 +187,26 @@
         "light": "Light",
         "dark": "Dark"
     },
+    "backup-restore": {
+        "title": "Backup/Restore",
+        "description": "Backup or restore your XRP Robot files. Click the button below to begin. Note that your XRP must be connected and your Google Drive account must be logged in before performing a backup or restore.",
+        "backup": "Backup",
+        "restore": "Restore",
+        "close": "Close",
+        "bluetooth-warning": "Backup and restore operations via Bluetooth will be slow. It is recommended that you connect via USB to perform these operations."
+    },
+    "backup": {
+        "title": "Backup",
+        "description": "Backup your XRP Robot files from Google Drive to your XRP Robot.",
+        "processing": "Processing {{ filename }}",
+        "begin": "Begin Backup"
+    },
+    "restore": {
+        "title": "Restore",
+        "description": "Restore your XRP Robot files from your XRP Robot to Google Drive.",
+        "processing": "Processing {{ filename }}",
+        "begin": "Begin Restore"
+    },
     "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
     "individualMotors": "Individual Motors"
 }
