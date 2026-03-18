@@ -82,7 +82,7 @@ const AddWidgets: React.FC = () => {
         {BUILTIN_SENSORS.map((def) => (
           <DropdownItem
             key={def.action}
-            icon={def.icon}
+            icon={def.icon as any}
             onClick={() => handleAddBuiltin(def)}
           >
             {t(def.titleKey)}

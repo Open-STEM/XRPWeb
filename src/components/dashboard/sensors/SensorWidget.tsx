@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Dropdown, DropdownItem } from 'flowbite-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { FaChartLine, FaHashtag, FaCog, FaTrash } from 'react-icons/fa';

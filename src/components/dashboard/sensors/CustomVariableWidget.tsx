@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FaPlug, FaTrash, FaPen, FaCheck, FaPaperPlane } from 'react-icons/fa';
-import { useTranslation } from 'react-i18next';
 import AppMgr, { EventType } from '@/managers/appmgr';
 import { CustomVarMeta, NetworkTable } from '@/managers/tablemgr';
 import { useGridStackWidget } from '../hooks/useGridStackWidget';
@@ -18,7 +17,6 @@ interface CustomVariableWidgetProps {
 const CustomVariableWidget: React.FC<CustomVariableWidgetProps> = ({
   initialVarName = '',
 }) => {
-  const { t } = useTranslation();
   const { handleDelete } = useGridStackWidget();
 
   // Variable name the user is targeting

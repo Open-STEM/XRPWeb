@@ -1,4 +1,3 @@
-import React from 'react';
 import { MdSpeed } from 'react-icons/md';
 import { FaBolt, FaCog, FaGlobe, FaEye, FaBatteryHalf } from 'react-icons/fa';
 import { BsRulers } from 'react-icons/bs';
