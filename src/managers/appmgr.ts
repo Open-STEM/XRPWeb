@@ -1,3 +1,11 @@
+// Copyright (c) Experiential Inc. and other XRP contributors.
+// Open Source Software; you can modify and share it under the terms of the
+// GNU General Public License v.3.
+// See https://www.gnu.org/licenses/
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+// See the GNU General Public License for more details
 import connecionMgr from '@/managers/connectionmgr';
 import mitt from 'mitt';
 import Connection from '@/connections/connection';
