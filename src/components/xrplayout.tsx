@@ -254,7 +254,11 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
             localStorage.setItem(StorageKeys.VERSION, currentVersion || '');
         };
 
-        window.addEventListener('load', handleWindowLoad);
+        if (document.readyState === 'complete') {
+            handleWindowLoad();
+        } else {
+            window.addEventListener('load', handleWindowLoad);
+        }
         return () => {
             window.removeEventListener('load', handleWindowLoad);
         }

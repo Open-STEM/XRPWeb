@@ -1,3 +1,4 @@
+import { ConnectionState } from '@/connections/connection';
 import AppMgr, { EventType } from '@/managers/appmgr';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -5,18 +6,31 @@ import { AiOutlineFileAdd } from "react-icons/ai";
 import { AiOutlineFolderAdd } from "react-icons/ai";
 
 interface FolderHeaderProps {
-    storageCapacity: string;
     newFolderCallback: () => void;
     newFileCallback: () => void;
 }
 
-function FolderHeader({ storageCapacity, newFolderCallback, newFileCallback }: FolderHeaderProps) {
+function FolderHeader({newFolderCallback, newFileCallback }: FolderHeaderProps) {
     const { t } = useTranslation();
     const [isRunning, setIsRunning] = useState<boolean>(false);
     const [appMgr, SetAppMgr] = useState<AppMgr>(AppMgr.getInstance());
+    const [capacity, setCapacity] = useState<string>('0/0');
 
     useEffect(() => {
         SetAppMgr(AppMgr.getInstance());
+
+        appMgr.on(EventType.EVENT_CONNECTION_STATUS, (state: string) => {
+            if (state === ConnectionState.Disconnected.toString()) {
+                setCapacity('0/0');
+            }
+        });
+
+        appMgr.on(EventType.EVENT_FILESYS_STORAGE, (storageCapacity: string) => {
+            // Update the storage capacity state here
+            const storage = JSON.parse(storageCapacity);
+            setCapacity(storage.used + '/' + storage.total);
+        });
+
 
         appMgr.on(EventType.EVENT_ISRUNNING, (running: string) => {
             if (running === 'running') {
@@ -32,7 +46,7 @@ function FolderHeader({ storageCapacity, newFolderCallback, newFileCallback }: F
             <div className="flex flex-row">
                 { appMgr.authService.isLogin ?
                     <span>{t('GoogleDriveStorage')}</span> :
-                    <span>{t('FilesystemStorage', { capacity: storageCapacity})}</span>
+                    <span>{t('FilesystemStorage', { capacity: capacity})}</span>
                 }
             </div>
             <div className="flex flex-row gap-1">
