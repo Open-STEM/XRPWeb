@@ -187,6 +187,26 @@
         "light": "Claro",
         "dark": "Oscuro"
     },
+    "backup-restore": {
+        "title": "Respaldo/Restauración",
+        "description": "Respalda o restaura tus archivos XRP. Haz clic en el botón de abajo para comenzar. Tenga en cuenta que su XRP debe estar conectado y su cuenta de Google Drive debe estar iniciada sesión antes de realizar un respaldo o restauración.",
+        "backup": "Respaldo",
+        "restore": "Restauración",
+        "close": "Cerrar"
+    },
+    "backup": {
+        "title": "Respaldo",
+        "description": "Respalda tus archivos XRP desde Google Drive a tu XRP Robot.",
+        "processing": "Procesando...",
+        "begin": "Comenzar Respaldo",
+        "bluetooth-warning": "Las operaciones de respaldo a través de Bluetooth serán lentas. Se recomienda que se conecte a través de USB para realizar estas operaciones."
+    },
+    "restore": {
+        "title": "Restauración",
+        "description": "Restaura tus archivos XRP desde tu XRP Robot a Google Drive.",
+        "processing": "Procesando...",
+        "begin": "Comenzar Restauración"
+    },
     "_commentBlockly": "Esto no necesita ser traducido - agregar traducción específica de blockly a continuación",
     "individualMotors": "Motores Individuales"
 }
