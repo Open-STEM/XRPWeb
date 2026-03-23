@@ -5,5 +5,12 @@
     "deps": [
       ["qwiic_i2c", "/drivers/qwiic_i2c/package.json"]
     ],
+    "blocks": [
+      {
+        "friendly_name": "Soil",
+        "blocks_url": "/drivers/qwiic_soil_moisture_sensor/blocks.json",
+        "script_url": "/drivers/qwiic_soil_moisture_sensor/blocks.js"
+      }
+    ],
     "version": "0.1.0"
 }

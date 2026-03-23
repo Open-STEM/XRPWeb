@@ -56,9 +56,8 @@ function ensureVemlSetup(addressLiteral) {
   var setupKey = 'veml6030_setup';
   if (!pythonGenerator.definitions_[setupKey]) {
     pythonGenerator.definitions_[setupKey] = 
-      `veml6030 = qwiic_veml6030.QwiicVEML6030(address=${addr})
-      veml6030.begin()
-      `;
+      'veml6030 = qwiic_veml6030.QwiicVEML6030(address=' + addr + ')\n' +
+      'veml6030.begin()';
   }
 }
 
@@ -71,7 +70,7 @@ pythonGenerator.forBlock['VEML6030_connect'] = function (block) {
   ensureVemlSetup(address);
   return (
     'veml6030.set_gain(' + gain + ')\n' + 
-    'veml6030.set_integ_time' + integ + ')\n'
+    'veml6030.set_integ_time(' + integ + ')\n'
   );
 };
 

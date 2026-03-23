@@ -1,0 +1,14 @@
+[
+    {
+        "kind": "BLOCK",
+        "type": "OLED_connect"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "OLED_clear"
+    },
+    {
+        "kind": "BLOCK",
+        "type": "OLED_write"
+    }
+]

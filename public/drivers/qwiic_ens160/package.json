@@ -6,17 +6,10 @@
       ["qwiic_i2c", "/drivers/qwiic_i2c/package.json"]
     ],
     "blocks": [
-      {"friendly_name": "ENS160_connect", "blocks_url": "/drivers/qwiic_ens160/blocks.json", "script_url": "/drivers/qwiic_ens160/blocks.js"},
-      {"friendly_name": "ENS160_set_temp_comp_c", "blocks_url": "/drivers/qwiic_ens160/blocks.json", "script_url": "/drivers/qwiic_ens160/blocks.js"},
-      {"friendly_name": "ENS160_set_rh_comp", "blocks_url": "/drivers/qwiic_ens160/blocks.json", "script_url": "/drivers/qwiic_ens160/blocks.js"},
-      {"friendly_name": "ENS160_read_aqi", "blocks_url": "/drivers/qwiic_ens160/blocks.json", "script_url": "/drivers/qwiic_ens160/blocks.js"},
-      {"friendly_name": "ENS160_read_tvoc", "blocks_url": "/drivers/qwiic_ens160/blocks.json", "script_url": "/drivers/qwiic_ens160/blocks.js"},
-      {"friendly_name": "ENS160_read_eco2", "blocks_url": "/drivers/qwiic_ens160/blocks.json", "script_url": "/drivers/qwiic_ens160/blocks.js"},
-      {"friendly_name": "ENS160_read_etoh", "blocks_url": "/drivers/qwiic_ens160/blocks.json", "script_url": "/drivers/qwiic_ens160/blocks.js"},
-      {"friendly_name": "ENS160_read_comp_temp_c", "blocks_url": "/drivers/qwiic_ens160/blocks.json", "script_url": "/drivers/qwiic_ens160/blocks.js"},
-      {"friendly_name": "ENS160_read_comp_rh", "blocks_url": "/drivers/qwiic_ens160/blocks.json", "script_url": "/drivers/qwiic_ens160/blocks.js"},
-      {"friendly_name": "ENS160_get_flags", "blocks_url": "/drivers/qwiic_ens160/blocks.json", "script_url": "/drivers/qwiic_ens160/blocks.js"},
-      {"friendly_name": "ENS160_op_active", "blocks_url": "/drivers/qwiic_ens160/blocks.json", "script_url": "/drivers/qwiic_ens160/blocks.js"}
+      {"friendly_name": "ENS160",
+       "blocks_url": "/drivers/qwiic_ens160/blocks.json",
+       "script_url": "/drivers/qwiic_ens160/blocks.js"
+      }
     ],
     "version": "2.0.0"
 }
