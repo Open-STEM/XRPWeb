@@ -18,8 +18,10 @@ export class USBConnection extends Connection {
     // Define USB connection constants
     readonly USB_VENDOR_ID_BETA: number = 11914; // For filtering ports during auto or manual selection
     readonly USB_VENDOR_ID: number = 6991; // For filtering ports during auto or manual selection
+    readonly USB_VENDOR_ID_NANOXRP: number = 0x2E8A; // For filtering ports during auto or manual selection
     readonly USB_PRODUCT_ID_BETA: number = 5; // For filtering ports during auto or manual selection
     readonly USB_PRODUCT_ID: number = 70; // For filtering ports during auto or manual selection
+    readonly USB_PRODUCT_ID_NANOXRP: number = 0x110A; // For filtering ports during auto or manual selection
 
     constructor(connMgr: ConnectionMgr) {
         super();
@@ -128,7 +130,9 @@ export class USBConnection extends Connection {
         if (
             (info.usbProductId == this.USB_PRODUCT_ID && info.usbVendorId == this.USB_VENDOR_ID) ||
             (info.usbProductId == this.USB_PRODUCT_ID_BETA &&
-                info.usbVendorId == this.USB_VENDOR_ID_BETA)
+                info.usbVendorId == this.USB_VENDOR_ID_BETA) ||
+            (info.usbProductId == this.USB_PRODUCT_ID_NANOXRP &&
+                info.usbVendorId == this.USB_VENDOR_ID_NANOXRP)
         ) {
             return true;
         }
@@ -272,6 +276,7 @@ export class USBConnection extends Connection {
         const filters = [
             { usbVendorId: this.USB_VENDOR_ID_BETA, usbProductId: this.USB_PRODUCT_ID_BETA },
             { usbVendorId: this.USB_VENDOR_ID, usbProductId: this.USB_PRODUCT_ID },
+            { usbVendorId: this.USB_VENDOR_ID_NANOXRP, usbProductId: this.USB_PRODUCT_ID_NANOXRP },
         ];
 
         if (!autoConnected) {
