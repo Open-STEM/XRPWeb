@@ -330,8 +330,8 @@ export default class AppMgr {
             return this._folderData;
         }
 
-        // remove the lib directory first
-        const folders = this._folderData?.at(0)?.children?.filter(folder => (folder.name !== 'lib' && folder.children !== null)).map(folder => ({ 
+        // remove the non folder items
+        const folders = this._folderData?.at(0)?.children?.filter(folder => (folder.children !== null)).map(folder => ({ 
             name: folder.name,
             id: folder.id,
             isReadOnly: folder.isReadOnly,

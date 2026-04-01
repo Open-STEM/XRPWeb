@@ -177,6 +177,40 @@ function NewFileDlg(newFileProps: NewFileProps) {
         setSelectedFolder(selectedItem.path);
     };
 
+    /**
+     * Handle Escape key to close dialog
+     */
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                newFileProps.toggleDialog();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
+
+    /**
+     * Auto-focus filename input when it becomes enabled
+     */
+    const filenameInputRef = useRef<HTMLInputElement>(null);
+    useEffect(() => {
+        if (filetype !== null && selectedFolder !== '' && filenameInputRef.current) {
+            filenameInputRef.current.focus();
+        }
+    }, [filetype, selectedFolder]);
+
+    /**
+     * Handle key down on filename input (Enter to submit)
+     */
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && isOkayToSubmit) {
+            handleSubmit();
+        }
+    };
+
     return (
         <div className="flex flex-col items-center gap-4 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950 w-96 max-h-[90vh] overflow-y-auto">
             <div className="flex w-[90%] flex-col items-center">
@@ -184,7 +218,7 @@ function NewFileDlg(newFileProps: NewFileProps) {
                 <p className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('chooseNewFile')}</p>
             </div>
             <hr className="w-full border-mountain-mist-600" />
-            <form id="fileOptionId" className="flex w-full flex-col gap-2">
+            <form id="fileOptionId" className="flex w-full flex-col gap-2" onSubmit={(e) => e.preventDefault()}>
                 <span className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('destFolder')}</span>
                 <div className='h-48 w-full overflow-y-auto border border-shark-300 dark:border-shark-600'>
                     <FolderTree
@@ -263,6 +297,7 @@ function NewFileDlg(newFileProps: NewFileProps) {
                 <span className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('filename')}</span>
                 <div className="flex flex-col items-center gap-1">
                     <input
+                        ref={filenameInputRef}
                         className={`w-full rounded border ${isFileExists ? 'border-cinnabar-800' : 'border-shark-300 dark:border-shark-600'} p-2 text-md text-mountain-mist-700 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-200`}
                         id="filenameId"
                         type="text"
@@ -271,6 +306,7 @@ function NewFileDlg(newFileProps: NewFileProps) {
                         minLength={2}
                         value={filename}
                         onChange={handleFilenameInput}
+                        onKeyDown={handleKeyDown}
                         disabled={filetype === null || selectedFolder === ''}
                     />
                     {isFileExists && (
