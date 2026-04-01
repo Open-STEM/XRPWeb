@@ -25,10 +25,10 @@ import curriculum from '@assets/images/curriculum.svg';
 import changelog from '@assets/images/changelog.svg';
 import settings from '@assets/images/settings.svg';
 import chatbot from '@assets/images/chatbot.svg';
-import gamepad from'@assets/images/gamepad.svg';
+import gamepad from '@assets/images/gamepad.svg';
 import { TiArrowSortedDown } from 'react-icons/ti';
 import { IoPlaySharp } from 'react-icons/io5';
-import { MdMoreVert } from "react-icons/md";
+import { MdMoreVert } from 'react-icons/md';
 import { IoStop } from 'react-icons/io5';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -74,7 +74,7 @@ import XRPDriverInstallDlg from '@components/dialogs/driver-installs';
 import powerswitch_standard from '@assets/images/XRP-nonbeta-controller-power.jpg';
 import powerswitch_beta from '@assets/images/XRP_Controller-Power.jpg';
 import BusyDialog from '@components/dialogs/busydlg';
-import { UAParser } from "ua-parser-js";
+import { UAParser } from 'ua-parser-js';
 import backup_restore from '@assets/images/backup_restore.svg';
 import BackupRestoreDlg from '@components/dialogs/backup-restoredlg';
 import BackupDlg from '@components/dialogs/backupdlg';
@@ -136,8 +136,13 @@ function NavBar({ layoutref }: NavBarProps) {
 
         const parser = new UAParser();
         const browser = parser.getResult().browser;
-        if (!("serial" in navigator)) {
-            setDialogContent(<AlertDialog alertMessage={t('firefox-not-supported', { browser: browser.name })} toggleDialog={toggleDialog} />);
+        if (!('serial' in navigator)) {
+            setDialogContent(
+                <AlertDialog
+                    alertMessage={t('firefox-not-supported', { browser: browser.name })}
+                    toggleDialog={toggleDialog}
+                />,
+            );
             toggleDialog();
         }
     }, [t]);
@@ -199,7 +204,7 @@ function NavBar({ layoutref }: NavBarProps) {
                 };
                 const tabId = CreateEditorTab(mewFileData, layoutref);
                 setActiveTab(tabId);
-                // Need to access the connection status directly from the manager because the React isConnected state available 
+                // Need to access the connection status directly from the manager because the React isConnected state available
                 // isn't available in the thread context
                 const isConnected = AppMgr.getInstance().getConnection()?.isConnected();
                 if (authService.isLogin) {
@@ -211,35 +216,51 @@ function NavBar({ layoutref }: NavBarProps) {
                         .then((content) => {
                             loadXRPEditor(content, fileType, filename, filePathData.xrpPath);
                         });
-                } 
+                }
             });
 
             AppMgr.getInstance().on(EventType.EVENT_MICROPYTHON_UPDATE, (versions) => {
-                setDialogContent(<UpdateDlg updateCallback={handleMPUpdateCallback} toggleDialog={toggleDialog} isUpdateMP={true} isUpdateLib={false} mpVersion={JSON.parse(versions)}/>);
+                setDialogContent(
+                    <UpdateDlg
+                        updateCallback={handleMPUpdateCallback}
+                        toggleDialog={toggleDialog}
+                        isUpdateMP={true}
+                        isUpdateLib={false}
+                        mpVersion={JSON.parse(versions)}
+                    />,
+                );
                 toggleDialog();
             });
 
             AppMgr.getInstance().on(EventType.EVENT_XRPLIB_UPDATE, (versions) => {
-                setDialogContent(<UpdateDlg updateCallback={handleXRPLibUpdateCallback} toggleDialog={toggleDialog} isUpdateMP={false} isUpdateLib={true} xrpVersion={JSON.parse(versions)}/>);
+                setDialogContent(
+                    <UpdateDlg
+                        updateCallback={handleXRPLibUpdateCallback}
+                        toggleDialog={toggleDialog}
+                        isUpdateMP={false}
+                        isUpdateLib={true}
+                        xrpVersion={JSON.parse(versions)}
+                    />,
+                );
                 toggleDialog();
             });
 
             AppMgr.getInstance().on(EventType.EVENT_MUST_UPDATE_MICROPYTHON, () => {
-                window.alert("must update MP");
+                window.alert('must update MP');
                 //setDialogContent(<ChangeLogDlg closeDialog={toggleDialog}/>);
                 //toggleDialog();
             });
 
             AppMgr.getInstance().on(EventType.EVENT_SHOWCHANGELOG, (changelog) => {
                 if (changelog === Constants.SHOW_CHANGELOG) {
-                    setDialogContent(<ChangeLogDlg closeDialog={toggleDialog}/>);
+                    setDialogContent(<ChangeLogDlg closeDialog={toggleDialog} />);
                     toggleDialog();
                 }
             });
 
             AppMgr.getInstance().on(EventType.EVENT_SHOWPROGRESS, (progress) => {
                 if (progress === Constants.SHOW_PROGRESS) {
-                    setDialogContent(<ProgressDlg title='saveToXRPTitle'/>);
+                    setDialogContent(<ProgressDlg title="saveToXRPTitle" />);
                     toggleDialog();
                     AppMgr.getInstance().on(EventType.EVENT_UPLOAD_DONE, () => {
                         toggleDialog();
@@ -250,13 +271,15 @@ function NavBar({ layoutref }: NavBarProps) {
             });
 
             AppMgr.getInstance().on(EventType.EVENT_ALERT, (message) => {
-                setDialogContent(<AlertDialog alertMessage={message} toggleDialog={toggleDialog} />);
+                setDialogContent(
+                    <AlertDialog alertMessage={message} toggleDialog={toggleDialog} />,
+                );
                 toggleDialog();
             });
 
             AppMgr.getInstance().on(EventType.EVENT_GAMEPAD_STATUS, (status: string) => {
                 if (status === Constants.CONNECTED) {
-                        setGamepadConnected(true)
+                    setGamepadConnected(true);
                 } else if (status === Constants.DISCONNECTED) {
                     setGamepadConnected(false);
                 }
@@ -314,9 +337,9 @@ function NavBar({ layoutref }: NavBarProps) {
 
     /**
      * loadGoogleEditor - load the file content from Google Drive into the editor
-     * @param filePathData 
-     * @param fileType 
-     * @param filename 
+     * @param filePathData
+     * @param fileType
+     * @param filename
      */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async function loadGoogleEditor(filePathData: NewFileData, fileType: FileType, filename: any) {
@@ -335,9 +358,9 @@ function NavBar({ layoutref }: NavBarProps) {
 
     /**
      * loadXRPEditor - load the file content from XRP into the editor
-     * @param content 
-     * @param fileType 
-     * @param filename 
+     * @param content
+     * @param fileType
+     * @param filename
      * @param path
      */
     function loadXRPEditor(content: number[], fileType: FileType, filename: string, path: string) {
@@ -348,9 +371,8 @@ function NavBar({ layoutref }: NavBarProps) {
             const lines: string[] = data.split('##XRPBLOCKS ');
             bytes = Array.from(new TextEncoder().encode(lines.slice(-1)[0]));
         }
-        const text = typeof bytes === 'string'
-            ? bytes
-            : new TextDecoder().decode(new Uint8Array(bytes));
+        const text =
+            typeof bytes === 'string' ? bytes : new TextDecoder().decode(new Uint8Array(bytes));
         // set the content in the editor
         const loadContent = { name: filename, path: path, content: text };
         AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
@@ -362,7 +384,13 @@ function NavBar({ layoutref }: NavBarProps) {
     function handleMPUpdateCallback() {
         // ask the user to confirm the update and provide instructions to the user about the update
         const xrpDrive = CommandToXRPMgr.getInstance().getXRPDrive();
-        setDialogContent(<ConfirmationDlg acceptCallback={handleMPUpdateConfirmed} toggleDialog={toggleDialog} confirmationMessage={t('update-mp-instructions', { drive: xrpDrive })} />);
+        setDialogContent(
+            <ConfirmationDlg
+                acceptCallback={handleMPUpdateConfirmed}
+                toggleDialog={toggleDialog}
+                confirmationMessage={t('update-mp-instructions', { drive: xrpDrive })}
+            />,
+        );
         toggleDialog();
     }
 
@@ -375,26 +403,36 @@ function NavBar({ layoutref }: NavBarProps) {
         // await CommandToXRPMgr.getInstance().updateMicroPython();
         let writable: FileSystemWritableFileStream;
         try {
-            setDialogContent(<ProgressDlg title='mpUpdateTitle'/>);
+            setDialogContent(<ProgressDlg title="mpUpdateTitle" />);
             toggleDialog();
             await CommandToXRPMgr.getInstance().enterBootSelect();
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const dirHandle = await (window as any).showDirectoryPicker();
             // await CommandToXRPMgr.getInstance().updateMicroPython(dirHandle);
-            const fileHandle = await dirHandle?.getFileHandle("firmware.uf2", { create: true });
+            const fileHandle = await dirHandle?.getFileHandle('firmware.uf2', { create: true });
             writable = await fileHandle!.createWritable();
-            const firmwareFilename = CommandToXRPMgr.getInstance().getXRPDrive() === Constants.XRP_PROCESSOR_BETA ? "firmware2040.uf2" : "firmware2350.uf2";
+            const firmwareFilename =
+                CommandToXRPMgr.getInstance().getXRPDrive() === Constants.XRP_PROCESSOR_BETA
+                    ? 'firmware2040.uf2'
+                    : 'firmware2350.uf2';
             AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '10');
-            const data = await (await fetch("micropython/" + firmwareFilename)).arrayBuffer();
+            const data = await (await fetch('micropython/' + firmwareFilename)).arrayBuffer();
             await writable.write(data);
             AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');
             await writable.close();
-        } catch(err) {
-            console.log("Firmware update error: ", err);
-            setDialogContent(<AlertDialog alertMessage={t('update-mp-error', { error: err})} toggleDialog={toggleDialog} />);
+        } catch (err) {
+            console.log('Firmware update error: ', err);
+            setDialogContent(
+                <AlertDialog
+                    alertMessage={t('update-mp-error', { error: err })}
+                    toggleDialog={toggleDialog}
+                />,
+            );
             toggleDialog();
         }
-        setDialogContent(<AlertDialog alertMessage={t('update-mp-complete')} toggleDialog={toggleDialog} />);
+        setDialogContent(
+            <AlertDialog alertMessage={t('update-mp-complete')} toggleDialog={toggleDialog} />,
+        );
         toggleDialog();
     }
 
@@ -405,7 +443,13 @@ function NavBar({ layoutref }: NavBarProps) {
         // ask the user to confirm the update and provide instructions to the user about the update
         const xrpDrive = CommandToXRPMgr.getInstance().getXRPDrive();
         toggleDialog(); // close the update dialog first. Can't display a dialog on top of another dialog.
-        setDialogContent(<ConfirmationDlg acceptCallback={handleXRPLibUpdateConfirmed} toggleDialog={toggleDialog} confirmationMessage={t('update-lib-instructions', { drive: xrpDrive })} />);
+        setDialogContent(
+            <ConfirmationDlg
+                acceptCallback={handleXRPLibUpdateConfirmed}
+                toggleDialog={toggleDialog}
+                confirmationMessage={t('update-lib-instructions', { drive: xrpDrive })}
+            />,
+        );
     }
 
     /**
@@ -414,16 +458,23 @@ function NavBar({ layoutref }: NavBarProps) {
     async function handleXRPLibUpdateConfirmed() {
         toggleDialog();
         try {
-            setDialogContent(<ProgressDlg title='xrpLibUpdateTitle'/>);
+            setDialogContent(<ProgressDlg title="xrpLibUpdateTitle" />);
             toggleDialog();
             await CommandToXRPMgr.getInstance().updateLibrary();
         } catch (err) {
-            console.log("Library update error: ", err);
-            setDialogContent(<AlertDialog alertMessage={t('update-lib-error', { error: err})} toggleDialog={toggleDialog} />);
+            console.log('Library update error: ', err);
+            setDialogContent(
+                <AlertDialog
+                    alertMessage={t('update-lib-error', { error: err })}
+                    toggleDialog={toggleDialog}
+                />,
+            );
             toggleDialog();
         }
         toggleDialog();
-        setDialogContent(<AlertDialog alertMessage={t('update-lib-complete')} toggleDialog={toggleDialog} />);
+        setDialogContent(
+            <AlertDialog alertMessage={t('update-lib-complete')} toggleDialog={toggleDialog} />,
+        );
         toggleDialog();
         await CommandToXRPMgr.getInstance().restartXRP();
     }
@@ -438,22 +489,26 @@ function NavBar({ layoutref }: NavBarProps) {
         if (authService.isLogin) {
             // create the file in Google Drive
             const minetype = data.name.includes('.py')
-                        ? 'text/x-python' : data.name.includes('.blocks')
-                        ? 'application/json' : 'text/plain';
+                ? 'text/x-python'
+                : data.name.includes('.blocks')
+                  ? 'application/json'
+                  : 'text/plain';
             const blob = new Blob([''], { type: minetype });
-            await driveService.uploadFile(blob, data.name, minetype, data.parentId ?? undefined).then((file) => {
-                console.log('New file created in Google Drive: ', file);
-                // update the file ID in the editor session
-                const editorMgr = EditorMgr.getInstance();
-                const searchParams: EdSearchParams = {
-                    name: data.name,
-                    path: data.path,
-                };
-                const session = editorMgr.getEditorSessionByName(searchParams);
-                if (session) {
-                    session.gpath = file?.id;
-                }
-            });
+            await driveService
+                .uploadFile(blob, data.name, minetype, data.parentId ?? undefined)
+                .then((file) => {
+                    console.log('New file created in Google Drive: ', file);
+                    // update the file ID in the editor session
+                    const editorMgr = EditorMgr.getInstance();
+                    const searchParams: EdSearchParams = {
+                        name: data.name,
+                        path: data.path,
+                    };
+                    const session = editorMgr.getEditorSessionByName(searchParams);
+                    if (session) {
+                        session.gpath = file?.id;
+                    }
+                });
             await fireGoogleUserTree(getUsernameFromEmail(authService.userProfile.email) ?? '');
         } else if (isConnected) {
             // create the file in XRP
@@ -552,54 +607,70 @@ function NavBar({ layoutref }: NavBarProps) {
             if (authService.isLogin) {
                 await loadGoogleEditor(newFileData, newFileData.filetype, newFileData.name);
             } else if (isConnected) {
-                await CommandToXRPMgr.getInstance().getFileContents(newFileData.path).then(async (content) => {
-                    loadXRPEditor(content, newFileData.filetype, newFileData.name, newFileData.path);
-                });
+                await CommandToXRPMgr.getInstance()
+                    .getFileContents(newFileData.path)
+                    .then(async (content) => {
+                        loadXRPEditor(
+                            content,
+                            newFileData.filetype,
+                            newFileData.name,
+                            newFileData.path,
+                        );
+                    });
             }
             if (newFileData.filetype === FileType.BLOCKLY) {
                 AppMgr.getInstance().emit(EventType.EVENT_SAVE_EDITOR, '');
             }
-        }
+        };
         // close the save as dialog first
         toggleDialog();
         if (session) {
             if (isLogin) {
                 // upload the file as new path and filename to Google Drive
-                const minetype = fileData.filetype === FileType.PYTHON
-                            ? 'text/x-python' : fileData.filetype === FileType.BLOCKLY
-                            ? 'application/json' : 'text/plain';
+                const minetype =
+                    fileData.filetype === FileType.PYTHON
+                        ? 'text/x-python'
+                        : fileData.filetype === FileType.BLOCKLY
+                          ? 'application/json'
+                          : 'text/plain';
                 const blob = new Blob([session.content || ''], { type: minetype });
-                
-                AppMgr.getInstance().driveService.uploadFile(blob, fileData.name, minetype, fileData.gparentId).then((file) => {
-                    console.log(file);
-                    const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
-                    fireGoogleUserTree(username ?? '');
-                    const newFileData: NewFileData = {
-                        parentId: '',
-                        path: fileData.path + '/' + fileData.name,
-                        gpath: file?.id,
-                        name: file?.name || '',
-                        filetype: fileData.filetype,
-                        content: session.content || ''
-                    };                    
-                    RemoveAndSwitchTab(newFileData);
-                });
+
+                AppMgr.getInstance()
+                    .driveService.uploadFile(blob, fileData.name, minetype, fileData.gparentId)
+                    .then((file) => {
+                        console.log(file);
+                        const username = getUsernameFromEmail(
+                            AppMgr.getInstance().authService.userProfile.email,
+                        );
+                        fireGoogleUserTree(username ?? '');
+                        const newFileData: NewFileData = {
+                            parentId: '',
+                            path: fileData.path + '/' + fileData.name,
+                            gpath: file?.id,
+                            name: file?.name || '',
+                            filetype: fileData.filetype,
+                            content: session.content || '',
+                        };
+                        RemoveAndSwitchTab(newFileData);
+                    });
             } else if (isConnected) {
                 // upload the file as new file path and name to XRP
                 AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
                 const path = fileData.path + fileData.name;
-                await CommandToXRPMgr.getInstance().uploadFile(path, session.content || '', true).then(async () => {
-                    AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
-                    const newFileData: NewFileData = {
-                        parentId: '',
-                        path: fileData.path + fileData.name,
-                        name: fileData.name,
-                        filetype: fileData.filetype,
-                        content: session.content || ''
-                    }
-                    await CommandToXRPMgr.getInstance().getOnBoardFSTree();
-                    RemoveAndSwitchTab(newFileData);
-                });
+                await CommandToXRPMgr.getInstance()
+                    .uploadFile(path, session.content || '', true)
+                    .then(async () => {
+                        AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
+                        const newFileData: NewFileData = {
+                            parentId: '',
+                            path: fileData.path + fileData.name,
+                            name: fileData.name,
+                            filetype: fileData.filetype,
+                            content: session.content || '',
+                        };
+                        await CommandToXRPMgr.getInstance().getOnBoardFSTree();
+                        RemoveAndSwitchTab(newFileData);
+                    });
             }
         }
     }
@@ -611,10 +682,7 @@ function NavBar({ layoutref }: NavBarProps) {
         console.log(t('saveFileAs'));
         if (EditorMgr.getInstance().hasEditorSession(activeTab)) {
             setDialogContent(
-                <FileSaveAsDialg
-                    saveCallback={handleSaveFileAs}
-                    toggleDialog={toggleDialog}
-                />,
+                <FileSaveAsDialg saveCallback={handleSaveFileAs} toggleDialog={toggleDialog} />,
             );
             toggleDialog();
         } else {
@@ -634,7 +702,13 @@ function NavBar({ layoutref }: NavBarProps) {
             return;
         }
         const viewPythonHandler = (code: string) => {
-            setDialogContent(<ViewPythonDlg code={code} toggleDlg={toggleDialog} clearDlg={clearDialogContent}/>);
+            setDialogContent(
+                <ViewPythonDlg
+                    code={code}
+                    toggleDlg={toggleDialog}
+                    clearDlg={clearDialogContent}
+                />,
+            );
             toggleDialog();
             appMgr.eventOff(EventType.EVENT_GENPYTHON_DONE);
         };
@@ -662,41 +736,62 @@ function NavBar({ layoutref }: NavBarProps) {
                     filetype: FileType.PYTHON,
                     content: code,
                 };
-                
+
                 if (authService.isLogin) {
                     // trash the file
                     await driveService.trashFile(newFileData.gpath ?? '').then(async () => {
                         const minetype = 'text/x-python';
                         const blob = new Blob([code], { type: minetype });
-                        await driveService.uploadFile(blob, newFileData.name, minetype, newFileData.gparentId ?? undefined).then(() => {
-                            EditorMgr.getInstance().RemoveEditor(activeTab);
-                            const tabId = CreateEditorTab(newFileData, layoutref);
-                            setActiveTab(tabId);
-                            const loadContent = { name: newFileData.name, path: newFileData.path, content: code };
-                            AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));                        
-                        });
-                        await fireGoogleUserTree(getUsernameFromEmail(authService.userProfile.email) ?? '');
+                        await driveService
+                            .uploadFile(
+                                blob,
+                                newFileData.name,
+                                minetype,
+                                newFileData.gparentId ?? undefined,
+                            )
+                            .then(() => {
+                                EditorMgr.getInstance().RemoveEditor(activeTab);
+                                const tabId = CreateEditorTab(newFileData, layoutref);
+                                setActiveTab(tabId);
+                                const loadContent = {
+                                    name: newFileData.name,
+                                    path: newFileData.path,
+                                    content: code,
+                                };
+                                AppMgr.getInstance().emit(
+                                    EventType.EVENT_EDITOR_LOAD,
+                                    JSON.stringify(loadContent),
+                                );
+                            });
+                        await fireGoogleUserTree(
+                            getUsernameFromEmail(authService.userProfile.email) ?? '',
+                        );
                     });
-                }
-                else if (isConnected) {
+                } else if (isConnected) {
                     // move the converted blockly file to /trash
-                    await CommandToXRPMgr.getInstance().buildPath(Constants.TRASH_FOLDER);  // ensure the trash folder exists
-                    await CommandToXRPMgr.getInstance().renameFile(
-                        editorSession.path,
-                        Constants.TRASH_FOLDER + '/' + editorSession.name,
-                    ).then(async () => {
-                        // save the file to python
-                        const path = editorSession.path.split('.blocks')[0] + '.py';
-                        await CommandToXRPMgr.getInstance().uploadFile(path, code).then(() => {
-                            EditorMgr.getInstance().RemoveEditor(activeTab);
-                            const tabId = CreateEditorTab(newFileData, layoutref);
-                            setActiveTab(tabId);
+                    await CommandToXRPMgr.getInstance().buildPath(Constants.TRASH_FOLDER); // ensure the trash folder exists
+                    await CommandToXRPMgr.getInstance()
+                        .renameFile(
+                            editorSession.path,
+                            Constants.TRASH_FOLDER + '/' + editorSession.name,
+                        )
+                        .then(async () => {
+                            // save the file to python
+                            const path = editorSession.path.split('.blocks')[0] + '.py';
+                            await CommandToXRPMgr.getInstance()
+                                .uploadFile(path, code)
+                                .then(() => {
+                                    EditorMgr.getInstance().RemoveEditor(activeTab);
+                                    const tabId = CreateEditorTab(newFileData, layoutref);
+                                    setActiveTab(tabId);
+                                });
+                            await CommandToXRPMgr.getInstance()
+                                .getFileContents(path)
+                                .then((content) => {
+                                    loadXRPEditor(content, FileType.PYTHON, newFileData.name, path);
+                                });
+                            await CommandToXRPMgr.getInstance().getOnBoardFSTree();
                         });
-                        await CommandToXRPMgr.getInstance().getFileContents(path).then((content) => {
-                            loadXRPEditor(content, FileType.PYTHON, newFileData.name, path);
-                        })
-                        await CommandToXRPMgr.getInstance().getOnBoardFSTree();
-                    });
                 }
             }
             EditorMgr.getInstance().RemoveEditorTab(activeTab);
@@ -709,31 +804,48 @@ function NavBar({ layoutref }: NavBarProps) {
             if (isLogin) {
                 // check if existing python file exist with the same name in the Google drive
                 if (editorSession.gparentId) {
-                    const foldername = await AppMgr.getInstance().driveService.getFolderName(editorSession.gparentId);
+                    const foldername = await AppMgr.getInstance().driveService.getFolderName(
+                        editorSession.gparentId,
+                    );
                     const filename = editorSession.name.split('.blocks')[0] + '.py';
                     if (AppMgr.getInstance().IsFileExists(foldername || '', filename)) {
                         toggleDialog();
-                        setDialogContent(<AlertDialog alertMessage={t('file-exists-on-python-convert', { filename: filename })} toggleDialog={toggleDialog} />);
+                        setDialogContent(
+                            <AlertDialog
+                                alertMessage={t('file-exists-on-python-convert', {
+                                    filename: filename,
+                                })}
+                                toggleDialog={toggleDialog}
+                            />,
+                        );
                         toggleDialog();
-                        return; 
+                        return;
                     }
                 }
             } else if (isConnected) {
                 const folderpath = editorSession.path.split(`/${editorSession.name}`);
-                const foldername = folderpath[0] !== '/' ? folderpath[0].split('/').pop() : folderpath[0];
-                console.log('foldername: ', foldername)
+                const foldername =
+                    folderpath[0] !== '/' ? folderpath[0].split('/').pop() : folderpath[0];
+                console.log('foldername: ', foldername);
 
                 // check if existing python file exist with the same name
                 const filename = editorSession.name.split('.blocks')[0] + '.py';
                 if (AppMgr.getInstance().IsFileExists(foldername || '', filename)) {
                     toggleDialog();
-                    setDialogContent(<AlertDialog alertMessage={t('file-exists-on-python-convert', { filename: filename })} toggleDialog={toggleDialog} />);
+                    setDialogContent(
+                        <AlertDialog
+                            alertMessage={t('file-exists-on-python-convert', {
+                                filename: filename,
+                            })}
+                            toggleDialog={toggleDialog}
+                        />,
+                    );
                     toggleDialog();
-                    return; 
+                    return;
                 }
             }
         }
-        
+
         // signal the editor to generate the python content in this editor session
         appMgr.on(EventType.EVENT_GENPYTHON_DONE, convertToPythonHandler);
         appMgr.emit(EventType.EVENT_GENPYTHON, activeTab);
@@ -749,10 +861,7 @@ function NavBar({ layoutref }: NavBarProps) {
         }
         if (!isConnected && !authService.isLogin) {
             setDialogContent(
-                <AlertDialog
-                    alertMessage={t('XRP-not-connected')}
-                    toggleDialog={toggleDialog}
-                />,
+                <AlertDialog alertMessage={t('XRP-not-connected')} toggleDialog={toggleDialog} />,
             );
             toggleDialog();
             return;
@@ -804,7 +913,7 @@ function NavBar({ layoutref }: NavBarProps) {
             component: 'dashboard',
             name: t('dashboard'),
             id: Constants.DASHBOARD_TAB_ID,
-            helpText: t('dashboard')
+            helpText: t('dashboard'),
         };
         layoutref!.current?.addTabToTabSet(Constants.EDITOR_TABSET_ID, tabInfo);
         EditorMgr.getInstance().AddEditor({
@@ -818,7 +927,7 @@ function NavBar({ layoutref }: NavBarProps) {
             content: undefined,
             lastUpdated: undefined,
             isModified: false,
-        });        
+        });
         setIsOtherTab(true);
         setActiveTab('Dashboard');
     }
@@ -833,7 +942,7 @@ function NavBar({ layoutref }: NavBarProps) {
             layoutModel?.doAction(Actions.selectTab(Constants.AI_CHAT_TAB_ID));
             setActiveTab(t('ai-chat'));
             return;
-        };
+        }
         const tabInfo: IJsonTabNode = {
             component: 'aichat',
             name: 'ai-chat',
@@ -905,7 +1014,7 @@ function NavBar({ layoutref }: NavBarProps) {
                 broadcastRunningState(false);
                 AppMgr.getInstance().eventOff(EventType.EVENT_PROGRAM_EXECUTED);
             });
-        }
+        };
 
         if (!isRunning) {
             if (!isConnected) {
@@ -923,10 +1032,7 @@ function NavBar({ layoutref }: NavBarProps) {
             const hasEditorSession = EditorMgr.getInstance().hasEditorSession(activeTab);
             if (!hasEditorSession) {
                 setDialogContent(
-                    <AlertDialog
-                        alertMessage={t('no-editor-run')}
-                        toggleDialog={toggleDialog}
-                    />,
+                    <AlertDialog alertMessage={t('no-editor-run')} toggleDialog={toggleDialog} />,
                 );
                 toggleDialog();
                 return;
@@ -951,20 +1057,32 @@ function NavBar({ layoutref }: NavBarProps) {
                             if (session) {
                                 if (isLogin && session.gpath) {
                                     // saving the Google drive parent directory to XRP first
-                                    await EditorMgr.getInstance().saveAllFilesInGoogleDriveToXRP(session.name);
+                                    await EditorMgr.getInstance().saveAllFilesInGoogleDriveToXRP(
+                                        session.name,
+                                    );
 
                                     // if Google Drive, need to save the select tab to XRP first
                                     // get the file from Google Drive and save it to XRP
-                                    AppMgr.getInstance().driveService.getFileContents(session.gpath || '').then(async (fileContent) => {
-                                        await CommandToXRPMgr.getInstance().uploadFile(session?.path || '', fileContent || '', true).then(async () => {
+                                    AppMgr.getInstance()
+                                        .driveService.getFileContents(session.gpath || '')
+                                        .then(async (fileContent) => {
                                             await CommandToXRPMgr.getInstance()
-                                                .updateMainFile(session.path)
-                                                .then(async (lines) => {
-                                                    resetRunButtonStates();
-                                                    await CommandToXRPMgr.getInstance().executeLines(lines);
+                                                .uploadFile(
+                                                    session?.path || '',
+                                                    fileContent || '',
+                                                    true,
+                                                )
+                                                .then(async () => {
+                                                    await CommandToXRPMgr.getInstance()
+                                                        .updateMainFile(session.path)
+                                                        .then(async (lines) => {
+                                                            resetRunButtonStates();
+                                                            await CommandToXRPMgr.getInstance().executeLines(
+                                                                lines,
+                                                            );
+                                                        });
                                                 });
                                         });
-                                    });
                                 } else {
                                     await CommandToXRPMgr.getInstance()
                                         .updateMainFile(session.path)
@@ -977,24 +1095,34 @@ function NavBar({ layoutref }: NavBarProps) {
                         } catch (err) {
                             console.log(err);
                         }
-                    }
+                    };
 
                     const handlePowerSwitchOK = async () => {
                         setRunning(true);
                         toggleDialog();
                         beginExecution();
-                    }
+                    };
 
                     const handlePowerSwitchCancel = () => {
                         setRunning(false);
                         toggleDialog();
-                    }
+                    };
 
                     if (connectionType === ConnectionType.USB) {
                         if (voltage < 0.45) {
                             // display a confirmation message to ask the user to turn on the power switch
-                            const powerswitchImage = CommandToXRPMgr.getInstance().getXRPDrive() === Constants.XRP_PROCESSOR_BETA ? powerswitch_beta : powerswitch_standard;
-                            setDialogContent(<PowerSwitchAlert powerswitchImage={powerswitchImage} cancelCallback={handlePowerSwitchCancel}  okayCallback={handlePowerSwitchOK}/>);
+                            const powerswitchImage =
+                                CommandToXRPMgr.getInstance().getXRPDrive() ===
+                                Constants.XRP_PROCESSOR_BETA
+                                    ? powerswitch_beta
+                                    : powerswitch_standard;
+                            setDialogContent(
+                                <PowerSwitchAlert
+                                    powerswitchImage={powerswitchImage}
+                                    cancelCallback={handlePowerSwitchCancel}
+                                    okayCallback={handlePowerSwitchOK}
+                                />,
+                            );
                             toggleDialog();
                         } else {
                             beginExecution();
@@ -1003,7 +1131,12 @@ function NavBar({ layoutref }: NavBarProps) {
                         if (voltage < 0.45) {
                             // display a confirmation message to ask the user to turn on the power switch
                             //this one will only happen if they are using a power device plugged into the USB port and the power switch is off.
-                            setDialogContent(<PowerSwitchAlert cancelCallback={handlePowerSwitchCancel} okayCallback={handlePowerSwitchOK}/>);
+                            setDialogContent(
+                                <PowerSwitchAlert
+                                    cancelCallback={handlePowerSwitchCancel}
+                                    okayCallback={handlePowerSwitchOK}
+                                />,
+                            );
                             toggleDialog();
                         } else if (voltage < 5.0) {
                             setDialogContent(<BatteryBadDlg cancelCallback={toggleDialog} />);
@@ -1012,7 +1145,7 @@ function NavBar({ layoutref }: NavBarProps) {
                             beginExecution();
                         }
                     }
-                });         
+                });
         } else {
             setIsStopping(true);
             CommandToXRPMgr.getInstance().stopProgram();
@@ -1053,16 +1186,11 @@ function NavBar({ layoutref }: NavBarProps) {
         setMoreMenuOpen(false);
         if (!isConnected || isLogin) {
             const message = isLogin ? t('driver-install-login') : t('XRP-not-connected');
-            setDialogContent(
-                <AlertDialog
-                    alertMessage={message}
-                    toggleDialog={toggleDialog}
-                />,
-            );
+            setDialogContent(<AlertDialog alertMessage={message} toggleDialog={toggleDialog} />);
             toggleDialog();
             return;
         }
-        setDialogContent(<XRPDriverInstallDlg toggleDialog={toggleDialog}/>);
+        setDialogContent(<XRPDriverInstallDlg toggleDialog={toggleDialog} />);
         toggleDialog();
     }
 
@@ -1070,7 +1198,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * ChangeLog
      */
     function ChangeLog() {
-        setDialogContent(<ChangeLogDlg closeDialog={toggleDialog}/>);
+        setDialogContent(<ChangeLogDlg closeDialog={toggleDialog} />);
         toggleDialog();
     }
 
@@ -1084,9 +1212,9 @@ function NavBar({ layoutref }: NavBarProps) {
     /**
      * clearDialogContent - toggle the dialog open/close state
      */
-    function clearDialogContent(){
+    function clearDialogContent() {
         setDialogContent(<div />);
-    };
+    }
 
     /**
      * toggleDialog - toggle the dialog open and closed
@@ -1098,8 +1226,7 @@ function NavBar({ layoutref }: NavBarProps) {
         if (dialogRef.current.hasAttribute('open')) {
             setDialogContent(<div />);
             dialogRef.current.close();
-        }
-        else dialogRef.current.showModal();
+        } else dialogRef.current.showModal();
     }
 
     /**
@@ -1108,7 +1235,7 @@ function NavBar({ layoutref }: NavBarProps) {
     function onBackup() {
         toggleDialog();
         // display the restore dialog to show the backup files process
-        setDialogContent(<BackupDlg toggleDialog={toggleDialog}/>);
+        setDialogContent(<BackupDlg toggleDialog={toggleDialog} />);
         toggleDialog();
     }
 
@@ -1117,7 +1244,7 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function onRestore() {
         toggleDialog();
-        setDialogContent(<RestoreDlg toggleDialog={toggleDialog}/>);
+        setDialogContent(<RestoreDlg toggleDialog={toggleDialog} />);
         toggleDialog();
     }
 
@@ -1126,7 +1253,13 @@ function NavBar({ layoutref }: NavBarProps) {
      */
     function onBackupRestoreClicked() {
         setMoreMenuOpen(false);
-        setDialogContent(<BackupRestoreDlg toggleDialog={toggleDialog} onBackup={onBackup} onRestore={onRestore}/>);
+        setDialogContent(
+            <BackupRestoreDlg
+                toggleDialog={toggleDialog}
+                onBackup={onBackup}
+                onRestore={onRestore}
+            />,
+        );
         toggleDialog();
     }
 
@@ -1240,7 +1373,7 @@ function NavBar({ layoutref }: NavBarProps) {
             iconImage: dashboard,
             clicked: onDashboardClicked,
         },
-        { 
+        {
             label: t('drivers'),
             iconImage: drivers,
             clicked: onDriverClicked,
@@ -1254,11 +1387,11 @@ function NavBar({ layoutref }: NavBarProps) {
             label: t('settings'),
             iconImage: settings,
             clicked: onSettingsClicked,
-        }
+        },
     ];
 
     return (
-        <div className="flex items-center justify-between p-1 px-5 shadow-md text-shark-100">
+        <div className="flex items-center justify-between p-1 px-5 text-shark-100 shadow-md">
             <div className="flex flex-row gap-4 transition-all">
                 {/** Logo */}
                 <img src={logo} alt="logo" width="100" height="50" />
@@ -1276,7 +1409,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                     {item.children.map((child, ci) => (
                                         <li
                                             key={ci}
-                                            className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500 ${child.isFile && (!isConnected && !isLogin) ? 'pointer-events-none' : 'pointer-events-auto'} ${child.isView && !isBlockly ? 'hidden' : 'visible'}`}
+                                            className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500 ${child.isFile && !isConnected && !isLogin ? 'pointer-events-none' : 'pointer-events-auto'} ${child.isView && !isBlockly ? 'hidden' : 'visible'}`}
                                             onClick={child.clicked}
                                         >
                                             <MenuItem
@@ -1291,7 +1424,6 @@ function NavBar({ layoutref }: NavBarProps) {
                                     <ul
                                         id="blockId"
                                         className={`${isBlockly ? 'hidden' : 'visible'} cursor-pointer flex-col`}
-                                        
                                     >
                                         {item.childrenExt?.map((child, ci) => (
                                             <li
@@ -1313,7 +1445,13 @@ function NavBar({ layoutref }: NavBarProps) {
                     </div>
                 ))}
                 {/* place the joystick icon here after the menu*/}
-                <img className={`mt-1 ${isGamepadConnected ? 'visible' : 'hidden'}`} src={gamepad} alt='game pad' width={40} height={30} />
+                <img
+                    className={`mt-1 ${isGamepadConnected ? 'visible' : 'hidden'}`}
+                    src={gamepad}
+                    alt="game pad"
+                    width={40}
+                    height={30}
+                />
             </div>
             {/** platform infor and connect button*/}
             <div className="flex flex-row items-center gap-4">
@@ -1351,29 +1489,37 @@ function NavBar({ layoutref }: NavBarProps) {
                         </>
                     )}
                 </button>
-                <div ref={dropdownRef} className='group relative transition-all'>
-                    <button id="settingsId" onClick={toggleMoreDropdown} className={`flex flex-row rounded-3xl p-1 ${isMoreMenuOpen ? 'bg-curious-blue-400 dark:bg-mountain-mist-800' : 'bg-curious-blue-700 dark:bg-mountain-mist-950'}`}>
+                <div ref={dropdownRef} className="group relative transition-all">
+                    <button
+                        id="settingsId"
+                        onClick={toggleMoreDropdown}
+                        className={`flex flex-row rounded-3xl p-1 ${isMoreMenuOpen ? 'bg-curious-blue-400 dark:bg-mountain-mist-800' : 'bg-curious-blue-700 dark:bg-mountain-mist-950'}`}
+                    >
                         <MdMoreVert size={'1.5em'} />
                     </button>
-                    {isMoreMenuOpen &&
-                        <div className="absolute right-0 top-11 w-48 z-[100] mx-auto flex flex-col bg-curious-blue-700 py-3 shadow-md transition-all dark:bg-mountain-mist-950 dark:group-hover:bg-mountain-mist-950">
+                    {isMoreMenuOpen && (
+                        <div className="absolute right-0 top-11 z-[100] mx-auto flex w-48 flex-col bg-curious-blue-700 py-3 shadow-md transition-all dark:bg-mountain-mist-950 dark:group-hover:bg-mountain-mist-950">
                             <ul id="pythonId" className="flex cursor-pointer flex-col">
-                                {moreMenu.map((item, ci) => (
-                                    <li
-                                        key={ci}
-                                        className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500`}
-                                        onClick={item.clicked}
-                                    >
-                                        <MenuItem
-                                            isConnected={isConnected && !isRunning}
-                                            isOther={false}
-                                            item={item}
-                                        />
-                                    </li>
-                                ))}
+                                {moreMenu.map(
+                                    (item, ci) =>
+                                        // hide ai chat menu item in production
+                                        item.label !== t('ai-chat') && (
+                                            <li
+                                                key={ci}
+                                                className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500`}
+                                                onClick={item.clicked}
+                                            >
+                                                <MenuItem
+                                                    isConnected={isConnected && !isRunning}
+                                                    isOther={false}
+                                                    item={item}
+                                                />
+                                            </li>
+                                        ),
+                                )}
                             </ul>
                         </div>
-        }           
+                    )}
                 </div>
             </div>
             <Dialog isOpen={isDlgOpen} toggleDialog={toggleDialog} ref={dialogRef}>
