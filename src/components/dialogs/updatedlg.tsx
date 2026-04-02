@@ -13,7 +13,14 @@ type UpdateDlgProps = {
     toggleDialog: () => void;
 };
 
-export default function UpdateDlg({ isUpdateMP, isUpdateLib, mpVersion, xrpVersion, updateCallback, toggleDialog }: UpdateDlgProps) {
+export default function UpdateDlg({
+    isUpdateMP,
+    isUpdateLib,
+    mpVersion,
+    xrpVersion,
+    updateCallback,
+    toggleDialog,
+}: UpdateDlgProps) {
     const { t } = useTranslation();
     const [connectionType, setConnectionType] = useState(ConnectionType.USB);
 
@@ -37,38 +44,68 @@ export default function UpdateDlg({ isUpdateMP, isUpdateLib, mpVersion, xrpVersi
     return (
         <div className="flex flex-col items-center gap-4 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
             <div className="flex w-[90%] flex-col items-center">
-                <h1 className="text-lg font-bold text-mountain-mist-700">{t('update')}</h1>
-                <p className="text-sm text-mountain-mist-700">{t('update-desc')}</p>
+                <h1 className="text-lg font-bold text-mountain-mist-700 dark:text-mountain-mist-300">
+                    {t('update')}
+                </h1>
+                <p className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">
+                    {t('update-desc')}
+                </p>
             </div>
             <hr className="w-full border-mountain-mist-600" />
-            <div className='flex flex-col items-start gap-2'>
-                { isUpdateMP && <p className='text-mountain-mist-700 text-md text-left'>{t('update-MP')}</p> }
-                { isUpdateLib && <p className='text-mountain-mist-700 text-md text-left'>{t('update-lib')}</p>}
-                { mpVersion &&
+            <div className="flex flex-col items-start gap-2">
+                {isUpdateMP && (
+                    <p className="text-md text-left text-mountain-mist-700 dark:text-mountain-mist-300">
+                        {t('update-MP')}
+                    </p>
+                )}
+                {isUpdateLib && (
+                    <p className="text-md text-left text-mountain-mist-700 dark:text-mountain-mist-300">
+                        {t('update-lib')}
+                    </p>
+                )}
+                {mpVersion && (
                     <>
-                        <div className='flex flex-row gap-2'>
-                            <label className='text-sm text-mountain-mist-700'>{t('current-mp-version')}</label>
-                            <span className='text-sm text-mountain-mist-900'>{mpVersion?.currentVersion}</span>
+                        <div className="flex flex-row gap-2">
+                            <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">
+                                {t('current-mp-version')}
+                            </label>
+                            <span className="text-sm text-mountain-mist-900 dark:text-mountain-mist-300">
+                                {mpVersion?.currentVersion}
+                            </span>
                         </div>
-                        <div className='flex flex-row gap-2'>
-                            <label className='text-sm text-mountain-mist-700'>{t('available-mp-version')}</label>
-                            <span className='text-sm text-mountain-mist-900'>{mpVersion?.newVersion}</span>
+                        <div className="flex flex-row gap-2">
+                            <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">
+                                {t('available-mp-version')}
+                            </label>
+                            <span className="text-sm text-mountain-mist-900 dark:text-mountain-mist-300">
+                                {mpVersion?.newVersion}
+                            </span>
                         </div>
                     </>
-                }   
-                { xrpVersion && 
+                )}
+                {xrpVersion && (
                     <>
-                        <div className='flex flex-col gap-2'>
-                            <label className='text-sm text-mountain-mist-700'>{t('current-lib-version')}</label>
-                            <span className='text-sm text-mountain-mist-900'>{xrpVersion?.currentVersion}</span>
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">
+                                {t('current-lib-version')}
+                            </label>
+                            <span className="text-sm text-mountain-mist-900 dark:text-mountain-mist-300">
+                                {xrpVersion?.currentVersion}
+                            </span>
                         </div>
-                        <div className='flex flex-col gap-2'>
-                            <label className='text-sm text-mountain-mist-700'>{t('available-lib-version')}</label>
-                            <span className='text-sm text-mountain-mist-900'>{xrpVersion?.newVersion}</span>
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">
+                                {t('available-lib-version')}
+                            </label>
+                            <span className="text-sm text-mountain-mist-900 dark:text-mountain-mist-300">
+                                {xrpVersion?.newVersion}
+                            </span>
                         </div>
                     </>
-                }
-                <p className='text-mountain-mist-700 text-md text-left'>{t('update-inst')}</p>
+                )}
+                <p className="text-md text-left text-mountain-mist-700 dark:text-mountain-mist-300">
+                    {t('update-inst')}
+                </p>
             </div>
             <hr className="w-full border-mountain-mist-600" />
             <DialogFooter
@@ -77,6 +114,6 @@ export default function UpdateDlg({ isUpdateMP, isUpdateLib, mpVersion, xrpVersi
                 btnAcceptCallback={handleUpdate}
                 btnCancelCallback={toggleDialog}
             />
-        </div>        
+        </div>
     );
 }
