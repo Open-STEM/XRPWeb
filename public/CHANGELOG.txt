@@ -1,37 +1,32 @@
 # Version 2.0.18
 
-#### Bluetooth support
-<img height="10%" width="10%" src="src/assets/images/Bluetooth_FM_Black.png"/></img>
+#### XRPCode V2 Beta What’s New
+* Rewritten with modern web tools for more solid and expandable future
+* Google Drive
+    * Files are available even without an XRP attached
+    * When XRP is attached and you are logged into your Google Drive, you will only see your Google Drive files
+    * When a program is run from the Google Drive it is automatically saved to the XRP as well
+    * Note - For security reasons XRPCode can only see the files that it has placed on the Google Drive. From the Google Drive side you can see the files that XRPCode has added. But XRPCode can not see any files that you add to that drive outside of XRPCode.
+* New more intelligent editor for Python files
+    * We are using the same editor as VSCode.
+    * Full Python syntax checking
+    * XRPCode will prompt for XRPLib API functions and parameters
+* Advanced features on the right hand 3 dot menu
+    * Dashboard
+        * Have you ever wondered what the sensors are actually doing on the XRP. With the new Dashboard you can see and graph the values coming back from the XRP. 
+        * Works over USB or Bluetooth
+        * Check out the Dashboard blocks to get started. 
+    * Drivers (with expandable blocks)
+        * Do you have a device that connects to the QWIIC connector? There is now an easy way to install the drivers for that device
+        * If the vendor has supplied them, there can be new blocks for the device under the 3rd Party Blocks category
+    * Multi language support
+        * XRPCode now has support for multiple languages. 
+        * Currently just Spanish has been done
+        * Language will follow the browser settings or can be selected in the settings.
+    * Light and Dark mode themes
+        * Also found in the settings
+    * Backup and Restore
+        * XRPCode users can backup the XRP Robot’s files on the Robot to Google Drive. These files can be restored back to the XRP from Google Drive.
 
-# Please read the steps below!!
-
-* Connect your XRP with a cable
-* Let XRPCode upgrade the Micropython and XRPLib
-* Under the RUN button will be the unique name of the XRP. You will want to write this on the XRP.
-* Disconnect the XRP from the cable and turn on the XRP.
-* When you click CONNECT select Bluetooth and it will bring up a list of XRPs that are not currently connected. (If your XRP does not show up press reset)
-* Select your XRP and click Pair.
-* Once connected XRPCode should be the same as if connected via a cable. YOU ARE NOW CABLE FREE!
-* If the XRP is reset / turned off / too far away XRPCode will show RE-CONNECT XRP for 10 seconds and then switch to CONNECT.
-    * If the XRP is turned back on / brought closer XRPCode will auto re-connect to the XRP within that 10 seconds
-* If you start the XRP and a program runs keeping the bluetooth from connecting then press reset and it will restart without running the program
-
-#### editors
-* The Python editor now supports intellisense and Python syntax
-* The Python editor also knows about XRPLib and the XRPLib API
-* The Block editor is now support custom blocks
-
-#### New Features
-* The XRPCode website is completely redesigned with latest web technologies
-* A dashboard now supports displaying various sensors from the XRP
-* XRPCode nows supports locales
-    * English
-    * Spanish (pending translation)
-* A new AI Chat feature is now available to help you write code
-* Google Drive integration is now available to save and load files
-* Third-party drivers can now be added to XRPCode
-* Theming support for light and dark modes
-* Support the New Puppet Protocol for communication with the XRP Bluetooth (advanced users) [See XPP](https://xrpcode.io/docs/puppet_protocol)
-
-#### Bug Fixes and Improvements
-* [Add backup and restore to from Google Drive](https://github.com/Open-STEM/XRPWeb/issues/236)
+#### Bugs and Feature requests
+* Please report bugs and add feature requests at [XRP Forums](https://xrp.discourse.group/c/support/)
