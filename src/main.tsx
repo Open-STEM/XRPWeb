@@ -5,6 +5,7 @@ import '@/utils/i18n';
 import '@/utils/blockly-global'; // Expose Blockly globally for external plugins
 import App from '@/App.tsx';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { ThemeInit } from '../.flowbite-react/init';
 
 function Root() {
     const [googleClientId, setGoogleClientId] = useState<string | null>(null);
@@ -34,6 +35,7 @@ function Root() {
 
     return (
         <StrictMode>
+            <ThemeInit />
             <GoogleOAuthProvider clientId={googleClientId}>
                 <App />
             </GoogleOAuthProvider>
