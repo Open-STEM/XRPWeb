@@ -1500,23 +1500,19 @@ function NavBar({ layoutref }: NavBarProps) {
                     {isMoreMenuOpen && (
                         <div className="absolute right-0 top-11 z-[100] mx-auto flex w-48 flex-col bg-curious-blue-700 py-3 shadow-md transition-all dark:bg-mountain-mist-950 dark:group-hover:bg-mountain-mist-950">
                             <ul id="pythonId" className="flex cursor-pointer flex-col">
-                                {moreMenu.map(
-                                    (item, ci) =>
-                                        // hide ai chat menu item in production
-                                        item.label !== t('ai-chat') && (
-                                            <li
-                                                key={ci}
-                                                className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500`}
-                                                onClick={item.clicked}
-                                            >
-                                                <MenuItem
-                                                    isConnected={isConnected && !isRunning}
-                                                    isOther={false}
-                                                    item={item}
-                                                />
-                                            </li>
-                                        ),
-                                )}
+                                {moreMenu.map((item, ci) => (
+                                    <li
+                                        key={ci}
+                                        className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500`}
+                                        onClick={item.clicked}
+                                    >
+                                        <MenuItem
+                                            isConnected={isConnected && !isRunning}
+                                            isOther={false}
+                                            item={item}
+                                        />
+                                    </li>
+                                ))}
                             </ul>
                         </div>
                     )}
