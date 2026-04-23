@@ -232,6 +232,7 @@ export default class PluginMgr {
      * Configure non-beta blocks for RP2350 board
      */
     private async configNonBeta(): Promise<void> {
+        const pluginRootUrl = 'plugins/2350/';
         // Add color LED block to Control Board category
         const toolbox = BlocklyConfigs.ToolboxJson;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -242,7 +243,7 @@ export default class PluginMgr {
         );
 
         if (controlBoardCategory) {
-            const colorLEDBlock = await this.loadPluginBlocks('/plugins/2350/nonbeta_blocks.json');
+            const colorLEDBlock = await this.loadPluginBlocks(pluginRootUrl + 'nonbeta_blocks.json');
             controlBoardCategory.contents.push(colorLEDBlock);
         }
 
@@ -250,7 +251,7 @@ export default class PluginMgr {
         this.extendServoArrayForRP2350();
 
         // Load the supporting script (use Vite public root)
-        await this.loadScript('/plugins/2350/nonbeta_blocks.js');
+        await this.loadScript(pluginRootUrl + 'nonbeta_blocks.js');
     }
 
     /**
