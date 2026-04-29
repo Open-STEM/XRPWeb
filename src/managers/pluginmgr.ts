@@ -188,8 +188,12 @@ export default class PluginMgr {
      */
     private async loadPluginBlocks(blocksUrl: string): Promise<PluginBlock[] | null> {
         
+        if(blocksUrl.startsWith('/')){
+            blocksUrl = blocksUrl.slice(1);
+        }
+
         if (process.env.NODE_ENV === 'development') {
-                blocksUrl = '/public' + blocksUrl;
+                blocksUrl = '/public/' + blocksUrl;
             }
         
         try {
@@ -209,9 +213,16 @@ export default class PluginMgr {
      * Load a script dynamically (module import with fallback)
      */
     private async loadScript(scriptUrl: string): Promise<void> {
+         if (scriptUrl.startsWith('/')){
+            scriptUrl = scriptUrl.slice(1);
+         }
+
          if (process.env.NODE_ENV === 'development') {
-                scriptUrl = '/public' + scriptUrl;
+                scriptUrl = '/public/' + scriptUrl;
             }
+         else{
+            scriptUrl = '../' + scriptUrl;
+         }
         
         if (this.loadedScripts.has(scriptUrl)) {
             return; // Already loaded
