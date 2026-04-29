@@ -41,7 +41,7 @@ function XRPDriverInstallDlg({toggleDialog}: XRPDriverInstallsProps) {
                 }
 
                 try {
-                    const response = await fetch('/drivers/drivers.json');
+                    const response = await fetch('drivers/drivers.json');
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
                     }

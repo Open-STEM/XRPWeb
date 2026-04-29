@@ -189,7 +189,7 @@ export default class PluginMgr {
     private async loadPluginBlocks(blocksUrl: string): Promise<PluginBlock[] | null> {
         
         if (process.env.NODE_ENV === 'development') {
-                blocksUrl = '/public' + blocksUrl;
+                blocksUrl = '/public/' + blocksUrl;
             }
         
         try {
@@ -209,9 +209,11 @@ export default class PluginMgr {
      * Load a script dynamically (module import with fallback)
      */
     private async loadScript(scriptUrl: string): Promise<void> {
-         if (process.env.NODE_ENV === 'development') {
-                scriptUrl = '/public' + scriptUrl;
-            }
+        if (process.env.NODE_ENV === 'development') {
+            scriptUrl = '/public/' + scriptUrl;
+        } else {
+            scriptUrl = '../' + scriptUrl;
+        }
         
         if (this.loadedScripts.has(scriptUrl)) {
             return; // Already loaded
@@ -219,8 +221,7 @@ export default class PluginMgr {
 
         try {
             // Dynamic import of the plugin script
-            const url = scriptUrl;
-            await import(/* @vite-ignore */ url);
+            await import(/* @vite-ignore */ scriptUrl);
             this.loadedScripts.add(scriptUrl);
         } catch (error) {
             console.error(`Error loading script ${scriptUrl}:`, error);
