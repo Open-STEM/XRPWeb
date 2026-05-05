@@ -1044,6 +1044,10 @@ export class CommandToXRPMgr {
         return 'firmware2040.uf2';
     }
 
+    isNanoXRP(): boolean {
+        return this.is_NanoXRP;
+    }
+
     /**
      * getMPFilename
      * @returns the MicroPython filename

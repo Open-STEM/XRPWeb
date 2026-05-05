@@ -1135,7 +1135,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                 />,
                             );
                             toggleDialog();
-                        } else if (voltage < 5.0) {
+                        } else if (voltage < (CommandToXRPMgr.getInstance().isNanoXRP() ? 3.3 : 5.0)) {
                             setDialogContent(<BatteryBadDlg cancelCallback={toggleDialog} />);
                             toggleDialog();
                         } else {
