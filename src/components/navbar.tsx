@@ -411,10 +411,7 @@ function NavBar({ layoutref }: NavBarProps) {
             // await CommandToXRPMgr.getInstance().updateMicroPython(dirHandle);
             const fileHandle = await dirHandle?.getFileHandle('firmware.uf2', { create: true });
             writable = await fileHandle!.createWritable();
-            const firmwareFilename =
-                CommandToXRPMgr.getInstance().getXRPDrive() === Constants.XRP_PROCESSOR_BETA
-                    ? 'firmware2040.uf2'
-                    : 'firmware2350.uf2';
+            const firmwareFilename = CommandToXRPMgr.getInstance().getFirmwareFilename();
             AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '10');
             const data = await (await fetch('micropython/' + firmwareFilename)).arrayBuffer();
             await writable.write(data);

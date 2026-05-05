@@ -67,6 +67,8 @@ abstract class Connection {
     abstract disconnect(): Promise<void>;
     abstract isConnected(): boolean;
 
+    isNanoXRP(): boolean { return false; }
+
     /**
      * HandleEsc 
      * @param value 
