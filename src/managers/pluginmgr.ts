@@ -47,10 +47,16 @@ export default class PluginMgr {
     // --- Public Methods ---
     public async pluginCheck(): Promise<void> {
         let needsUpdate = false;
-        
+
         // Check for RP2350 board special case
         if (this.cmdToXRPMgr.getXRPDrive() === "RP2350") {
             await this.configNonBeta();
+            needsUpdate = true;
+        }
+
+        // Add NanoXRP-specific blocks
+        if (this.cmdToXRPMgr.isNanoXRP()) {
+            this.configNanoXRP();
             needsUpdate = true;
         }
 
@@ -229,6 +235,33 @@ export default class PluginMgr {
     }
 
     
+    /**
+     * Add NanoXRP-specific blocks to the toolbox (middle reflectance sensor)
+     */
+    private configNanoXRP(): void {
+        const toolbox = BlocklyConfigs.ToolboxJson;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const contents = toolbox.contents as any[];
+
+        const sensorsCategory = contents.find(cat =>
+            cat.kind === "CATEGORY" && cat.name === "Sensors"
+        );
+
+        if (sensorsCategory) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const reflectanceCategory = sensorsCategory.contents.find((cat: any) =>
+                cat.kind === "CATEGORY" && cat.name === "Reflectance"
+            );
+
+            if (reflectanceCategory) {
+                reflectanceCategory.contents.push({
+                    "kind": "BLOCK",
+                    "type": "xrp_m_refl"
+                });
+            }
+        }
+    }
+
     /**
      * Configure non-beta blocks for RP2350 board
      */

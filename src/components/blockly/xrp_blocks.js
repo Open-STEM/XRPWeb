@@ -308,6 +308,17 @@ Blockly.Blocks['xrp_r_refl'] = {
   }
 };
 
+Blockly.Blocks['xrp_m_refl'] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField("Middle reflectance");
+    this.setOutput(true, null);
+    this.setColour(90); // soft green
+    this.setTooltip("");
+    this.setHelpUrl("");
+  }
+};
+
 //Sensors - Gyro
 Blockly.Blocks['xrp_yaw'] = {
   init: function () {
