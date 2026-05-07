@@ -1106,7 +1106,7 @@ function NavBar({ layoutref }: NavBarProps) {
                     };
 
                     if (connectionType === ConnectionType.USB) {
-                        if (voltage < 0.45) {
+                        if (voltage < 0.45 && !CommandToXRPMgr.getInstance().isNanoXRP()) {
                             // display a confirmation message to ask the user to turn on the power switch
                             const powerswitchImage =
                                 CommandToXRPMgr.getInstance().getXRPDrive() ===
@@ -1125,7 +1125,7 @@ function NavBar({ layoutref }: NavBarProps) {
                             beginExecution();
                         }
                     } else if (connectionType === ConnectionType.BLUETOOTH) {
-                        if (voltage < 0.45) {
+                        if (voltage < 0.45 && !CommandToXRPMgr.getInstance().isNanoXRP()) {
                             // display a confirmation message to ask the user to turn on the power switch
                             //this one will only happen if they are using a power device plugged into the USB port and the power switch is off.
                             setDialogContent(
@@ -1135,7 +1135,7 @@ function NavBar({ layoutref }: NavBarProps) {
                                 />,
                             );
                             toggleDialog();
-                        } else if (voltage < (CommandToXRPMgr.getInstance().isNanoXRP() ? 3.3 : 5.0)) {
+                        } else if (voltage < (CommandToXRPMgr.getInstance().isNanoXRP() ? 3.6 : 5.0)) {
                             setDialogContent(<BatteryBadDlg cancelCallback={toggleDialog} />);
                             toggleDialog();
                         } else {
