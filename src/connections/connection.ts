@@ -67,6 +67,12 @@ abstract class Connection {
     abstract disconnect(): Promise<void>;
     abstract isConnected(): boolean;
 
+    private _isNanoXRP: boolean = false;
+
+    isNanoXRP(): boolean { return this._isNanoXRP; }
+
+    setNanoXRP(val: boolean): void { this._isNanoXRP = val; }
+
     /**
      * HandleEsc 
      * @param value 
