@@ -263,15 +263,6 @@ export class USBConnection extends Connection {
         return this.connectionStates === ConnectionState.Connected;
     }
 
-    public isNanoXRP(): boolean {
-        if (this.port) {
-            const info = this.port.getInfo();
-            return info.usbProductId === this.USB_PRODUCT_ID_NANOXRP &&
-                   info.usbVendorId === this.USB_VENDOR_ID_NANOXRP;
-        }
-        return false;
-    }
-
     /**
      * connection - creates an async connection and return result via promise
      */

@@ -227,7 +227,8 @@ export class CommandToXRPMgr {
                         this.PROCESSOR = 2350;
                     } else if (hiddenLines[1].includes('RP2040')) {
                         this.PROCESSOR = 2040;
-                        this.is_NanoXRP = this.connection?.isNanoXRP() ?? false;
+                        this.is_NanoXRP = hiddenLines[1].includes('NanoXRP');
+                        this.connection?.setNanoXRP(this.is_NanoXRP);
                     }
                 }
                 if(hiddenLines[1].includes('XRP')){ //is this an XRP version of microPython?
@@ -253,7 +254,8 @@ export class CommandToXRPMgr {
         this.lastRun = undefined;
         this.HAS_MICROPYTHON = true;    // this is set after connection is successful
         this.is_NanoXRP = false;
-        
+        this.connection?.setNanoXRP(false);
+
         //get version information from the XRP
         const info = await this.getVersionInfo();
 
