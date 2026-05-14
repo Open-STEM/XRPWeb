@@ -174,6 +174,14 @@ pythonGenerator.forBlock['xrp_r_refl'] = function (block) {
   return [code, pythonGenerator.ORDER_NONE];
 };
 
+// NanoXRP only - middle reflectance sensor
+pythonGenerator.forBlock['xrp_m_refl'] = function (block) {
+  pythonGenerator.definitions_['import_reflectance'] = 'from XRPLib.reflectance import Reflectance';
+  pythonGenerator.definitions_[`reflectance_setup`] = `reflectance = Reflectance.get_default_reflectance()`;
+  var code = `reflectance.get_middle()`;
+  return [code, pythonGenerator.ORDER_NONE];
+};
+
 //Gyro
 pythonGenerator.forBlock['xrp_yaw'] = function (block) {
   pythonGenerator.definitions_['import_imu'] = 'from XRPLib.imu import IMU';
