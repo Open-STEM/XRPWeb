@@ -30,6 +30,7 @@ import { TiArrowSortedDown } from 'react-icons/ti';
 import { IoPlaySharp } from 'react-icons/io5';
 import { MdMoreVert } from 'react-icons/md';
 import { IoStop } from 'react-icons/io5';
+import { IoArrowUpCircle } from 'react-icons/io5';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Dialog from '@components/dialogs/dialog';
@@ -43,6 +44,7 @@ import {
     FileData,
     EditorType,
     FontSize,
+    Versions,
 } from '@/utils/types';
 import { useFilePicker } from 'use-file-picker';
 import { MenuDataItem } from '@/widgets/menutypes';
@@ -64,7 +66,6 @@ import AlertDialog from '@/components/dialogs/alertdlg';
 import BatteryBadDlg from '@/components/dialogs/battery-baddlg';
 import ProgressDlg from '@/components/dialogs/progressdlg';
 import ConfirmationDlg from '@components/dialogs/confirmdlg';
-import UpdateDlg from '@components/dialogs/updatedlg';
 import React from 'react';
 import { CreateEditorTab } from '@/utils/editorUtils';
 import ChangeLogDlg from '@components/dialogs/changelog';
@@ -76,7 +77,10 @@ import powerswitch_beta from '@assets/images/XRP_Controller-Power.jpg';
 import BusyDialog from '@components/dialogs/busydlg';
 import { UAParser } from 'ua-parser-js';
 import backup_restore from '@assets/images/backup_restore.svg';
+import firmwareLoaderIcon from '@assets/images/firmware-loader.svg';
 import BackupRestoreDlg from '@components/dialogs/backup-restoredlg';
+import FirmwareLoaderDlg from '@components/dialogs/firmware-loaderdlg';
+import FirmwareBackupPromptDlg from '@components/dialogs/firmware-backup-promptdlg';
 import BackupDlg from '@components/dialogs/backupdlg';
 import RestoreDlg from '@components/dialogs/restoredlg';
 
@@ -122,6 +126,12 @@ function NavBar({ layoutref }: NavBarProps) {
         },
     });
     const [xprID, setXrpId] = useState<{ platform?: string; XRPID?: string } | null>(null);
+    const [availableUpdate, setAvailableUpdate] = useState<
+        | { kind: 'mp'; versions: Versions }
+        | { kind: 'lib'; versions: Versions }
+        | { kind: 'must-mp' }
+        | null
+    >(null);
     const [activeTab, setActiveTab] = useLocalStorage(StorageKeys.ACTIVETAB, '');
     const authService = AppMgr.getInstance().authService;
     const driveService = AppMgr.getInstance().driveService;
@@ -163,6 +173,7 @@ function NavBar({ layoutref }: NavBarProps) {
                 } else if (state === ConnectionState.Disconnected.toString()) {
                     setConnected(false);
                     setXrpId(null);
+                    setAvailableUpdate(null);
                 }
             });
 
@@ -219,36 +230,40 @@ function NavBar({ layoutref }: NavBarProps) {
                 }
             });
 
+            // Update checks now surface a subtle indicator instead of an auto-popup.
+            // The actual update is performed manually via the Firmware Loader.
             AppMgr.getInstance().on(EventType.EVENT_MICROPYTHON_UPDATE, (versions) => {
-                setDialogContent(
-                    <UpdateDlg
-                        updateCallback={handleMPUpdateCallback}
-                        toggleDialog={toggleDialog}
-                        isUpdateMP={true}
-                        isUpdateLib={false}
-                        mpVersion={JSON.parse(versions)}
-                    />,
-                );
-                toggleDialog();
+                try {
+                    setAvailableUpdate({ kind: 'mp', versions: JSON.parse(versions) });
+                } catch {
+                    setAvailableUpdate({
+                        kind: 'mp',
+                        versions: { currentVersion: '', newVersion: '' },
+                    });
+                }
             });
 
             AppMgr.getInstance().on(EventType.EVENT_XRPLIB_UPDATE, (versions) => {
-                setDialogContent(
-                    <UpdateDlg
-                        updateCallback={handleXRPLibUpdateCallback}
-                        toggleDialog={toggleDialog}
-                        isUpdateMP={false}
-                        isUpdateLib={true}
-                        xrpVersion={JSON.parse(versions)}
-                    />,
-                );
-                toggleDialog();
+                try {
+                    setAvailableUpdate((prev) =>
+                        prev && prev.kind === 'mp'
+                            ? prev
+                            : { kind: 'lib', versions: JSON.parse(versions) },
+                    );
+                } catch {
+                    setAvailableUpdate((prev) =>
+                        prev && prev.kind === 'mp'
+                            ? prev
+                            : {
+                                  kind: 'lib',
+                                  versions: { currentVersion: '', newVersion: '' },
+                              },
+                    );
+                }
             });
 
             AppMgr.getInstance().on(EventType.EVENT_MUST_UPDATE_MICROPYTHON, () => {
-                window.alert('must update MP');
-                //setDialogContent(<ChangeLogDlg closeDialog={toggleDialog}/>);
-                //toggleDialog();
+                setAvailableUpdate((prev) => prev ?? { kind: 'must-mp' });
             });
 
             AppMgr.getInstance().on(EventType.EVENT_SHOWCHANGELOG, (changelog) => {
@@ -376,107 +391,6 @@ function NavBar({ layoutref }: NavBarProps) {
         // set the content in the editor
         const loadContent = { name: filename, path: path, content: text };
         AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
-    }
-
-    /**
-     * handleMPUpdateCallback - handle the MicroPython update callback
-     */
-    function handleMPUpdateCallback() {
-        // ask the user to confirm the update and provide instructions to the user about the update
-        const xrpDrive = CommandToXRPMgr.getInstance().getXRPDrive();
-        setDialogContent(
-            <ConfirmationDlg
-                acceptCallback={handleMPUpdateConfirmed}
-                toggleDialog={toggleDialog}
-                confirmationMessage={t('update-mp-instructions', { drive: xrpDrive })}
-            />,
-        );
-        toggleDialog();
-    }
-
-    /**
-     * handleMPUpdateConfirmed - handle the MicroPython update confirmed
-     * update is confirmed by the user, start the update process
-     */
-    async function handleMPUpdateConfirmed() {
-        toggleDialog();
-        // await CommandToXRPMgr.getInstance().updateMicroPython();
-        let writable: FileSystemWritableFileStream;
-        try {
-            setDialogContent(<ProgressDlg title="mpUpdateTitle" />);
-            toggleDialog();
-            await CommandToXRPMgr.getInstance().enterBootSelect();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const dirHandle = await (window as any).showDirectoryPicker();
-            // await CommandToXRPMgr.getInstance().updateMicroPython(dirHandle);
-            const fileHandle = await dirHandle?.getFileHandle('firmware.uf2', { create: true });
-            writable = await fileHandle!.createWritable();
-            const firmwareFilename =
-                CommandToXRPMgr.getInstance().getXRPDrive() === Constants.XRP_PROCESSOR_BETA
-                    ? 'firmware2040.uf2'
-                    : 'firmware2350.uf2';
-            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '10');
-            const data = await (await fetch('micropython/' + firmwareFilename)).arrayBuffer();
-            await writable.write(data);
-            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');
-            await writable.close();
-        } catch (err) {
-            console.log('Firmware update error: ', err);
-            setDialogContent(
-                <AlertDialog
-                    alertMessage={t('update-mp-error', { error: err })}
-                    toggleDialog={toggleDialog}
-                />,
-            );
-            toggleDialog();
-        }
-        setDialogContent(
-            <AlertDialog alertMessage={t('update-mp-complete')} toggleDialog={toggleDialog} />,
-        );
-        toggleDialog();
-    }
-
-    /**
-     * handleXRPLibUpdateCallback - handle the XRPLib update callback
-     */
-    async function handleXRPLibUpdateCallback() {
-        // ask the user to confirm the update and provide instructions to the user about the update
-        const xrpDrive = CommandToXRPMgr.getInstance().getXRPDrive();
-        toggleDialog(); // close the update dialog first. Can't display a dialog on top of another dialog.
-        setDialogContent(
-            <ConfirmationDlg
-                acceptCallback={handleXRPLibUpdateConfirmed}
-                toggleDialog={toggleDialog}
-                confirmationMessage={t('update-lib-instructions', { drive: xrpDrive })}
-            />,
-        );
-    }
-
-    /**
-     * handleXRPLibUpdateConfirmed - handle the XRPLib update confirmed
-     */
-    async function handleXRPLibUpdateConfirmed() {
-        toggleDialog();
-        try {
-            setDialogContent(<ProgressDlg title="xrpLibUpdateTitle" />);
-            toggleDialog();
-            await CommandToXRPMgr.getInstance().updateLibrary();
-        } catch (err) {
-            console.log('Library update error: ', err);
-            setDialogContent(
-                <AlertDialog
-                    alertMessage={t('update-lib-error', { error: err })}
-                    toggleDialog={toggleDialog}
-                />,
-            );
-            toggleDialog();
-        }
-        toggleDialog();
-        setDialogContent(
-            <AlertDialog alertMessage={t('update-lib-complete')} toggleDialog={toggleDialog} />,
-        );
-        toggleDialog();
-        await CommandToXRPMgr.getInstance().restartXRP();
     }
 
     /**
@@ -1164,6 +1078,41 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
+     * openFirmwareLoaderDialog - swap the current dialog out for the firmware loader
+     */
+    function openFirmwareLoaderDialog() {
+        toggleDialog();
+        setDialogContent(<FirmwareLoaderDlg toggleDialog={toggleDialog} />);
+        toggleDialog();
+    }
+
+    /**
+     * openBackupDialog - swap the current dialog out for the backup flow
+     */
+    function openBackupDialog() {
+        toggleDialog();
+        setDialogContent(<BackupDlg toggleDialog={toggleDialog} />);
+        toggleDialog();
+    }
+
+    /**
+     * onFirmwareLoaderClicked - warn about possible file loss before opening the
+     * full-screen firmware loader. Offers a backup-now path so users don't
+     * accidentally wipe their XRP files during an update or project change.
+     */
+    function onFirmwareLoaderClicked() {
+        setMoreMenuOpen(false);
+        setDialogContent(
+            <FirmwareBackupPromptDlg
+                onBackupNow={openBackupDialog}
+                onContinue={openFirmwareLoaderDialog}
+                onCancel={toggleDialog}
+            />,
+        );
+        toggleDialog();
+    }
+
+    /**
      * onAiClicked - handle the AI button click event
      */
     function onAiClicked() {
@@ -1384,6 +1333,11 @@ function NavBar({ layoutref }: NavBarProps) {
             clicked: onBackupRestoreClicked,
         },
         {
+            label: t('firmwareLoader'),
+            iconImage: firmwareLoaderIcon,
+            clicked: onFirmwareLoaderClicked,
+        },
+        {
             label: t('settings'),
             iconImage: settings,
             clicked: onSettingsClicked,
@@ -1458,6 +1412,31 @@ function NavBar({ layoutref }: NavBarProps) {
                 <div className="flex flex-col items-center text-sm text-shark-300">
                     {xprID && <span>{`XRP-${xprID['XRPID']}`}</span>}
                 </div>
+                {availableUpdate && (
+                    <button
+                        type="button"
+                        id="updateAvailableBtn"
+                        onClick={ChangeLog}
+                        title={
+                            availableUpdate.kind === 'mp'
+                                ? t('updateAvailableMpTooltip', {
+                                      current: availableUpdate.versions.currentVersion,
+                                      next: availableUpdate.versions.newVersion,
+                                  })
+                                : availableUpdate.kind === 'lib'
+                                  ? t('updateAvailableLibTooltip', {
+                                        current: availableUpdate.versions.currentVersion,
+                                        next: availableUpdate.versions.newVersion,
+                                    })
+                                  : t('updateAvailableMustMpTooltip')
+                        }
+                        aria-label={t('updateAvailable')}
+                        className="flex items-center gap-1 rounded-full bg-curious-blue-100 px-2.5 py-1 text-xs font-medium text-curious-blue-900 ring-1 ring-curious-blue-300 hover:bg-curious-blue-200 dark:bg-curious-blue-900/40 dark:text-curious-blue-100 dark:ring-curious-blue-700 dark:hover:bg-curious-blue-900/70"
+                    >
+                        <IoArrowUpCircle size={14} />
+                        <span>{t('updateAvailable')}</span>
+                    </button>
+                )}
                 <button
                     id="connectBtn"
                     className={`text-neutral-900 flex h-full w-[200] items-center justify-center gap-2 rounded-3xl bg-shark-200 px-4 py-2 text-matisse-900 hover:bg-curious-blue-300 dark:bg-shark-600 dark:text-shark-100 dark:hover:bg-shark-500 ${isConnected ? 'hidden' : ''}`}

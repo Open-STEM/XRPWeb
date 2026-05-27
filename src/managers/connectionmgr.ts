@@ -94,10 +94,12 @@ export default class ConnectionMgr {
         //ID this would be a good spot to send window.xrpID to the database
         if (this.xrpID != undefined) {
             const isBLE = connType === ConnectionType.BLUETOOTH;
+            const xrpType = this.cmdToXRPMgr.getXRPType();
             const data = {
                 XRPID: this.xrpID.slice(-5),
                 platform: 'XRP-react',
                 BLE: isBLE,
+                XRPType: xrpType,
             };
 
             // Send this information back to the WPI server

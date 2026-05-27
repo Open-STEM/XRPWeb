@@ -362,6 +362,88 @@ export class CommandToXRPMgr {
         await this.getOnBoardFSTree();
     }
 
+    /**
+     * Set RP2040 vs RP2350 before UF2 install when the user has not connected yet
+     * (getVersionInfo would not have run).
+     */
+    public setProcessorTypeForFirmwareLoader(processor: 2040 | 2350) {
+        this.PROCESSOR = processor;
+    }
+
+    /**
+     * Copy project files described by a firmware-loader project.json manifest.
+     *
+     * Each entry in `urls` is `[deviceDestination, sourcePathRelativeToProjectDir]`:
+     *   - `deviceDestination` is the absolute path written to the XRP filesystem
+     *     (e.g. "/lib/XRPLib/__init__.py" or "/XRPExamples/foo.py").
+     *   - `sourcePathRelativeToProjectDir` is the file's path inside the project
+     *     directory (e.g. "XRPLib/__init__.py"); it is passed to `resolveSourceUrl`
+     *     to obtain the actual fetch URL.
+     *
+     * The caller (firmware-install-wizard) supplies `resolveSourceUrl` so this
+     * manager stays unaware of where the project tree lives on disk.
+     */
+    async updateLibraryFromFirmwareManifest(
+        urls: [string, string][],
+        version: string | undefined,
+        resolveSourceUrl: (sourceRelativePath: string) => string,
+        onProgressPercent?: (pct: number) => void,
+    ) {
+        const versionLabel =
+            version && version.length > 0 && version.toUpperCase() !== 'TBD' ? version : undefined;
+        const versionParts = versionLabel?.split('.') ?? [];
+        const cacheToken =
+            versionParts.length >= 3 ? versionParts[2]! : versionLabel ?? String(Date.now());
+
+        const totalSteps = urls.length + (versionLabel !== undefined ? 1 : 0);
+        if (totalSteps === 0) {
+            return;
+        }
+
+        const emitProgress = (pct: number) => {
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, String(Math.round(pct)));
+            onProgressPercent?.(pct);
+        };
+
+        emitProgress(0);
+        const percent_per = 99 / totalSteps;
+        let cur_percent = percent_per;
+
+        // Wipe well-known library directories before re-populating so removed files
+        // don't linger on the device. Only delete dirs that actually appear in the
+        // manifest, and only well-known ones to avoid clobbering user files.
+        const wipeDirs = ['/lib/XRPLib', '/lib/ble', '/lib/phew'];
+        const destStartsWithDir = (dest: string, dir: string): boolean => {
+            const prefix = dir.endsWith('/') ? dir : dir + '/';
+            return dest === dir || dest.startsWith(prefix) || dest.startsWith(prefix.slice(1));
+        };
+        for (const dir of wipeDirs) {
+            if (urls.some(([dest]) => destStartsWithDir(dest, dir))) {
+                await this.deleteFileOrDir(dir);
+            }
+        }
+
+        for (let i = 0; i < urls.length; i++) {
+            const [deviceDest, sourceRel] = urls[i];
+            const fetchUrl = resolveSourceUrl(sourceRel) + '?version=' + cacheToken;
+            await this.uploadFile(deviceDest, await this.downloadFile(fetchUrl));
+            emitProgress(cur_percent);
+            cur_percent += percent_per;
+        }
+
+        if (versionLabel !== undefined) {
+            await this.uploadFile(
+                'lib/XRPLib/version.py',
+                "__version__ = '" + versionLabel.replace(/'/g, "\\'") + "'\n",
+            );
+            emitProgress(cur_percent);
+            cur_percent += percent_per;
+        }
+
+        emitProgress(100);
+        await this.getOnBoardFSTree();
+    }
+
     async restartXRP() {
         await this.connection?.writeToDevice(this.connection!.CTRL_CMD_SOFTRESET);
     }
@@ -378,14 +460,24 @@ export class CommandToXRPMgr {
         }
     }
 
-    async  downloadFile(filePath:string) {
+    /**
+     * Fetch a file from the web server as raw bytes.
+     *
+     * Returns a Uint8Array (not a string) so binary files such as fonts or
+     * UF2 blobs survive the round-trip. Text files are unaffected because
+     * uploadFile accepts a Uint8Array directly and writes it to the board
+     * verbatim. Previously this used response.text(), which UTF-8-decoded
+     * the body and silently corrupted any byte > 0x7F (binary files and
+     * non-ASCII text alike).
+     */
+    async downloadFile(filePath: string): Promise<Uint8Array> {
         const response = await fetch(filePath);
-    
-        if(response.status != 200) {
+
+        if (response.status != 200) {
             throw new Error("Server Error");
         }
-        // read response stream as text
-        return await response.text();
+        const buf = await response.arrayBuffer();
+        return new Uint8Array(buf);
     }
     
     /*** File Routines  ***/
@@ -1029,6 +1121,14 @@ export class CommandToXRPMgr {
      */
     getXRPDrive(): string {
         return (this.PROCESSOR! === 2350) ? "RP2350" : "RPI-RP2";
+    }
+
+     /**
+     * getXRP
+     * @returns the XRP type
+     */
+     getXRPType(): string {
+        return (this.PROCESSOR! === 2350) ? "V1" : "beta";
     }
 
     /**

@@ -1,0 +1,620 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { IoWarning } from 'react-icons/io5';
+import AppMgr, { EventType } from '@/managers/appmgr';
+import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
+import { USBConnection } from '@/connections/usbconnection';
+import { ConnectionCMD } from '@/utils/types';
+import ProgressBar from 'react-customizable-progressbar';
+
+/** Subset of project manifest needed for install (avoids circular imports with firmware-loaderdlg). */
+export type FirmwareInstallProjectDoc = {
+    urls?: [string, string][];
+    deps?: [string, string][];
+    version?: string;
+    /** Path to UF2 file relative to the project directory (e.g. "firmware.uf2"). */
+    uf2Path?: string;
+};
+
+const FIRMWARE_LOADER_BASE = '/firmware-loader/';
+
+/** Build a site-relative URL for a file under the project directory, encoding any special chars. */
+function projectFileUrl(projectBaseDir: string, relPath: string): string {
+    const cleanRel = relPath.startsWith('/') ? relPath.slice(1) : relPath;
+    return `${FIRMWARE_LOADER_BASE}${projectBaseDir}${cleanRel.split('/').map(encodeURIComponent).join('/')}`;
+}
+
+export type OsFamily = 'win' | 'mac' | 'linux';
+
+export type WizardAssets = {
+    powerOff: Record<string, string>;
+    bootSel: Record<string, string>;
+    selectDir: Record<string, string>;
+    editFiles: Record<string, string>;
+};
+
+function detectOsFamily(): OsFamily {
+    const ua = navigator.userAgent.toLowerCase();
+    if (ua.includes('win')) return 'win';
+    if (ua.includes('mac')) return 'mac';
+    return 'linux';
+}
+
+function boardIdToProcessor(boardId: string): 2040 | 2350 {
+    return boardId === 'xrp-2350' ? 2350 : 2040;
+}
+
+/** BOOTSEL mass-storage drive name for the given XRP board. */
+function expectedDriveForBoard(boardId: string): string {
+    return boardId === 'xrp-2350' ? 'RP2350' : 'RPI-RP2';
+}
+
+/** Returns the *other* board's BOOTSEL drive name, used to reject mis-picks. */
+function otherBoardDriveName(boardId: string): string {
+    return boardId === 'xrp-2350' ? 'RPI-RP2' : 'RP2350';
+}
+
+/**
+ * Resolve the UF2 fetch URL. The project manifest's `uf2Path` is relative to the
+ * project directory (e.g. "firmware.uf2"), so it's joined to the project base.
+ * If absent, falls back to the legacy `public/micropython/` location for backward
+ * compatibility with manifests that haven't been migrated yet.
+ */
+function resolveUf2FetchPath(
+    boardId: string,
+    projectBaseDir: string,
+    uf2Path: string | undefined,
+): string {
+    if (uf2Path && uf2Path.length > 0) {
+        if (uf2Path.startsWith('/')) {
+            return uf2Path.slice(1);
+        }
+        return `${FIRMWARE_LOADER_BASE.slice(1)}${projectBaseDir}${uf2Path}`;
+    }
+    return boardId === 'xrp-2350' ? 'micropython/firmware2350.uf2' : 'micropython/firmware2040.uf2';
+}
+
+function pickImage(map: Record<string, string>, key: string, fallback: string): string {
+    return map[key] ?? fallback;
+}
+
+/**
+ * Wait for the XRP to reappear on USB after a UF2 flash + reboot, and for any
+ * post-connect initialization to settle before the caller starts new commands.
+ *
+ * Approach:
+ * 1. Wait a generous boot window so the board can finish rebooting. The
+ *    browser's `navigator.serial` 'connect' event listener in USBConnection
+ *    will auto-call `tryAutoConnect()` when the XRP re-enumerates — which
+ *    silently connects only if exactly one authorized matching port exists.
+ * 2. After the boot window, periodically call `tryAutoConnectIfSingle()`
+ *    ourselves. This still won't fall through to `requestPort()` (which
+ *    requires a user gesture we no longer have); it just retries the silent
+ *    path in case the 'connect' event handler missed a beat.
+ * 3. Returns false if we never reconnected — in that case the caller should
+ *    show a "Connect to XRP" button so the user can supply a fresh gesture
+ *    and trigger `connect()` (which will either auto-pick the single port or
+ *    open the navigator.serial.requestPort() picker for first-time / multi-
+ *    board cases).
+ * 4. Once connected, also wait for `CommandToXRPMgr.BUSY` to clear. The
+ *    auto-connect path runs `connectCallback` (getToREPL, getOnBoardFSTree,
+ *    getToNormal, …) in the background, and uploadFile is a silent no-op
+ *    while BUSY, so we must let that settle before copying project files.
+ */
+async function waitForUsbReady(
+    timeoutMs: number,
+    bootDelayMs: number = 6000,
+): Promise<boolean> {
+    const app = AppMgr.getInstance();
+    const cmd = CommandToXRPMgr.getInstance();
+    const start = Date.now();
+    const deadline = start + timeoutMs;
+    const isConnected = (): boolean => {
+        try {
+            return app.getConnection()?.isConnected() ?? false;
+        } catch {
+            return false;
+        }
+    };
+    const trySilentReconnect = async (): Promise<void> => {
+        const conn = app.getConnection();
+        if (conn instanceof USBConnection) {
+            try {
+                await conn.tryAutoConnectIfSingle();
+            } catch (e) {
+                console.log('tryAutoConnectIfSingle failed:', e);
+            }
+        }
+    };
+    const settleAfterConnect = async (): Promise<boolean> => {
+        const settleDeadline = Math.min(Date.now() + 20000, deadline);
+        while (Date.now() < settleDeadline) {
+            if (!isConnected()) return false;
+            if (!cmd.BUSY) return true;
+            await new Promise((r) => setTimeout(r, 250));
+        }
+        return isConnected();
+    };
+
+    if (isConnected()) {
+        return await settleAfterConnect();
+    }
+
+    const bootWindowEnd = Math.min(start + bootDelayMs, deadline);
+    while (Date.now() < bootWindowEnd) {
+        if (isConnected()) return await settleAfterConnect();
+        await new Promise((r) => setTimeout(r, 400));
+    }
+
+    let nextRetryAt = Date.now();
+    while (Date.now() < deadline) {
+        if (isConnected()) return await settleAfterConnect();
+        if (Date.now() >= nextRetryAt) {
+            void trySilentReconnect();
+            nextRetryAt = Date.now() + 3000;
+        }
+        await new Promise((r) => setTimeout(r, 400));
+    }
+    return isConnected() ? await settleAfterConnect() : false;
+}
+
+type FirmwareInstallWizardProps = {
+    boardId: string;
+    projectDoc: FirmwareInstallProjectDoc;
+    /**
+     * Project directory relative to `/firmware-loader/`, with trailing slash
+     * (e.g. "boards/xrp-2350/micropython/"). UF2 and library file fetches are
+     * resolved against this base.
+     */
+    projectBaseDir: string;
+    assets: WizardAssets;
+    onCancel: () => void;
+    onComplete: () => void;
+};
+
+type WizardUiPhase =
+    | { kind: 'instruction'; step: 1 | 2 | 3 }
+    | { kind: 'uf2' }
+    | { kind: 'libs'; waitingUsb: boolean; needsManualConnect: boolean }
+    | { kind: 'success' };
+
+/**
+ * Multi-step install flow: instructional steps 1–3, UF2 copy (auto-starts after step 3),
+ * optional USB reconnect + library copy, success.
+ */
+export default function FirmwareInstallWizard({
+    boardId,
+    projectDoc,
+    projectBaseDir,
+    assets,
+    onCancel,
+    onComplete,
+}: FirmwareInstallWizardProps) {
+    const { t } = useTranslation();
+    const os = useMemo(() => detectOsFamily(), []);
+
+    const cmd = CommandToXRPMgr.getInstance();
+
+    useEffect(() => {
+        cmd.setProcessorTypeForFirmwareLoader(boardIdToProcessor(boardId));
+    }, [boardId, cmd]);
+
+    const [phase, setPhase] = useState<WizardUiPhase>({ kind: 'instruction', step: 1 });
+    const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
+    const [uf2Pct, setUf2Pct] = useState(0);
+    const [libPct, setLibPct] = useState(0);
+    const [error, setError] = useState<string | null>(null);
+
+    const urls = projectDoc.urls ?? [];
+    const needsLibraryPhase = urls.length > 0;
+
+    const selectDirKey = `${boardId}-${os}`;
+    const fallbackBoardImg =
+        pickImage(assets.powerOff, boardId, '/firmware-loader/images/board-xrp-beta.jpg') ||
+        '/firmware-loader/images/board-xrp-beta.jpg';
+
+    const imgPowerOff = pickImage(assets.powerOff, boardId, fallbackBoardImg);
+    const imgBootSel = pickImage(assets.bootSel, boardId, fallbackBoardImg);
+    const imgSelectDir = pickImage(assets.selectDir, selectDirKey, fallbackBoardImg);
+
+    /**
+     * Run the library/project file copy phase. Used both as the second half
+     * of runFlashAndLibrary and as a standalone retry (e.g. after a manual
+     * Connect click). The autoFirst flag controls whether to attempt a
+     * silent auto-reconnect first; when the user has just clicked "Connect
+     * to XRP" (which already triggered connect()), we skip the auto attempt
+     * since the connection is already in flight.
+     */
+    const runLibraryCopy = useCallback(
+        async (opts: { autoFirst: boolean }) => {
+            setError(null);
+            setPhase({ kind: 'libs', waitingUsb: true, needsManualConnect: false });
+            setLibPct(0);
+
+            try {
+                // First try a short, silent auto-reconnect window. If that
+                // fails, surface the manual Connect button so the user can
+                // supply a fresh gesture for navigator.serial.requestPort().
+                let connected = false;
+                if (opts.autoFirst) {
+                    connected = await waitForUsbReady(15000);
+                }
+                if (!connected) {
+                    setPhase({ kind: 'libs', waitingUsb: true, needsManualConnect: true });
+                    // Wait (up to ~2 min) for the user to click Connect and
+                    // a connection to land. The click handler emits
+                    // CONNECT_USB which eventually flips isConnected() true.
+                    connected = await waitForUsbReady(120000, 0);
+                }
+                if (!connected) {
+                    throw new Error(t('firmwareWizardConnectTimeout'));
+                }
+
+                setPhase({ kind: 'libs', waitingUsb: false, needsManualConnect: false });
+
+                await cmd.updateLibraryFromFirmwareManifest(
+                    urls as [string, string][],
+                    projectDoc.version,
+                    (rel) => projectFileUrl(projectBaseDir, rel),
+                    (pct) => setLibPct(Math.round(pct)),
+                );
+
+                await cmd.restartXRP();
+                setPhase({ kind: 'success' });
+            } catch (e) {
+                const msg = e instanceof Error ? e.message : String(e);
+                setError(msg);
+                setPhase({ kind: 'libs', waitingUsb: false, needsManualConnect: false });
+            }
+        },
+        [cmd, projectBaseDir, projectDoc.version, t, urls],
+    );
+
+    const runFlashAndLibrary = useCallback(async () => {
+        setError(null);
+        setPhase({ kind: 'uf2' });
+        setUf2Pct(0);
+        cmd.setProcessorTypeForFirmwareLoader(boardIdToProcessor(boardId));
+
+        try {
+            if (!dirHandle) {
+                throw new Error(t('firmwareWizardNoFolder'));
+            }
+
+            // Belt-and-suspenders: pickFolder already rejects the wrong
+            // board's BOOTSEL drive, but if state was carried over from a
+            // previous run or a different board's flow, double-check here
+            // before we actually write any bytes to the drive.
+            const wrongDrive = otherBoardDriveName(boardId);
+            if (dirHandle.name === wrongDrive) {
+                const expected = expectedDriveForBoard(boardId);
+                throw new Error(
+                    t('firmwareWizardWrongDrive', { picked: dirHandle.name, expected }),
+                );
+            }
+
+            // Re-confirm readwrite access on the directory while the user
+            // gesture from clicking "Start firmware copy" is still fresh.
+            // The picker was opened with mode: 'readwrite' so this should
+            // be a no-op on modern Chrome, but on older browsers (or if the
+            // permission has since been downgraded) we get one more chance
+            // to elevate before any awaits consume the gesture.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const handle = dirHandle as any;
+            if (typeof handle.requestPermission === 'function') {
+                const perm = await handle.requestPermission({ mode: 'readwrite' });
+                if (perm !== 'granted') {
+                    throw new Error(t('firmwareWizardNoFolder'));
+                }
+            }
+
+            // If the XRP is currently sitting at the MicroPython REPL, ask
+            // it to drop into BOOTSEL. We do this *after* the permission
+            // recheck above so that the await here can't strip our user
+            // gesture before createWritable() runs.
+            if (AppMgr.getInstance().getConnection()?.isConnected()) {
+                try {
+                    await cmd.enterBootSelect();
+                } catch (e) {
+                    console.log('enterBootSelect:', e);
+                }
+            }
+
+            setUf2Pct(8);
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '8');
+
+            const fileHandle = await handle.getFileHandle('firmware.uf2', { create: true });
+            const writable = await fileHandle.createWritable();
+
+            const uf2Src = resolveUf2FetchPath(boardId, projectBaseDir, projectDoc.uf2Path);
+            setUf2Pct(15);
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '15');
+            const response = await fetch(uf2Src);
+            if (!response.ok) {
+                throw new Error(`${uf2Src}: ${response.status}`);
+            }
+            const data = await response.arrayBuffer();
+            setUf2Pct(55);
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '55');
+            await writable.write(data);
+            setUf2Pct(100);
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');
+
+            // Closing the writable is best-effort: as soon as the UF2 is
+            // fully written, the RP2350 bootloader latches onto it and
+            // disconnects the mass-storage drive, which can cause close()
+            // to reject with NotFoundError or "aborted due to security
+            // policy". The flash itself has already begun, so swallow the
+            // error and proceed to the library copy phase.
+            try {
+                await writable.close();
+            } catch (e) {
+                console.log('writable.close (ignored, drive likely already rebooted):', e);
+            }
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            setError(msg);
+            setPhase({ kind: 'instruction', step: 3 });
+            return;
+        }
+
+        if (!needsLibraryPhase) {
+            setPhase({ kind: 'success' });
+            return;
+        }
+
+        await runLibraryCopy({ autoFirst: true });
+    }, [boardId, cmd, dirHandle, needsLibraryPhase, t, runLibraryCopy]);
+
+    const runLibraryPhaseOnly = useCallback(async () => {
+        await runLibraryCopy({ autoFirst: true });
+    }, [runLibraryCopy]);
+
+    /**
+     * Handler for the "Connect to XRP" button shown when silent auto-
+     * reconnect doesn't land. This runs inside a fresh click handler so the
+     * user gesture is alive — emit CONNECT_USB, which lets the connection
+     * manager call connect() → tryAutoConnect (1-port case) or
+     * navigator.serial.requestPort() (0-port first-time / multi-port cases).
+     */
+    const onConnectToXrpClicked = () => {
+        AppMgr.getInstance().emit(EventType.EVENT_CONNECTION, ConnectionCMD.CONNECT_USB);
+    };
+
+    const onInstructionNext = () => {
+        if (phase.kind !== 'instruction') return;
+        const s = phase.step;
+        if (s < 3) {
+            setPhase({ kind: 'instruction', step: (s + 1) as 2 | 3 });
+            return;
+        }
+        void runFlashAndLibrary();
+    };
+
+    const pickFolder = async () => {
+        setError(null);
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const w = window as any;
+            if (typeof w.showDirectoryPicker !== 'function') {
+                throw new Error(t('firmwareWizardNoFolderPicker'));
+            }
+            // Ask for readwrite up-front while we still have a fresh user
+            // gesture (the click on "Choose folder"). If we leave it as the
+            // default 'read', Chrome will need a second permission prompt
+            // when createWritable() is called later, and after the awaits in
+            // runFlashAndLibrary the user gesture has been consumed —
+            // resulting in a SecurityError "aborted due to security policy".
+            const h = await w.showDirectoryPicker({ mode: 'readwrite' });
+
+            // Reject the other board's BOOTSEL drive — writing a 2350 UF2
+            // to an RP2040 (or vice versa) would brick the board or fail
+            // silently. We only reject when the picked drive name matches
+            // the *wrong* board's well-known BOOTSEL volume name; any other
+            // folder name (including the right one or something unrelated)
+            // is left to the user.
+            const wrongDrive = otherBoardDriveName(boardId);
+            if (h.name === wrongDrive) {
+                const expected = expectedDriveForBoard(boardId);
+                throw new Error(
+                    t('firmwareWizardWrongDrive', { picked: h.name, expected }),
+                );
+            }
+            setDirHandle(h);
+        } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            setError(msg);
+        }
+    };
+
+    const headerSubtitle =
+        phase.kind === 'instruction'
+            ? t('firmwareWizardStepCounter', { step: phase.step })
+            : phase.kind === 'uf2'
+              ? t('firmwareWizardPhaseUf2')
+              : phase.kind === 'libs'
+                ? phase.waitingUsb
+                    ? t('firmwareWizardPhaseWaitUsb')
+                    : t('firmwareWizardPhaseLibs')
+                : '';
+
+    return (
+        <div className="flex min-h-0 flex-1 flex-col">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-mountain-mist-600 dark:text-shark-400">{headerSubtitle}</p>
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="rounded-lg border border-mountain-mist-300 px-3 py-1.5 text-sm dark:border-shark-600"
+                >
+                    {t('firmwareWizardExitWizard')}
+                </button>
+            </div>
+
+            {error && (
+                <div
+                    role="alert"
+                    className="mb-4 flex items-start gap-3 rounded-lg border-l-8 border-red-700 bg-red-600 p-4 text-base font-semibold text-white shadow-lg dark:border-red-400 dark:bg-red-700"
+                >
+                    <IoWarning size={28} className="mt-0.5 shrink-0" aria-hidden="true" />
+                    <span className="break-words">{error}</span>
+                </div>
+            )}
+
+            {phase.kind === 'instruction' && (
+                <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-6">
+                    {phase.step === 1 && (
+                        <>
+                            <h2 className="text-center text-lg font-semibold">{t('firmwareWizardStep1Title')}</h2>
+                            <img src={imgPowerOff} alt="" className="max-h-72 w-full rounded-lg object-contain" />
+                            <p className="text-center text-sm text-mountain-mist-700 dark:text-shark-300">
+                                {t('firmwareWizardStep1Body')}
+                            </p>
+                        </>
+                    )}
+                    {phase.step === 2 && (
+                        <>
+                            <h2 className="text-center text-lg font-semibold">{t('firmwareWizardStep2Title')}</h2>
+                            <img src={imgBootSel} alt="" className="max-h-72 w-full rounded-lg object-contain" />
+                            <p className="text-center text-sm text-mountain-mist-700 dark:text-shark-300">
+                                {t('firmwareWizardStep2Body')}
+                            </p>
+                        </>
+                    )}
+                    {phase.step === 3 && (
+                        <>
+                            <h2 className="text-center text-lg font-semibold">{t('firmwareWizardStep3Title')}</h2>
+                            <img src={imgSelectDir} alt="" className="max-h-72 w-full rounded-lg object-contain" />
+                            <p className="mb-2 text-center text-sm text-mountain-mist-700 dark:text-shark-300">
+                                {t('firmwareWizardStep3Body', { drive: cmd.getXRPDrive() })}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => void pickFolder()}
+                                className="rounded-lg bg-curious-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-curious-blue-700"
+                            >
+                                {t('firmwareWizardChooseFolder')}
+                            </button>
+                            {dirHandle && (
+                                <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                                    {t('firmwareWizardFolderReady')}
+                                </p>
+                            )}
+                        </>
+                    )}
+                    <div className="flex w-full justify-end gap-3">
+                        {phase.step === 3 ? (
+                            <button
+                                type="button"
+                                disabled={!dirHandle}
+                                onClick={onInstructionNext}
+                                className="rounded-lg bg-curious-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-curious-blue-700 disabled:opacity-50"
+                            >
+                                {t('firmwareWizardStartFlash')}
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={onInstructionNext}
+                                className="rounded-lg bg-curious-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-curious-blue-700"
+                            >
+                                {t('firmwareWizardNext')}
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {phase.kind === 'uf2' && (
+                <div className="relative mx-auto flex w-full max-w-md flex-col items-center gap-6 py-8">
+                    <h2 className="text-lg font-semibold">{t('firmwareWizardUf2Title')}</h2>
+                    <ProgressBar
+                        radius={100}
+                        progress={uf2Pct}
+                        strokeColor="#0a96ed"
+                        strokeLinecap="square"
+                        trackStrokeWidth={18}
+                    >
+                        <div className="absolute flex h-full w-full items-center justify-center">
+                            <span className="text-2xl text-mountain-mist-700 dark:text-shark-200">{uf2Pct}%</span>
+                        </div>
+                    </ProgressBar>
+                    <p className="text-center text-sm text-mountain-mist-600 dark:text-shark-400">
+                        {t('firmwareWizardUf2Wait')}
+                    </p>
+                </div>
+            )}
+
+            {phase.kind === 'libs' && (
+                <div className="relative mx-auto flex w-full max-w-md flex-col items-center gap-6 py-8">
+                    <h2 className="text-lg font-semibold">{t('firmwareWizardLibsTitle')}</h2>
+                    {phase.waitingUsb ? (
+                        <>
+                            <p className="text-center text-sm text-mountain-mist-700 dark:text-shark-300">
+                                {phase.needsManualConnect
+                                    ? t('firmwareWizardManualConnectBody')
+                                    : t('firmwareWizardConnectBody')}
+                            </p>
+                            {phase.needsManualConnect && (
+                                <button
+                                    type="button"
+                                    onClick={onConnectToXrpClicked}
+                                    className="rounded-lg bg-curious-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-curious-blue-700"
+                                >
+                                    {t('firmwareWizardConnectToXrp')}
+                                </button>
+                            )}
+                        </>
+                    ) : (
+                        <div className="relative w-full">
+                            <ProgressBar
+                                radius={100}
+                                progress={libPct}
+                                strokeColor="#0a96ed"
+                                strokeLinecap="square"
+                                trackStrokeWidth={18}
+                            >
+                                <div className="absolute flex h-full w-full items-center justify-center">
+                                    <span className="text-2xl text-mountain-mist-700 dark:text-shark-200">
+                                        {libPct}%
+                                    </span>
+                                </div>
+                            </ProgressBar>
+                        </div>
+                    )}
+                    {error && !phase.waitingUsb && (
+                        <button
+                            type="button"
+                            onClick={() => void runLibraryPhaseOnly()}
+                            className="rounded-lg border border-mountain-mist-300 px-4 py-2 text-sm dark:border-shark-600"
+                        >
+                            {t('firmwareWizardRetryLibrary')}
+                        </button>
+                    )}
+                </div>
+            )}
+
+            {phase.kind === 'success' && (
+                <div className="fixed inset-0 z-[1002] flex items-center justify-center bg-black/40 px-4">
+                    <div className="w-full max-w-md rounded-lg border border-mountain-mist-200 bg-white p-8 shadow-xl dark:border-shark-600 dark:bg-shark-900">
+                        <h2 className="mb-4 text-center text-lg font-bold text-mountain-mist-900 dark:text-shark-100">
+                            {t('firmwareWizardSuccessTitle')}
+                        </h2>
+                        <p className="mb-6 text-center text-sm text-mountain-mist-700 dark:text-shark-300">
+                            {t('firmwareWizardSuccessBody')}
+                        </p>
+                        <div className="flex justify-center">
+                            <button
+                                type="button"
+                                onClick={onComplete}
+                                className="rounded-lg bg-curious-blue-600 px-8 py-2.5 text-sm font-medium text-white hover:bg-curious-blue-700"
+                            >
+                                {t('okButton')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
