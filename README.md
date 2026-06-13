@@ -12,6 +12,37 @@ The XRP software platform is an integrated development environment where you can
 - **Python** (v3.8 or higher) 
 - **npm** or **yarn**
 
+### Development Environment Setup
+
+- Install VSCode or Google Antigravity
+- Install IDE Extensions
+    - Pylance
+    - Python
+    - ESLint
+    - Prettier
+    - Git Graph
+    - Tailwind CSS IntelliSense
+- Install NodeJS
+- Install Python
+- Setup Python Virtual Environment
+
+#### Debugging
+
+- Create a launch.json file in the .vscode directory to debug the frontend
+```json
+{
+  "configurations": [
+    {
+      "name": "XRP Web",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}"
+    }
+  ]
+}
+```
+
 ### Frontend Setup
 
 1. **Clone the repository**

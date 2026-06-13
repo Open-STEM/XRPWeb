@@ -232,7 +232,7 @@ class Puppet:
         """
         if self._poll_timer_running:
             self._poll_timer.deinit()
-            kbd_intr(03) #start watching for ctrl-c again
+            kbd_intr(3) #start watching for ctrl-c again
             self._poll_timer_running = False
         if self._stdin_poll is not None:
             try:

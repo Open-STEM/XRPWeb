@@ -299,7 +299,6 @@ function NavBar({ layoutref }: NavBarProps) {
             });
 
             AppMgr.getInstance().on(EventType.EVENT_HIDE_BLUETOOTH_CONNECTING, () => {
-                setDialogContent(<div />);
                 toggleDialog();
             });
 
