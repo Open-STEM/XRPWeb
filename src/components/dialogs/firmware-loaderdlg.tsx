@@ -2,12 +2,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoClose } from 'react-icons/io5';
 import FirmwareInstallWizard, { type WizardAssets } from '@/components/dialogs/firmware-install-wizard';
+import {
+    isInstallable,
+    parseProjectDoc,
+    resolveInstall,
+    type ResolvedInstall,
+} from '@/utils/firmware-loader';
 
 const FIRMWARE_LOADER_BASE = '/firmware-loader/';
 const ROOT_MANIFEST = 'index.json';
-
-/** Pair of [path on device including directories, source] — same shape as public/lib/package.json `urls`. */
-export type FirmwareFileEntry = [string, string];
 
 export type FirmwareBoardEntry = {
     id: string;
@@ -17,7 +20,7 @@ export type FirmwareBoardEntry = {
     nextLevel?: string;
 };
 
-/** Project row in `boards/*.json` — display only; file lists live in `nextLevel` JSON. */
+/** Project row in `boards/*.json` — display only; install details live in `nextLevel` project.json. */
 export type FirmwareProjectSummary = {
     id: string;
     name: string;
@@ -26,18 +29,12 @@ export type FirmwareProjectSummary = {
     nextLevel?: string;
 };
 
+/** A navigation level: the board selector (index.json) or a board's project list (boards/<id>.json). */
 export type FirmwareLevelDocument = {
     title: string;
     description?: string;
     boards: FirmwareBoardEntry[];
     projects: FirmwareProjectSummary[];
-    /** Per-file entries: [deviceDestinationPath, sourcePathRelativeToProjectDir]. */
-    urls?: FirmwareFileEntry[];
-    /** Legacy deps array; new project.json files no longer use this. */
-    deps?: FirmwareFileEntry[];
-    version?: string;
-    /** Path to the UF2 relative to the project directory (e.g. "firmware.uf2"). */
-    uf2Path?: string;
     /** Optional further step after reviewing this manifest */
     nextLevel?: string;
 };
@@ -45,28 +42,6 @@ export type FirmwareLevelDocument = {
 type FirmwareLoaderDlgProps = {
     toggleDialog: () => void;
 };
-
-function isFileEntryTuple(v: unknown): v is FirmwareFileEntry {
-    return (
-        Array.isArray(v) &&
-        v.length === 2 &&
-        typeof v[0] === 'string' &&
-        typeof v[1] === 'string'
-    );
-}
-
-function parseFileTupleArray(raw: unknown, label: string): FirmwareFileEntry[] {
-    if (raw === undefined) {
-        return [];
-    }
-    if (!Array.isArray(raw)) {
-        throw new Error(`Invalid firmware loader manifest: ${label} must be an array`);
-    }
-    if (!raw.every(isFileEntryTuple)) {
-        throw new Error(`Invalid firmware loader manifest: ${label} entries must be [string, string] pairs`);
-    }
-    return raw;
-}
 
 function parseLevelDocument(raw: unknown): FirmwareLevelDocument {
     if (raw === null || typeof raw !== 'object') {
@@ -93,22 +68,13 @@ function parseLevelDocument(raw: unknown): FirmwareLevelDocument {
         }
     }
 
-    const urls = parseFileTupleArray(o.urls, 'urls');
-    const deps = parseFileTupleArray(o.deps, 'deps');
-
-    const version = o.version === undefined ? undefined : String(o.version);
     const nextLevel = typeof o.nextLevel === 'string' && o.nextLevel ? o.nextLevel : undefined;
-    const uf2Path = typeof o.uf2Path === 'string' && o.uf2Path ? o.uf2Path : undefined;
 
     return {
         title: o.title,
         description: typeof o.description === 'string' ? o.description : undefined,
         boards,
         projects,
-        urls: urls.length > 0 ? urls : undefined,
-        deps: deps.length > 0 ? deps : undefined,
-        version,
-        uf2Path,
         nextLevel,
     };
 }
@@ -180,11 +146,7 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
     const [loading, setLoading] = useState(true);
     /** `undefined` = still loading wizard image map; `null` = failed to load. */
     const [wizardAssets, setWizardAssets] = useState<WizardAssets | null | undefined>(undefined);
-    const [installContext, setInstallContext] = useState<{
-        boardId: string;
-        doc: FirmwareLevelDocument;
-        projectBaseDir: string;
-    } | null>(null);
+    const [installContext, setInstallContext] = useState<ResolvedInstall | null>(null);
     /** Friendly title shown when a clicked project has no installable content yet. */
     const [unavailableProject, setUnavailableProject] = useState<string | null>(null);
     /** True while a project.json is being fetched after a project tile click. */
@@ -259,11 +221,8 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
             if (!response.ok) {
                 throw new Error(`${response.status} ${response.statusText}`);
             }
-            const projectDoc = parseLevelDocument(await response.json());
-            const hasInstallable =
-                (projectDoc.urls && projectDoc.urls.length > 0) ||
-                (projectDoc.uf2Path !== undefined && projectDoc.uf2Path !== '');
-            if (!hasInstallable) {
+            const projectDoc = parseProjectDoc(await response.json());
+            if (!isInstallable(projectDoc)) {
                 setUnavailableProject(projectDoc.title || project.name);
                 return;
             }
@@ -272,7 +231,8 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
             if (!bid || !baseDir) {
                 throw new Error(`Could not resolve install context from ${next}`);
             }
-            setInstallContext({ boardId: bid, doc: projectDoc, projectBaseDir: baseDir });
+            const resolved = await resolveInstall(bid, baseDir, projectDoc);
+            setInstallContext(resolved);
         } catch (e) {
             setLoadError(e instanceof Error ? e.message : String(e));
         } finally {
@@ -348,8 +308,9 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
                 {installContext && wizardAssets && (
                     <FirmwareInstallWizard
                         boardId={installContext.boardId}
-                        projectDoc={installContext.doc}
-                        projectBaseDir={installContext.projectBaseDir}
+                        uf2Url={installContext.uf2Url}
+                        libraryEntries={installContext.libraryEntries}
+                        xrplibVersion={installContext.xrplibVersion}
                         assets={wizardAssets}
                         onCancel={() => setInstallContext(null)}
                         onComplete={() => {

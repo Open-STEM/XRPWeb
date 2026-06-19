@@ -11,7 +11,54 @@ import { Uri } from 'vscode';
 import * as JSZip from 'jszip';
 
 const languageId = 'python';
+const FIRMWARE_LOADER_BASE = '/firmware-loader/';
 let files: { [id: string]: string } = {};
+
+/** Compare dotted version strings; returns >0 when `a` is newer than `b`. */
+function compareVersions(a: string, b: string): number {
+    const pa = a.split('.').map((n) => parseInt(n, 10) || 0);
+    const pb = b.split('.').map((n) => parseInt(n, 10) || 0);
+    const len = Math.max(pa.length, pb.length);
+    for (let i = 0; i < len; i++) {
+        const d = (pa[i] ?? 0) - (pb[i] ?? 0);
+        if (d !== 0) return d;
+    }
+    return 0;
+}
+
+/**
+ * Resolve the URL of the newest XRPLib release's LSP zip from the firmware-loader
+ * registry (boards/XRPLib/index.json). The zip is expected to already exist in
+ * the release directory (boards/XRPLib/<version>/xrplib.zip).
+ *
+ * The language server loads XRPLib stubs before any robot is connected, so it
+ * cannot know which XRPLib version is actually installed — the latest available
+ * release is used as a reasonable default. Returns null if the registry can't be
+ * read or has no usable versions, in which case the XRPLib stubs are skipped.
+ */
+async function resolveLatestXrplibZipUrl(): Promise<string | null> {
+    try {
+        const res = await fetch(`${FIRMWARE_LOADER_BASE}boards/XRPLib/index.json`);
+        if (!res.ok) return null;
+        const json = await res.json();
+        const versions: { dir?: string; version?: string }[] = Array.isArray(json?.versions)
+            ? json.versions
+            : [];
+        let latestDir: string | undefined;
+        let latestVersion: string | undefined;
+        for (const v of versions) {
+            if (!v?.dir || !v?.version) continue;
+            if (latestVersion === undefined || compareVersions(v.version, latestVersion) > 0) {
+                latestVersion = v.version;
+                latestDir = v.dir;
+            }
+        }
+        return latestDir ? `${FIRMWARE_LOADER_BASE}boards/XRPLib/${latestDir}/xrplib.zip` : null;
+    } catch (e) {
+        console.error('resolveLatestXrplibZipUrl failed', e);
+        return null;
+    }
+}
 
 /**
  * read file contents from zip file using jszip
@@ -58,7 +105,10 @@ export const initializedAndStartLanguageClient = async () => {
     files1 = await readZipFile(
         new URL('./stdlib-source-with-typeshed-pyi.zip', window.location.href).href,
     );
-    files2 = await readZipFile(new URL('./XRPLib.zip', window.location.href).href);
+    const xrplibZipUrl = await resolveLatestXrplibZipUrl();
+    if (xrplibZipUrl) {
+        files2 = await readZipFile(xrplibZipUrl);
+    }
     files = Object.assign({}, files1, files2);
 
     await whenReady();

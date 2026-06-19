@@ -249,6 +249,15 @@ export default class AppMgr {
     }
 
     /**
+     * republishConnectionId - re-publish the connected XRP's identity (shown next
+     * to the RUN button). Used by flows that connect outside the normal connect
+     * path (e.g. the firmware install wizard). No-op when not connected.
+     */
+    public async republishConnectionId(): Promise<void> {
+        await this._connectionMgr?.publishConnectionInfo();
+    }
+
+    /**
      * getConnectionType - return the type of active connection, i.e., bluetooth or USB
      * @returns ConnectionType
      */

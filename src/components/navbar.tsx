@@ -1152,6 +1152,21 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
+     * onUpdateAvailableClicked - show the firmware/library release notes for the
+     * available update. Uses the board-specific MicroPython changelog rather than
+     * the application-wide changelog.
+     */
+    function onUpdateAvailableClicked() {
+        setDialogContent(
+            <ChangeLogDlg
+                closeDialog={toggleDialog}
+                changelogUrl="firmware-loader/boards/xrp-2350/micropython/CHANGELOG.txt"
+            />,
+        );
+        toggleDialog();
+    }
+
+    /**
      * toggleMoreDropdown - toggle the more dropdown menu
      */
     function toggleMoreDropdown() {
@@ -1416,7 +1431,7 @@ function NavBar({ layoutref }: NavBarProps) {
                     <button
                         type="button"
                         id="updateAvailableBtn"
-                        onClick={ChangeLog}
+                        onClick={onUpdateAvailableClicked}
                         title={
                             availableUpdate.kind === 'mp'
                                 ? t('updateAvailableMpTooltip', {

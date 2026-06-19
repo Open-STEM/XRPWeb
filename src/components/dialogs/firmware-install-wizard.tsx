@@ -7,23 +7,6 @@ import { USBConnection } from '@/connections/usbconnection';
 import { ConnectionCMD } from '@/utils/types';
 import ProgressBar from 'react-customizable-progressbar';
 
-/** Subset of project manifest needed for install (avoids circular imports with firmware-loaderdlg). */
-export type FirmwareInstallProjectDoc = {
-    urls?: [string, string][];
-    deps?: [string, string][];
-    version?: string;
-    /** Path to UF2 file relative to the project directory (e.g. "firmware.uf2"). */
-    uf2Path?: string;
-};
-
-const FIRMWARE_LOADER_BASE = '/firmware-loader/';
-
-/** Build a site-relative URL for a file under the project directory, encoding any special chars. */
-function projectFileUrl(projectBaseDir: string, relPath: string): string {
-    const cleanRel = relPath.startsWith('/') ? relPath.slice(1) : relPath;
-    return `${FIRMWARE_LOADER_BASE}${projectBaseDir}${cleanRel.split('/').map(encodeURIComponent).join('/')}`;
-}
-
 export type OsFamily = 'win' | 'mac' | 'linux';
 
 export type WizardAssets = {
@@ -52,26 +35,6 @@ function expectedDriveForBoard(boardId: string): string {
 /** Returns the *other* board's BOOTSEL drive name, used to reject mis-picks. */
 function otherBoardDriveName(boardId: string): string {
     return boardId === 'xrp-2350' ? 'RPI-RP2' : 'RP2350';
-}
-
-/**
- * Resolve the UF2 fetch URL. The project manifest's `uf2Path` is relative to the
- * project directory (e.g. "firmware.uf2"), so it's joined to the project base.
- * If absent, falls back to the legacy `public/micropython/` location for backward
- * compatibility with manifests that haven't been migrated yet.
- */
-function resolveUf2FetchPath(
-    boardId: string,
-    projectBaseDir: string,
-    uf2Path: string | undefined,
-): string {
-    if (uf2Path && uf2Path.length > 0) {
-        if (uf2Path.startsWith('/')) {
-            return uf2Path.slice(1);
-        }
-        return `${FIRMWARE_LOADER_BASE.slice(1)}${projectBaseDir}${uf2Path}`;
-    }
-    return boardId === 'xrp-2350' ? 'micropython/firmware2350.uf2' : 'micropython/firmware2040.uf2';
 }
 
 function pickImage(map: Record<string, string>, key: string, fallback: string): string {
@@ -160,13 +123,12 @@ async function waitForUsbReady(
 
 type FirmwareInstallWizardProps = {
     boardId: string;
-    projectDoc: FirmwareInstallProjectDoc;
-    /**
-     * Project directory relative to `/firmware-loader/`, with trailing slash
-     * (e.g. "boards/xrp-2350/micropython/"). UF2 and library file fetches are
-     * resolved against this base.
-     */
-    projectBaseDir: string;
+    /** Fully-resolved, site-relative URL of the UF2 to flash. */
+    uf2Url: string;
+    /** [deviceDestinationPath, fullyResolvedSourceUrl] entries to copy after flashing. */
+    libraryEntries: [string, string][];
+    /** XRPLib version label written to /lib/XRPLib/version.py (undefined when no library copy). */
+    xrplibVersion?: string;
     assets: WizardAssets;
     onCancel: () => void;
     onComplete: () => void;
@@ -184,8 +146,9 @@ type WizardUiPhase =
  */
 export default function FirmwareInstallWizard({
     boardId,
-    projectDoc,
-    projectBaseDir,
+    uf2Url,
+    libraryEntries,
+    xrplibVersion,
     assets,
     onCancel,
     onComplete,
@@ -205,8 +168,7 @@ export default function FirmwareInstallWizard({
     const [libPct, setLibPct] = useState(0);
     const [error, setError] = useState<string | null>(null);
 
-    const urls = projectDoc.urls ?? [];
-    const needsLibraryPhase = urls.length > 0;
+    const needsLibraryPhase = libraryEntries.length > 0;
 
     const selectDirKey = `${boardId}-${os}`;
     const fallbackBoardImg =
@@ -252,10 +214,13 @@ export default function FirmwareInstallWizard({
 
                 setPhase({ kind: 'libs', waitingUsb: false, needsManualConnect: false });
 
+                // Library entries are already fully resolved to source URLs by
+                // the firmware-loader resolver, so the source resolver here is a
+                // pass-through.
                 await cmd.updateLibraryFromFirmwareManifest(
-                    urls as [string, string][],
-                    projectDoc.version,
-                    (rel) => projectFileUrl(projectBaseDir, rel),
+                    libraryEntries,
+                    xrplibVersion,
+                    (url) => url,
                     (pct) => setLibPct(Math.round(pct)),
                 );
 
@@ -267,7 +232,7 @@ export default function FirmwareInstallWizard({
                 setPhase({ kind: 'libs', waitingUsb: false, needsManualConnect: false });
             }
         },
-        [cmd, projectBaseDir, projectDoc.version, t, urls],
+        [cmd, libraryEntries, xrplibVersion, t],
     );
 
     const runFlashAndLibrary = useCallback(async () => {
@@ -326,12 +291,11 @@ export default function FirmwareInstallWizard({
             const fileHandle = await handle.getFileHandle('firmware.uf2', { create: true });
             const writable = await fileHandle.createWritable();
 
-            const uf2Src = resolveUf2FetchPath(boardId, projectBaseDir, projectDoc.uf2Path);
             setUf2Pct(15);
             AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '15');
-            const response = await fetch(uf2Src);
+            const response = await fetch(uf2Url);
             if (!response.ok) {
-                throw new Error(`${uf2Src}: ${response.status}`);
+                throw new Error(`${uf2Url}: ${response.status}`);
             }
             const data = await response.arrayBuffer();
             setUf2Pct(55);
@@ -364,7 +328,7 @@ export default function FirmwareInstallWizard({
         }
 
         await runLibraryCopy({ autoFirst: true });
-    }, [boardId, cmd, dirHandle, needsLibraryPhase, t, runLibraryCopy]);
+    }, [boardId, cmd, dirHandle, needsLibraryPhase, t, runLibraryCopy, uf2Url]);
 
     const runLibraryPhaseOnly = useCallback(async () => {
         await runLibraryCopy({ autoFirst: true });
@@ -379,6 +343,20 @@ export default function FirmwareInstallWizard({
      */
     const onConnectToXrpClicked = () => {
         AppMgr.getInstance().emit(EventType.EVENT_CONNECTION, ConnectionCMD.CONNECT_USB);
+    };
+
+    /**
+     * Finish the wizard. The board was connected during the install via the
+     * reconnect path, which may not have published the XRP id shown next to the
+     * RUN button — re-publish it now so the IDE reflects the live connection.
+     */
+    const handleComplete = async () => {
+        try {
+            await AppMgr.getInstance().republishConnectionId();
+        } catch (e) {
+            console.log('republishConnectionId failed:', e);
+        }
+        onComplete();
     };
 
     const onInstructionNext = () => {
@@ -527,7 +505,7 @@ export default function FirmwareInstallWizard({
 
             {phase.kind === 'uf2' && (
                 <div className="relative mx-auto flex w-full max-w-md flex-col items-center gap-6 py-8">
-                    <h2 className="text-lg font-semibold">{t('firmwareWizardUf2Title')}</h2>
+                    <h2 className="whitespace-pre-line text-center text-lg font-semibold">{t('firmwareWizardUf2Title')}</h2>
                     <ProgressBar
                         radius={100}
                         progress={uf2Pct}
@@ -547,7 +525,7 @@ export default function FirmwareInstallWizard({
 
             {phase.kind === 'libs' && (
                 <div className="relative mx-auto flex w-full max-w-md flex-col items-center gap-6 py-8">
-                    <h2 className="text-lg font-semibold">{t('firmwareWizardLibsTitle')}</h2>
+                    <h2 className="whitespace-pre-line text-center text-lg font-semibold">{t('firmwareWizardLibsTitle')}</h2>
                     {phase.waitingUsb ? (
                         <>
                             <p className="text-center text-sm text-mountain-mist-700 dark:text-shark-300">
@@ -606,7 +584,7 @@ export default function FirmwareInstallWizard({
                         <div className="flex justify-center">
                             <button
                                 type="button"
-                                onClick={onComplete}
+                                onClick={() => void handleComplete()}
                                 className="rounded-lg bg-curious-blue-600 px-8 py-2.5 text-sm font-medium text-white hover:bg-curious-blue-700"
                             >
                                 {t('okButton')}
