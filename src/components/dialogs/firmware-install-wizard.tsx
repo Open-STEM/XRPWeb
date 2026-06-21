@@ -13,7 +13,6 @@ export type WizardAssets = {
     powerOff: Record<string, string>;
     bootSel: Record<string, string>;
     selectDir: Record<string, string>;
-    editFiles: Record<string, string>;
 };
 
 function detectOsFamily(): OsFamily {
