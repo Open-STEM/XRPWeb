@@ -8,11 +8,11 @@
         "xrp-2350": "/firmware-loader/images/board-xrp-2350_bootsel.jpg"
     },
     "selectDir": {
-        "xrp-beta-win": "/firmware-loader/images/board-xrp-beta-selectdir-win.jpg",
+        "xrp-beta-win": "/firmware-loader/images/board-xrp-beta-selectdir-win.png",
         "xrp-beta-mac": "/firmware-loader/images/board-xrp-beta-selectdir-mac.jpg",
-        "xrp-beta-linux": "/firmware-loader/images/board-xrp-beta-selectdir-linux.jpg",
-        "xrp-2350-win": "/firmware-loader/images/board-xrp-2350-selectdir-win.jpg",
+        "xrp-beta-linux": "/firmware-loader/images/board-xrp-beta-selectdir-linux.png",
+        "xrp-2350-win": "/firmware-loader/images/board-xrp-2350-selectdir-win.png",
         "xrp-2350-mac": "/firmware-loader/images/board-xrp-2350-selectdir-mac.jpg",
-        "xrp-2350-linux": "/firmware-loader/images/board-xrp-2350-selectdir-linux.jpg"
+        "xrp-2350-linux": "/firmware-loader/images/board-xrp-2350-selectdir-linux.png"
     }
 }
