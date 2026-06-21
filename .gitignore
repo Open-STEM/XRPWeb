@@ -75,3 +75,7 @@ htmlcov/
 
 # Build analysis and stats
 stats.html
+
+# Firmware-loader boards content is loaded dynamically and is never checked in,
+# even when present locally for testing.
+public/firmware-loader/boards/
