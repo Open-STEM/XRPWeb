@@ -433,7 +433,9 @@ export class CommandToXRPMgr {
         if (versionLabel !== undefined) {
             await this.uploadFile(
                 'lib/XRPLib/version.py',
-                "__version__ = '" + versionLabel.replace(/'/g, "\\'") + "'\n",
+                "__version__ = '" +
+                    versionLabel.replace(/\\/g, '\\\\').replace(/'/g, "\\'") +
+                    "'\n",
             );
             emitProgress(cur_percent);
             cur_percent += percent_per;
