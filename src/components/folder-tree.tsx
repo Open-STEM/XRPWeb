@@ -1,7 +1,16 @@
 import { FolderItem } from '@/utils/types';
 import { Tree, NodeApi, NodeRendererProps } from 'react-arborist';
 import { RiArrowDownSFill, RiArrowRightSFill } from 'react-icons/ri';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, Component } from 'react';
+
+class GoogleAuthBoundary extends Component<{children: React.ReactNode}, {failed: boolean}> {
+    constructor(props: {children: React.ReactNode}) {
+        super(props);
+        this.state = { failed: false };
+    }
+    static getDerivedStateFromError() { return { failed: true }; }
+    render() { return this.state.failed ? null : this.props.children; }
+}
 import AppMgr, { EventType, LoginStatus } from '@/managers/appmgr';
 import useResizeObserver from 'use-resize-observer';
 import { FaRegFolder } from 'react-icons/fa';
@@ -714,7 +723,7 @@ function FolderTree(treeProps: TreeProps) {
         <div className="flex flex-col gap-1 h-full">
             {treeProps.isHeader && (
                 <div className='flex flex-col items-center p-1 gap-1 bg-mountain-mist-100 dark:bg-mountain-mist-950'>
-                    <Login onSuccess={onGoogleLoginSuccess} logoutCallback={onGoogleLogout}/>
+                    <GoogleAuthBoundary><Login onSuccess={onGoogleLoginSuccess} logoutCallback={onGoogleLogout}/></GoogleAuthBoundary>
                 </div>
             )}
             {treeProps.isHeader && (isConnected || isLogin) &&(
