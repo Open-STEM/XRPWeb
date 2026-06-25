@@ -22,13 +22,13 @@ function Root() {
                 setGoogleClientId(data.client_id);
             } catch (error) {
                 console.error('Error fetching Google Client ID:', error);
-                // Handle error appropriately, e.g., show an error message to the user
+                setGoogleClientId('');
             }
         };
         fetchClientId();
     }, []);
 
-    if (!googleClientId) {
+    if (googleClientId === null) {
         // Optionally render a loading spinner or message
         return <div>Loading Google authentication...</div>;
     }
@@ -36,9 +36,13 @@ function Root() {
     return (
         <StrictMode>
             <ThemeInit />
-            <GoogleOAuthProvider clientId={googleClientId}>
+            {googleClientId ? (
+                <GoogleOAuthProvider clientId={googleClientId}>
+                    <App />
+                </GoogleOAuthProvider>
+            ) : (
                 <App />
-            </GoogleOAuthProvider>
+            )}
         </StrictMode>
     );
 }
