@@ -47,10 +47,16 @@ export default class PluginMgr {
     // --- Public Methods ---
     public async pluginCheck(): Promise<void> {
         let needsUpdate = false;
-        
+
         // Check for RP2350 board special case
         if (this.cmdToXRPMgr.getXRPDrive() === "RP2350") {
             await this.configNonBeta();
+            needsUpdate = true;
+        }
+
+        // Add NanoXRP-specific blocks
+        if (this.cmdToXRPMgr.isNanoXRP()) {
+            this.configNanoXRP();
             needsUpdate = true;
         }
 
@@ -189,7 +195,7 @@ export default class PluginMgr {
     private async loadPluginBlocks(blocksUrl: string): Promise<PluginBlock[] | null> {
         
         if (process.env.NODE_ENV === 'development') {
-                blocksUrl = '/public' + blocksUrl;
+                blocksUrl = '/public/' + blocksUrl;
             }
         
         try {
@@ -209,9 +215,11 @@ export default class PluginMgr {
      * Load a script dynamically (module import with fallback)
      */
     private async loadScript(scriptUrl: string): Promise<void> {
-         if (process.env.NODE_ENV === 'development') {
-                scriptUrl = '/public' + scriptUrl;
-            }
+        if (process.env.NODE_ENV === 'development') {
+            scriptUrl = '/public/' + scriptUrl;
+        } else {
+            scriptUrl = '../' + scriptUrl;
+        }
         
         if (this.loadedScripts.has(scriptUrl)) {
             return; // Already loaded
@@ -219,8 +227,7 @@ export default class PluginMgr {
 
         try {
             // Dynamic import of the plugin script
-            const url = scriptUrl;
-            await import(/* @vite-ignore */ url);
+            await import(/* @vite-ignore */ scriptUrl);
             this.loadedScripts.add(scriptUrl);
         } catch (error) {
             console.error(`Error loading script ${scriptUrl}:`, error);
@@ -229,9 +236,37 @@ export default class PluginMgr {
 
     
     /**
+     * Add NanoXRP-specific blocks to the toolbox (middle reflectance sensor)
+     */
+    private configNanoXRP(): void {
+        const toolbox = BlocklyConfigs.ToolboxJson;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const contents = toolbox.contents as any[];
+
+        const sensorsCategory = contents.find(cat =>
+            cat.kind === "CATEGORY" && cat.name === "Sensors"
+        );
+
+        if (sensorsCategory) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const reflectanceCategory = sensorsCategory.contents.find((cat: any) =>
+                cat.kind === "CATEGORY" && cat.name === "Reflectance"
+            );
+
+            if (reflectanceCategory) {
+                reflectanceCategory.contents.push({
+                    "kind": "BLOCK",
+                    "type": "xrp_m_refl"
+                });
+            }
+        }
+    }
+
+    /**
      * Configure non-beta blocks for RP2350 board
      */
     private async configNonBeta(): Promise<void> {
+        const pluginRootUrl = 'plugins/2350/';
         // Add color LED block to Control Board category
         const toolbox = BlocklyConfigs.ToolboxJson;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -242,7 +277,7 @@ export default class PluginMgr {
         );
 
         if (controlBoardCategory) {
-            const colorLEDBlock = await this.loadPluginBlocks('/plugins/2350/nonbeta_blocks.json');
+            const colorLEDBlock = await this.loadPluginBlocks(pluginRootUrl + 'nonbeta_blocks.json');
             controlBoardCategory.contents.push(colorLEDBlock);
         }
 
@@ -250,7 +285,7 @@ export default class PluginMgr {
         this.extendServoArrayForRP2350();
 
         // Load the supporting script (use Vite public root)
-        await this.loadScript('/plugins/2350/nonbeta_blocks.js');
+        await this.loadScript(pluginRootUrl + 'nonbeta_blocks.js');
     }
 
     /**

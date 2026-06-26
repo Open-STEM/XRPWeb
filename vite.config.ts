@@ -83,8 +83,14 @@ export default defineConfig(({ mode }) => {
                         if (id.includes('react-blockly')) {
                             return '@react-blockly'
                         }
-                        if (id.includes('@codingame')) {
-                            return '@codingame'
+                        if (
+                            id.includes('@codingame') ||
+                            id.includes('monaco-languageclient') ||
+                            id.includes('@typefox/pyright-browser') ||
+                            id.includes('monaco-editor') ||
+                            id.includes('vscode')
+                        ) {
+                            return '@monaco'
                         }
                         if (
                             id.includes('react') ||
@@ -97,13 +103,6 @@ export default defineConfig(({ mode }) => {
                             id.includes('react-xtermjs')
                         ) {
                             return '@react'
-                        }
-                        if (
-                            id.includes('monaco-languageclient') ||
-                            id.includes('@typefox/pyright-browser') ||
-                            id.includes('monaco-editor')
-                        ) {
-                            return '@monaco'
                         }
                     }
                 }

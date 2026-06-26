@@ -41,6 +41,7 @@ export class CommandToXRPMgr {
     private DEBUG_CONSOLE_ON: boolean = true;
     private HAS_MICROPYTHON: boolean = false;
     private is_XRP_MP: boolean = false;
+    private is_NanoXRP: boolean = false;
 
     phewList = ["__init__.py","dns.py","logging.py","server.py","template.py"];
     bleList = ["__init__.py","blerepl.py", "ble_uart_peripheral.py", "isrunning"] 
@@ -191,6 +192,8 @@ export class CommandToXRPMgr {
                         this.PROCESSOR = 2350;
                     } else if (hiddenLines[1].includes('RP2040')) {
                         this.PROCESSOR = 2040;
+                        this.is_NanoXRP = hiddenLines[1].includes('NanoXRP');
+                        this.connection?.setNanoXRP(this.is_NanoXRP);
                     }
                 }
                 if(hiddenLines[1].includes('XRP')){ //is this an XRP version of microPython?
@@ -285,7 +288,9 @@ export class CommandToXRPMgr {
         this.XRPId = undefined;
         this.lastRun = undefined;
         this.HAS_MICROPYTHON = true;    // this is set after connection is successful
-        
+        this.is_NanoXRP = false;
+        this.connection?.setNanoXRP(false);
+
         //get version information from the XRP
         const info = await this.getVersionInfo();
 
@@ -1122,6 +1127,16 @@ export class CommandToXRPMgr {
      */
     getXRPDrive(): string {
         return (this.PROCESSOR! === 2350) ? "RP2350" : "RPI-RP2";
+    }
+   
+    getFirmwareFilename(): string {
+        if (this.PROCESSOR === 2350) return 'firmware2350.uf2';
+        if (this.is_NanoXRP) return 'firnware2040nanoxrp.uf2';
+        return 'firmware2040.uf2';
+    }
+
+    isNanoXRP(): boolean {
+        return this.is_NanoXRP;
     }
 
      /**

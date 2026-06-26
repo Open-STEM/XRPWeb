@@ -1,10 +1,19 @@
-import { Layout, Model, IJsonModel, TabNode, Action, Actions, ITabRenderValues } from 'flexlayout-react';
+import {
+    Layout,
+    Model,
+    IJsonModel,
+    TabNode,
+    Action,
+    Actions,
+    ITabRenderValues,
+} from 'flexlayout-react';
 import React, { useEffect, useRef, useState } from 'react';
 import BlocklyEditor from '@components/blockly';
 import MonacoEditor from '@components/MonacoEditor';
 import XRPShell from '@components/xrpshell';
 import FolderIcon from '@assets/images/folder-24.png';
 import ShellIcon from '@assets/images/shell.svg';
+import GoogleDriveLogo from '@assets/images/Google_Drive-Logo.svg';
 //import treeDaaJson from '@/utils/testdata';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
 import FolderTree from './folder-tree';
@@ -28,7 +37,7 @@ const layout_json: IJsonModel = {
         tabEnablePopout: false,
         tabSetEnableDrag: false,
         tabSetEnableDrop: false,
-        tabEnableRename: false
+        tabEnableRename: false,
     },
     borders: [
         {
@@ -85,7 +94,7 @@ const layout_json: IJsonModel = {
                                 component: 'xterm',
                                 enableClose: false,
                                 enableDrag: false,
-                                enablePopout: false
+                                enablePopout: false,
                             },
                         ],
                     },
@@ -104,7 +113,14 @@ let layoutRef: React.RefObject<Layout> = {
 const factory = (node: TabNode) => {
     const component = node.getComponent();
     if (component == 'editor') {
-        return <MonacoEditor tabId={node.getId()} tabname={node.getName()} width="100vw" height="100vh" />;
+        return (
+            <MonacoEditor
+                tabId={node.getId()}
+                tabname={node.getName()}
+                width="100vw"
+                height="100vh"
+            />
+        );
     } else if (component == 'xterm') {
         return <XRPShell />;
     } else if (component == 'folders') {
@@ -127,17 +143,17 @@ let hasSubscribed = false;
 
 /**
  * useOnceCall - call the function once
- * @param cb 
- * @param condition 
+ * @param cb
+ * @param condition
  */
 function useOnceCall(cb: () => void, condition = true) {
     const isCalledRef = React.useRef(false);
-  
+
     React.useEffect(() => {
-      if (condition && !isCalledRef.current) {
-        isCalledRef.current = true;
-        cb();
-      }
+        if (condition && !isCalledRef.current) {
+            isCalledRef.current = true;
+            cb();
+        }
     }, [cb, condition]);
 }
 
@@ -223,7 +239,7 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                         gpath: store.gpath,
                         filetype: store.isBlockly ? FileType.BLOCKLY : FileType.PYTHON,
                         content: store.content,
-                    }
+                    };
                     CreateEditorTab(fileData, layoutRef);
                     let content: string | undefined;
                     if (fileData.filetype === FileType.BLOCKLY) {
@@ -233,12 +249,18 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                         content = store.content;
                     }
                     const loadContent = { name: store.name, path: store.path, content: content };
-                    AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
+                    AppMgr.getInstance().emit(
+                        EventType.EVENT_EDITOR_LOAD,
+                        JSON.stringify(loadContent),
+                    );
                     if (!store.isSavedToXRP) {
                         // update the editor session and update the tab dirty status
                         const editorSession = EditorMgr.getInstance().getEditorSession(store.id);
                         if (editorSession) {
-                            EditorMgr.getInstance().updateEditorSessionChange(store.id, !store.isSavedToXRP);
+                            EditorMgr.getInstance().updateEditorSessionChange(
+                                store.id,
+                                !store.isSavedToXRP,
+                            );
                         }
                     }
                     setActiveTab(store.id);
@@ -250,7 +272,7 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
             const currentVersion = Constants.APP_VERSION;
             if (version === null || version !== currentVersion) {
                 AppMgr.getInstance().emit(EventType.EVENT_SHOWCHANGELOG, Constants.SHOW_CHANGELOG);
-            } 
+            }
             localStorage.setItem(StorageKeys.VERSION, currentVersion || '');
         };
 
@@ -261,7 +283,7 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
         }
         return () => {
             window.removeEventListener('load', handleWindowLoad);
-        }
+        };
     });
 
     /**
@@ -273,8 +295,7 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
         }
         if (dialogRef.current.hasAttribute('open')) {
             dialogRef.current.close();
-        }
-        else dialogRef.current.showModal();
+        } else dialogRef.current.showModal();
     };
 
     /**
@@ -291,7 +312,7 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                 setActiveTab(id);
             }
         }
-    }
+    };
 
     /**
      * handleActions - handle the actions from the layout
@@ -301,64 +322,102 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
     function handleActions(action: Action): Action | undefined {
         console.log('Handle Action: Action Type:', action.type, activeTab);
         switch (action.type) {
-            case Actions.SELECT_TAB: {
-                console.log('Selected Tab:', action.data.tabNode);
-                if (EditorMgr.getInstance().hasEditorSession(action.data.tabNode)) {
-                    const editorType = EditorMgr.getInstance().getEditorSession(action.data.tabNode)?.type;
-                    if (editorType !== undefined) {
-                        AppMgr.getInstance().emit(EventType.EVENT_EDITOR, editorType);
+            case Actions.SELECT_TAB:
+                {
+                    console.log('Selected Tab:', action.data.tabNode);
+                    if (EditorMgr.getInstance().hasEditorSession(action.data.tabNode)) {
+                        const editorType = EditorMgr.getInstance().getEditorSession(
+                            action.data.tabNode,
+                        )?.type;
+                        if (editorType !== undefined) {
+                            AppMgr.getInstance().emit(EventType.EVENT_EDITOR, editorType);
+                        }
+                        setActiveTab(action.data.tabNode);
                     }
-                    setActiveTab(action.data.tabNode);
-                } 
-            }
-            break;
-            case Actions.DELETE_TAB: {        
-                console.log('Delete Node:', action.data);
-                const isDirty = EditorMgr.getInstance().hasSessionChanged(action.data.node);
-                if (isDirty) {
-                    setDialogContent(<ConfirmationDlg acceptCallback={handleDeleteTabConfirmation} toggleDialog={toggleDialog} confirmationMessage={t('confirmDeleteTab', { name: action.data.node })} name={action.data.node}/>);
-                    toggleDialog();
-
-                    return undefined;
                 }
+                break;
+            case Actions.DELETE_TAB:
+                {
+                    console.log('Delete Node:', action.data);
+                    const isDirty = EditorMgr.getInstance().hasSessionChanged(action.data.node);
+                    if (isDirty) {
+                        setDialogContent(
+                            <ConfirmationDlg
+                                acceptCallback={handleDeleteTabConfirmation}
+                                toggleDialog={toggleDialog}
+                                confirmationMessage={t('confirmDeleteTab', {
+                                    name: action.data.node,
+                                })}
+                                name={action.data.node}
+                            />,
+                        );
+                        toggleDialog();
 
-                const name = EditorMgr.getInstance().RemoveEditor(action.data.node);
-                if (name) {
-                    setActiveTab(name);
+                        return undefined;
+                    }
+
+                    const name = EditorMgr.getInstance().RemoveEditor(action.data.node);
+                    if (name) {
+                        setActiveTab(name);
+                    }
                 }
-            }
-            break;
-            default: {
-                console.log('Default Action:', action);
-            }
-            break;
+                break;
+            default:
+                {
+                    console.log('Default Action:', action);
+                }
+                break;
         }
         return action;
     }
 
     /**
      * onRenderTab - render the tab with custom functionality
-     * @param node 
+     * @param node
      * @param renderValues
-     * @returns 
+     * @returns
      */
     const onRenderTab = (node: TabNode, renderValues: ITabRenderValues) => {
         // Override the content to use the translated tab names
         if (node.getId() === Constants.FOLDER_TAB_ID) {
-            renderValues.leading = <img src={FolderIcon} alt="icon" style={{ width: '16px', height: '16px', marginRight: '16px' }} />;
+            renderValues.leading = (
+                <img
+                    src={FolderIcon}
+                    alt="icon"
+                    style={{ width: '16px', height: '16px', marginRight: '16px' }}
+                />
+            );
         } else if (node.getId() === Constants.SHELL_TAB_ID) {
-            renderValues.leading = <img src={ShellIcon} alt="icon" style={{ width: '16px', height: '16px', marginRight: '0px' }} />;
+            renderValues.leading = (
+                <img
+                    src={ShellIcon}
+                    alt="icon"
+                    style={{ width: '16px', height: '16px', marginRight: '0px' }}
+                />
+            );
+        } else if (EditorMgr.getInstance().getEditorSession(node.getId())?.gpath !== undefined) {
+            renderValues.leading = (
+                <img src={GoogleDriveLogo} alt="icon" style={{ width: '16px', height: '16px' }} />
+            );
         }
         renderValues.content = t(node.getName());
         if (EditorMgr.getInstance().hasSessionChanged(node.getId())) {
-            renderValues.buttons.push(<div className='w-2 h-2 bg-shark-800 dark:bg-shark-200 rounded-full' />)
+            renderValues.buttons.push(
+                <div className={`h-2 w-2 rounded-full bg-shark-800 dark:bg-shark-200`} />,
+            );
         }
         return renderValues;
     };
 
     return (
         <>
-            <Layout ref={forwardedref} model={model} factory={factory} onAction={handleActions} onRenderTab={onRenderTab}/>
+            <Layout
+                ref={forwardedref}
+                model={model}
+                factory={factory}
+                onAction={handleActions}
+                onRenderTab={onRenderTab}
+            />
             <Dialog isOpen={false} toggleDialog={toggleDialog} ref={dialogRef}>
                 {dialogContent}
             </Dialog>
