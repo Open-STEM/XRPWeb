@@ -43,44 +43,9 @@ export class CommandToXRPMgr {
     private is_XRP_MP: boolean = false;
     private is_NanoXRP: boolean = false;
 
-    private latestLibraryVersion: string = "";
-
-    private mpVersion: string | number[] = [];
-    private mpBuild: string | undefined = undefined;
-    private mpFilename: string | undefined = undefined;
     phewList = ["__init__.py","dns.py","logging.py","server.py","template.py"];
     bleList = ["__init__.py","blerepl.py", "ble_uart_peripheral.py", "isrunning"] 
     XRPId:string | undefined = undefined;
-
-    constructor(){
-        this.getLibVersion();
-        this.getMicropythonVersion();
-    }
-
-    /**
-     * getLibVersion - get the XRP library version
-     */
-    async getLibVersion(){
-        const response = await fetch("lib/package.json"); // do we need to cache bust? + "?version=" + showChangelogVersion //need an await?
-        const responseTxt = await response.text();
-        const jresp = JSON.parse(responseTxt);
-        const v = jresp.version
-        // This should match what is in /lib/XRPLib/version.py as '__version__'
-        this.latestLibraryVersion = v.split(".");
-    }
-
-    /**
-     * getMicropythonVersion - get the micropython version
-     */
-    async getMicropythonVersion(){
-        const response = await fetch("micropython/package.json"); 
-        const responseTxt = await response.text();
-        const jresp = JSON.parse(responseTxt);
-        const v = jresp.version
-        this.mpVersion = v.split(".");
-        this.mpBuild = jresp.firmwareBuild;
-        this.mpFilename = jresp.firmwareFilename;
-    }
 
     public CommandsToXRPMgr() {
         //constructor
@@ -248,6 +213,76 @@ export class CommandToXRPMgr {
         return [];
     }
 
+    /**
+     * getBoardId - map the connected XRP's processor to the firmware-loader board id.
+     * RP2040 boards are the "xrp-beta"; everything else (RP2350) is "xrp-2350".
+     */
+    private getBoardId(): string {
+        return this.PROCESSOR === 2040 ? 'xrp-beta' : 'xrp-2350';
+    }
+
+    /**
+     * resolveVersionFromIndex - look up a version entry's `version` string from a
+     * firmware-loader version registry (index.json) by its friendly id.
+     */
+    private async resolveVersionFromIndex(
+        indexUrl: string,
+        friendlyId: string | undefined,
+    ): Promise<string | undefined> {
+        if (!friendlyId) return undefined;
+        try {
+            const response = await fetch(indexUrl);
+            if (!response.ok) return undefined;
+            const json = await response.json();
+            const versions: { id?: string; version?: string }[] = Array.isArray(json?.versions)
+                ? json.versions
+                : [];
+            const entry = versions.find((v) => v?.id === friendlyId);
+            return entry && typeof entry.version === 'string' ? entry.version : undefined;
+        } catch (e) {
+            console.error('Error reading version registry', indexUrl, e);
+            return undefined;
+        }
+    }
+
+    /**
+     * getBoardCanonicalVersions - resolve the available MicroPython and XRPLib
+     * versions for the connected board from the firmware-loader manifests.
+     *
+     * The board's canonical MicroPython project.json declares which MicroPython
+     * firmware (`micropython` friendly id) and which XRPLib (`xrplib` friendly
+     * id) are current. Those ids are resolved to version strings via the
+     * per-board micropython/index.json and the shared XRPLib/index.json. These
+     * are the versions compared against the on-device values to decide whether
+     * an update is available.
+     */
+    private async getBoardCanonicalVersions(): Promise<{
+        micropythonVersion: string | undefined;
+        xrplibVersion: string | undefined;
+    }> {
+        const boardId = this.getBoardId();
+        const projectUrl = `firmware-loader/boards/${boardId}/micropython/project.json`;
+        try {
+            const response = await fetch(projectUrl);
+            if (!response.ok) {
+                return { micropythonVersion: undefined, xrplibVersion: undefined };
+            }
+            const project = await response.json();
+            const micropythonVersion = await this.resolveVersionFromIndex(
+                `firmware-loader/boards/${boardId}/micropython-firmware/index.json`,
+                typeof project.micropython === 'string' ? project.micropython : undefined,
+            );
+            const xrplibVersion = await this.resolveVersionFromIndex(
+                'firmware-loader/boards/XRPLib/index.json',
+                typeof project.xrplib === 'string' ? project.xrplib : undefined,
+            );
+            return { micropythonVersion, xrplibVersion };
+        } catch (e) {
+            console.error('Error reading board canonical versions:', e);
+            return { micropythonVersion: undefined, xrplibVersion: undefined };
+        }
+    }
+
     async checkIfNeedUpdate():Promise<string | undefined> {
         //This is only called when a new XRP is attached. Reset a few variables.
         this.XRPId = undefined;
@@ -266,20 +301,36 @@ export class CommandToXRPMgr {
         this.XRPId = info[2]; //store off the unique ID for this XRP
 
         info[0] = info[0]!.replace(/[()]/g, "").replace(/,\s/g, "."); //convert to a semantic version
+
+        // Available versions for this board are declared in the firmware-loader
+        // manifests: the per-board micropython/index.json (MicroPython firmware)
+        // and the shared XRPLib/index.json (library), selected by the friendly
+        // ids in the board's canonical MicroPython project.json.
+        const { micropythonVersion, xrplibVersion } = await this.getBoardCanonicalVersions();
+
         //if the microPython is out of date
-        if (this.isVersionNewer(this.mpVersion, info[0]!)) {
+        if (
+            micropythonVersion !== undefined &&
+            this.isVersionNewer(micropythonVersion.split(".").map(Number), info[0]!)
+        ) {
             // Need to update MicroPython
-            
             const mpVersions : Versions = {
                 currentVersion: info[0]!,
-                newVersion: this.mpVersion[0] + "." + this.mpVersion[1] + "." + this.mpVersion[2] + "." + this.mpBuild
+                newVersion: micropythonVersion,
             }
             AppMgr.getInstance().emit(EventType.EVENT_MICROPYTHON_UPDATE, JSON.stringify(mpVersions));
             return this.XRPId;
         }
 
+        // Compare the on-device /lib/XRPLib/version.py value (info[1]) against the
+        // XRPLib version the board's MicroPython project references.
+        if (xrplibVersion === undefined) {
+            return this.XRPId; //can't determine the available version; skip the indicator.
+        }
+        const xrplibParts = xrplibVersion.split(".").map(Number);
+
         //if no library or the library is out of date
-        if (Number.isNaN(parseFloat(info[1] as string)) || this.isVersionNewer(this.latestLibraryVersion, info[1] as string)) {
+        if (Number.isNaN(parseFloat(info[1] as string)) || this.isVersionNewer(xrplibParts, info[1] as string)) {
             //from now on we can only update the library if we are on an XRP version of the microPython firmware
             if(!this.is_XRP_MP){
                 AppMgr.getInstance().emit(EventType.EVENT_MUST_UPDATE_MICROPYTHON, '');
@@ -287,7 +338,7 @@ export class CommandToXRPMgr {
             if (info[1]) {
                 const versions : Versions = {
                     currentVersion: (info[1] as string) === "ERROR EX" ? "None" : info[1] as string,
-                    newVersion: this.latestLibraryVersion[0] + "." + this.latestLibraryVersion[1] + "." + this.latestLibraryVersion[2]
+                    newVersion: xrplibVersion
                 }
                 AppMgr.getInstance().emit(EventType.EVENT_XRPLIB_UPDATE, JSON.stringify(versions)); 
             }
@@ -315,55 +366,87 @@ export class CommandToXRPMgr {
         return false;
     }
 
-    async updateLibrary() {
+    /**
+     * Set RP2040 vs RP2350 before UF2 install when the user has not connected yet
+     * (getVersionInfo would not have run).
+     */
+    public setProcessorTypeForFirmwareLoader(processor: 2040 | 2350) {
+        this.PROCESSOR = processor;
+    }
 
-        const response = await fetch("lib/package.json");
-        const responseTxt = await response.text();
-        const jresp = JSON.parse(responseTxt);
-        const urls = jresp.urls;
+    /**
+     * Copy project files described by a firmware-loader project.json manifest.
+     *
+     * Each entry in `urls` is `[deviceDestination, sourcePathRelativeToProjectDir]`:
+     *   - `deviceDestination` is the absolute path written to the XRP filesystem
+     *     (e.g. "/lib/XRPLib/__init__.py" or "/XRPExamples/foo.py").
+     *   - `sourcePathRelativeToProjectDir` is the file's path inside the project
+     *     directory (e.g. "XRPLib/__init__.py"); it is passed to `resolveSourceUrl`
+     *     to obtain the actual fetch URL.
+     *
+     * The caller (firmware-install-wizard) supplies `resolveSourceUrl` so this
+     * manager stays unaware of where the project tree lives on disk.
+     */
+    async updateLibraryFromFirmwareManifest(
+        urls: [string, string][],
+        version: string | undefined,
+        resolveSourceUrl: (sourceRelativePath: string) => string,
+        onProgressPercent?: (pct: number) => void,
+    ) {
+        const versionLabel =
+            version && version.length > 0 && version.toUpperCase() !== 'TBD' ? version : undefined;
+        const versionParts = versionLabel?.split('.') ?? [];
+        const cacheToken =
+            versionParts.length >= 3 ? versionParts[2]! : versionLabel ?? String(Date.now());
 
-        AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '0');
-        const percent_per = Math.round(99 / (urls.length + this.phewList.length + this.bleList.length + 1));
-        let cur_percent = 1 + percent_per;
+        const totalSteps = urls.length + (versionLabel !== undefined ? 1 : 0);
+        if (totalSteps === 0) {
+            return;
+        }
 
-        await this.deleteFileOrDir("/lib/XRPLib");  //delete all the files first to avoid any confusion.
-        //BUGBUG: should we delete the /XRPExamples?
+        const emitProgress = (pct: number) => {
+            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, String(Math.round(pct)));
+            onProgressPercent?.(pct);
+        };
+
+        emitProgress(0);
+        const percent_per = 99 / totalSteps;
+        let cur_percent = percent_per;
+
+        // Wipe well-known library directories before re-populating so removed files
+        // don't linger on the device. Only delete dirs that actually appear in the
+        // manifest, and only well-known ones to avoid clobbering user files.
+        const wipeDirs = ['/lib/XRPLib', '/lib/AgXRPLib', '/lib/ble', '/lib/phew'];
+        const destStartsWithDir = (dest: string, dir: string): boolean => {
+            const prefix = dir.endsWith('/') ? dir : dir + '/';
+            return dest === dir || dest.startsWith(prefix) || dest.startsWith(prefix.slice(1));
+        };
+        for (const dir of wipeDirs) {
+            if (urls.some(([dest]) => destStartsWithDir(dest, dir))) {
+                await this.deleteFileOrDir(dir);
+            }
+        }
+
         for (let i = 0; i < urls.length; i++) {
-            //added a version number to ensure that the browser does not cache it.
-            const next = urls[i];
-            let parts = next[0];
-            parts = parts.replace("XRPLib", "lib/XRPLib");
-            await this.uploadFile(parts, await this.downloadFile(parts.replace("XRPExamples", "lib/XRPExamples") + "?version=" + this.latestLibraryVersion[2]));
-            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, cur_percent.toString());
+            const [deviceDest, sourceRel] = urls[i];
+            const fetchUrl = resolveSourceUrl(sourceRel) + '?version=' + cacheToken;
+            await this.uploadFile(deviceDest, await this.downloadFile(fetchUrl));
+            emitProgress(cur_percent);
             cur_percent += percent_per;
         }
 
-        //create a version.py file that has the version in it for future checks
-        await this.uploadFile("lib/XRPLib/version.py", "__version__ = '" + this.latestLibraryVersion[0] + "." + this.latestLibraryVersion[1] + "." + this.latestLibraryVersion[2] + "'\n");
-        cur_percent += percent_per;
-
-        await this.deleteFileOrDir("/lib/ble");  //delete all the files first to avoid any confusion.
-        for (let i = 0; i < this.bleList.length; i++) {
-            //added a version number to ensure that the browser does not cache it.
-            await this.uploadFile("lib/ble/" + this.bleList[i], await this.downloadFile("lib/ble/" + this.bleList[i] + "?version=" + this.latestLibraryVersion[2]));
-            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, cur_percent.toString());
+        if (versionLabel !== undefined) {
+            await this.uploadFile(
+                'lib/XRPLib/version.py',
+                "__version__ = '" +
+                    versionLabel.replace(/\\/g, '\\\\').replace(/'/g, "\\'") +
+                    "'\n",
+            );
+            emitProgress(cur_percent);
             cur_percent += percent_per;
         }
 
-        await this.deleteFileOrDir("/lib/phew");  //delete all the files first to avoid any confusion.
-        for (let i = 0; i < this.phewList.length; i++) {
-            //added a version number to ensure that the browser does not cache it.
-            await this.uploadFile("lib/phew/" + this.phewList[i], await this.downloadFile("lib/phew/" + this.phewList[i] + "?version=" + this.latestLibraryVersion[2]));
-            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, cur_percent.toString());
-            cur_percent += percent_per;
-        }
-
-        //needed for this BLE release. Replace the main.py file so that the BLE support will be available.
-        cur_percent = 100;
-        AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, cur_percent.toString());
-        await this.uploadFile("/main.py", await this.downloadFile("lib/main.py" + "?version=" + this.latestLibraryVersion[2]));
-
-
+        emitProgress(100);
         await this.getOnBoardFSTree();
     }
 
@@ -383,14 +466,24 @@ export class CommandToXRPMgr {
         }
     }
 
-    async  downloadFile(filePath:string) {
+    /**
+     * Fetch a file from the web server as raw bytes.
+     *
+     * Returns a Uint8Array (not a string) so binary files such as fonts or
+     * UF2 blobs survive the round-trip. Text files are unaffected because
+     * uploadFile accepts a Uint8Array directly and writes it to the board
+     * verbatim. Previously this used response.text(), which UTF-8-decoded
+     * the body and silently corrupted any byte > 0x7F (binary files and
+     * non-ASCII text alike).
+     */
+    async downloadFile(filePath: string): Promise<Uint8Array> {
         const response = await fetch(filePath);
-    
-        if(response.status != 200) {
+
+        if (response.status != 200) {
             throw new Error("Server Error");
         }
-        // read response stream as text
-        return await response.text();
+        const buf = await response.arrayBuffer();
+        return new Uint8Array(buf);
     }
     
     /*** File Routines  ***/
@@ -1035,11 +1128,7 @@ export class CommandToXRPMgr {
     getXRPDrive(): string {
         return (this.PROCESSOR! === 2350) ? "RP2350" : "RPI-RP2";
     }
-
-    /**
-     * getFirmwareFilename
-     * @returns the firmware filename for the connected robot
-     */
+   
     getFirmwareFilename(): string {
         if (this.PROCESSOR === 2350) return 'firmware2350.uf2';
         if (this.is_NanoXRP) return 'firnware2040nanoxrp.uf2';
@@ -1050,14 +1139,12 @@ export class CommandToXRPMgr {
         return this.is_NanoXRP;
     }
 
-    /**
-     * getMPFilename
-     * @returns the MicroPython filename
+     /**
+     * getXRP
+     * @returns the XRP type
      */
-    getMPFilename(): string | undefined{
-        if (this.mpFilename != undefined) {
-            return this.mpFilename;
-        }
-        return undefined;
+     getXRPType(): string {
+        return (this.PROCESSOR! === 2350) ? "V1" : "beta";
     }
+
 }
