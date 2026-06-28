@@ -113,11 +113,17 @@ class Puppet:
             cls._DEFAULT_PUPPET_INSTANCE = cls()
         return cls._DEFAULT_PUPPET_INSTANCE
     
-    def __init__(self):
+    def __init__(self, transport_mode=None):
         """
         Initialize the XPP protocol handler.
+
+        :param transport_mode: 'AUTO', 'BLE', or 'USB_STDIO'.
+            When None, falls back to the class-level default set by
+            get_default_puppet(). Pass explicitly to create a private
+            (non-singleton) instance with a specific transport.
         """
-        self._transport_mode = self.__class__._DEFAULT_TRANSPORT_MODE
+        self._transport_mode = transport_mode if transport_mode is not None \
+            else self.__class__._DEFAULT_TRANSPORT_MODE
 
         # Variable registry: name -> (id, type, permissions, value, update_rate, last_sent_time)
         self._variables = {}

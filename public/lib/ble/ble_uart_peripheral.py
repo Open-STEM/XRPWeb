@@ -18,9 +18,10 @@ _IRQ_CENTRAL_DISCONNECT = const(2)
 _IRQ_GATTS_WRITE = const(3)
 _IRQ_GATTS_INDICATE_DONE = const(20)
 
-_FLAG_READ = const(0x0002)
-_FLAG_WRITE = const(0x0008)
-_FLAG_NOTIFY = const(0x0010)
+_FLAG_READ             = const(0x0002)
+_FLAG_WRITE_NO_RESPONSE = const(0x0004)
+_FLAG_WRITE            = const(0x0008)
+_FLAG_NOTIFY           = const(0x0010)
 
 _UART_UUID = bluetooth.UUID("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
 _UART_TX = (
@@ -35,7 +36,7 @@ _UART_RX = (
 # Define a new UUID for the binary data characteristic.
 _UART_DATA_RX = (
     bluetooth.UUID("92ae6088-f24d-4360-b1b1-a432a8ed36ff"),
-    _FLAG_WRITE,
+    _FLAG_WRITE_NO_RESPONSE | _FLAG_WRITE,
 )
 # Define a new UUID for the binary data characteristic.
 _UART_DATA_TX = (

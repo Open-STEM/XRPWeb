@@ -43,8 +43,10 @@ develop-eggs/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
+# lib/ is intentionally excluded here — public/lib/ contains robot firmware
+# that IS tracked. Only match lib/ at the repo root (Python virtualenv artifact).
+/lib/
 parts/
 sdist/
 var/
