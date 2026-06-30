@@ -395,7 +395,7 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                     style={{ width: '16px', height: '16px', marginRight: '0px' }}
                 />
             );
-        } else if (EditorMgr.getInstance().getEditorSession(node.getId())?.gpath !== undefined) {
+        } else if (EditorMgr.getInstance().getEditorSession(node.getId())?.gpath !== undefined && EditorMgr.getInstance().getEditorSession(node.getId())?.name !== 'Dashboard' && EditorMgr.getInstance().getEditorSession(node.getId())?.name !== 'AI Buddy'){
             renderValues.leading = (
                 <img src={GoogleDriveLogo} alt="icon" style={{ width: '16px', height: '16px' }} />
             );
