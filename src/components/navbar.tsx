@@ -420,6 +420,10 @@ function NavBar({ layoutref }: NavBarProps) {
                     const session = editorMgr.getEditorSessionByName(searchParams);
                     if (session) {
                         session.gpath = file?.id;
+                        // gpath is assigned after the tab was first rendered, so
+                        // force a tab re-render to show the Google Drive icon now
+                        // instead of waiting for the next tab switch.
+                        editorMgr.SelectEditorTab(session.id);
                     }
                 });
             await fireGoogleUserTree(getUsernameFromEmail(authService.userProfile.email) ?? '');
