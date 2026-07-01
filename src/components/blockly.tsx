@@ -4,11 +4,12 @@ import { BlocklyWorkspace, Workspace } from 'react-blockly';
 import BlocklyConfigs from '@components/blockly/xrp_blockly_configs';
 import * as Blockly from 'blockly/core';
 import { setBlocklyLocale } from '@/utils/blockly-locales';
-import AppMgr, { EventType, Themes } from '@/managers/appmgr';
+import AppMgr, { EventType, LoginStatus, Themes } from '@/managers/appmgr';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { StorageKeys } from '@/utils/localstorage';
 import EditorMgr, { EditorSession } from '@/managers/editormgr';
+import i18n from '@/utils/i18n';
 import moment from 'moment';
 
 registerFieldColour(); //Plugin needs to be registered. Used for the Color LED on the non beta board. 
@@ -220,7 +221,16 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
     const nameRef = useRef(name);
     const isLoadingRef = useRef(isLoading);
     const [workspace, setWorkspace] = useState<Workspace | null>(null);
+    // True when this is a Google Drive file (session.gpath) but the user is
+    // signed out of Google Drive. The file cannot be saved, so editing is
+    // blocked until they sign back in.
+    const [editBlocked, setEditBlocked] = useState<boolean>(false);
     const containerRef = useRef<HTMLDivElement>(null);
+
+    const evaluateEditBlocked = useCallback(() => {
+        const session = EditorMgr.getInstance().getEditorSession(tabId);
+        setEditBlocked(!!session?.gpath && !AppMgr.getInstance().authService.isLogin);
+    }, [tabId]);
 
     const persistViewport = useCallback((ws: Workspace) => {
         // When FlexLayout hides this tab (display:none) the container is 0x0 and
@@ -405,6 +415,12 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
                 setName(newNames.newId);
             });            
 
+            AppMgr.getInstance().on(EventType.EVENT_LOGIN_STATUS, (status) => {
+                if (status === LoginStatus.LOGGED_IN || status === LoginStatus.LOGGED_OUT) {
+                    evaluateEditBlocked();
+                }
+            });
+
             EditorMgr.getInstance().setSubscription(tabId);
 
         } else {
@@ -431,7 +447,11 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
         // Call setupLanguage to initialize Blockly locale
         setupLanguage();
 
-    }, [saveEditor, tabId, restoreViewportForTab, persistViewport]);
+    }, [saveEditor, tabId, restoreViewportForTab, persistViewport, evaluateEditBlocked]);
+
+    useEffect(() => {
+        evaluateEditBlocked();
+    }, [evaluateEditBlocked]);
 
     useEffect(() => {
         if (!workspace) return;
@@ -497,7 +517,20 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
     }, [workspace, restoreViewportForTab]);
 
     return (
-        <div ref={containerRef} className="h-full">
+        <div ref={containerRef} className="relative h-full">
+        {editBlocked && (
+            <div
+                className="absolute inset-0 z-10 cursor-not-allowed"
+                onPointerDownCapture={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    AppMgr.getInstance().emit(
+                        EventType.EVENT_ALERT,
+                        i18n.t('editGoogleLoginRequired'),
+                    );
+                }}
+            />
+        )}
         <BlocklyWorkspace
             className="h-full"
             toolboxConfiguration={toolboxConfiguration}
