@@ -655,35 +655,42 @@ function NavBar({ layoutref }: NavBarProps) {
                 };
 
                 if (authService.isLogin) {
-                    // trash the file
-                    await driveService.trashFile(newFileData.gpath ?? '').then(async () => {
-                        const minetype = 'text/x-python';
-                        const blob = new Blob([code], { type: minetype });
-                        await driveService
-                            .uploadFile(
-                                blob,
-                                newFileData.name,
-                                minetype,
-                                newFileData.gparentId ?? undefined,
-                            )
-                            .then(() => {
-                                EditorMgr.getInstance().RemoveEditor(activeTab);
-                                const tabId = CreateEditorTab(newFileData, layoutref);
-                                setActiveTab(tabId);
-                                const loadContent = {
-                                    name: newFileData.name,
-                                    path: newFileData.path,
-                                    content: code,
-                                };
-                                AppMgr.getInstance().emit(
-                                    EventType.EVENT_EDITOR_LOAD,
-                                    JSON.stringify(loadContent),
-                                );
-                            });
-                        await fireGoogleUserTree(
-                            getUsernameFromEmail(authService.userProfile.email) ?? '',
-                        );
-                    });
+                    const blocksFileId = editorSession.gpath;
+                    const blocksParentId = editorSession.gparentId;
+
+                    const trashFolderId = await driveService.ensureTrashFolder();
+                    if (trashFolderId && blocksFileId && blocksParentId) {
+                        await driveService.moveFile(blocksFileId, blocksParentId, trashFolderId);
+                    }
+
+                    const minetype = 'text/x-python';
+                    const blob = new Blob([code], { type: minetype });
+                    const uploaded = await driveService.uploadFile(
+                        blob,
+                        newFileData.name,
+                        minetype,
+                        blocksParentId ?? undefined,
+                    );
+
+                    newFileData.gpath = uploaded?.id;
+                    newFileData.gparentId = blocksParentId;
+                    newFileData.path = editorSession.path.split('.blocks')[0] + '.py';
+
+                    EditorMgr.getInstance().RemoveEditor(activeTab);
+                    const tabId = CreateEditorTab(newFileData, layoutref);
+                    setActiveTab(tabId);
+                    const loadContent = {
+                        name: newFileData.name,
+                        path: newFileData.path,
+                        content: code,
+                    };
+                    AppMgr.getInstance().emit(
+                        EventType.EVENT_EDITOR_LOAD,
+                        JSON.stringify(loadContent),
+                    );
+                    await fireGoogleUserTree(
+                        getUsernameFromEmail(authService.userProfile.email) ?? '',
+                    );
                 } else if (isConnected) {
                     // move the converted blockly file to /trash
                     await CommandToXRPMgr.getInstance().buildPath(Constants.TRASH_FOLDER); // ensure the trash folder exists
