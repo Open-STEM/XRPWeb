@@ -25,6 +25,8 @@ export type EditorSession = {
     fontsize: number;
     content?: string;
     workspace?: Workspace;
+    /** Saved pan/zoom so tab switches do not reset the Blockly viewport. */
+    viewport?: { scrollX: number; scrollY: number; scale: number };
     lastUpdated?: Date;
 };
 

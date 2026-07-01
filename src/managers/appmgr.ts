@@ -59,6 +59,7 @@ export enum EventType {
     EVENT_SHOWBLUETOOTH_CONNECTING = 'show-bluetooth-connecting', // Show Bluetooth connecting dialog
     EVENT_HIDE_BLUETOOTH_CONNECTING = 'hide-bluetooth-connecting', // Hide Bluetooth connecting dialog
     EVENT_EDITOR_NAME_CHANGED = 'editor-name-changed', // Editor name changed
+    EVENT_EDITOR_TAB_SELECTED = 'editor-tab-selected', // Editor tab id selected in layout
 }
 
 type Events = {
@@ -96,6 +97,7 @@ type Events = {
     [EventType.EVENT_SHOWBLUETOOTH_CONNECTING]: string;
     [EventType.EVENT_HIDE_BLUETOOTH_CONNECTING]: string;
     [EventType.EVENT_EDITOR_NAME_CHANGED]: string;
+    [EventType.EVENT_EDITOR_TAB_SELECTED]: string;
 };
 
 /**
