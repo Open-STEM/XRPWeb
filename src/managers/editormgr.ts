@@ -271,6 +271,27 @@ export default class EditorMgr {
     }
 
     /**
+     * True when the tab is a Python or Blockly file that can be executed on the XRP.
+     * Dashboard, AI Buddy, and other non-code tabs are excluded.
+     */
+    public isRunnableCodeTab(id: string): boolean {
+        if (
+            id === Constants.DASHBOARD_TAB_ID ||
+            id === Constants.AI_CHAT_TAB_ID
+        ) {
+            return false;
+        }
+        const session = this.editorSessions.get(id);
+        if (!session || !session.path) {
+            return false;
+        }
+        return (
+            session.type === EditorType.PYTHON ||
+            session.type === EditorType.BLOCKLY
+        );
+    }
+
+    /**
      * hasEditorSessionByName - Check if an editor session exists by name
      * @param searchParams - Editor session search parameters
      * @returns 

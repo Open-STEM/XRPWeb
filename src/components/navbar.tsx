@@ -831,6 +831,8 @@ function NavBar({ layoutref }: NavBarProps) {
         if (EditorMgr.getInstance().hasEditorSession(Constants.DASHBOARD_TAB_ID)) {
             const layoutModel = EditorMgr.getInstance().getLayoutModel();
             layoutModel?.doAction(Actions.selectTab(Constants.DASHBOARD_TAB_ID));
+            setIsOtherTab(true);
+            setActiveTab(Constants.DASHBOARD_TAB_ID);
             return;
         }
         const tabInfo: IJsonTabNode = {
@@ -853,7 +855,7 @@ function NavBar({ layoutref }: NavBarProps) {
             isModified: false,
         });
         setIsOtherTab(true);
-        setActiveTab('Dashboard');
+        setActiveTab(Constants.DASHBOARD_TAB_ID);
     }
 
     /**
@@ -864,7 +866,8 @@ function NavBar({ layoutref }: NavBarProps) {
         if (EditorMgr.getInstance().hasEditorSession(Constants.AI_CHAT_TAB_ID)) {
             const layoutModel = EditorMgr.getInstance().getLayoutModel();
             layoutModel?.doAction(Actions.selectTab(Constants.AI_CHAT_TAB_ID));
-            setActiveTab(t('ai-chat'));
+            setIsOtherTab(true);
+            setActiveTab(Constants.AI_CHAT_TAB_ID);
             return;
         }
         const tabInfo: IJsonTabNode = {
@@ -887,7 +890,7 @@ function NavBar({ layoutref }: NavBarProps) {
             isModified: false,
         });
         setIsOtherTab(true);
-        setActiveTab(t('ai-chat'));
+        setActiveTab(Constants.AI_CHAT_TAB_ID);
     }
 
     /**
@@ -952,9 +955,11 @@ function NavBar({ layoutref }: NavBarProps) {
                 return;
             }
 
-            // make sure this is not the dashboard tab or AI chat tab
-            const hasEditorSession = EditorMgr.getInstance().hasEditorSession(activeTab);
-            if (!hasEditorSession) {
+            // Only run from a Python or Blockly tab — not Dashboard or AI Buddy
+            const tabId = (activeTab ?? '').replace(/^"|"$/g, '');
+            const canRun =
+                !isOtherTab && EditorMgr.getInstance().isRunnableCodeTab(tabId);
+            if (!canRun) {
                 setDialogContent(
                     <AlertDialog alertMessage={t('no-editor-run')} toggleDialog={toggleDialog} />,
                 );
