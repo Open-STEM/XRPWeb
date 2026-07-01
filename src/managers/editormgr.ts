@@ -344,6 +344,14 @@ export default class EditorMgr {
     public async saveEditor(id: string, code: string) {
         const session = this.editorSessions.get(id);
         if (session) {
+            // Google Drive files can only be saved while signed in to Google
+            // Drive. When signed out, block the save (menu/Ctrl-S) and tell the
+            // user to sign back in.
+            if (session.gpath && !AppMgr.getInstance().authService.isLogin) {
+                AppMgr.getInstance().emit(EventType.EVENT_ALERT, i18n.t('editGoogleLoginRequired'));
+                return;
+            }
+
             const isConnected = AppMgr.getInstance().getConnection()?.isConnected() ?? false;
             if (!isConnected && !AppMgr.getInstance().authService.isLogin) {
                 // show a dialog to inform user to connect to XRP or login to Google Drive
