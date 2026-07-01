@@ -1,5 +1,6 @@
 import React from 'react';
 import SensorWidget from './SensorWidget';
+import type { DashboardViewMode } from './SensorWidget';
 import {
   accelerometerConfig,
   gyroscopeConfig,
@@ -10,30 +11,34 @@ import {
   voltageConfig,
 } from './configs';
 
-export const Accelerometer: React.FC = () => (
-  <SensorWidget config={accelerometerConfig} />
+type BuiltinSensorProps = {
+  viewMode?: DashboardViewMode;
+};
+
+export const Accelerometer: React.FC<BuiltinSensorProps> = ({ viewMode = 'data' }) => (
+  <SensorWidget config={accelerometerConfig} initialViewMode={viewMode} />
 );
 
-export const Gyroscope: React.FC = () => (
-  <SensorWidget config={gyroscopeConfig} />
+export const Gyroscope: React.FC<BuiltinSensorProps> = ({ viewMode = 'data' }) => (
+  <SensorWidget config={gyroscopeConfig} initialViewMode={viewMode} />
 );
 
-export const Current: React.FC = () => (
-  <SensorWidget config={currentConfig} />
+export const Current: React.FC<BuiltinSensorProps> = ({ viewMode = 'data' }) => (
+  <SensorWidget config={currentConfig} initialViewMode={viewMode} />
 );
 
-export const Encoder: React.FC = () => (
-  <SensorWidget config={encoderConfig} />
+export const Encoder: React.FC<BuiltinSensorProps> = ({ viewMode = 'data' }) => (
+  <SensorWidget config={encoderConfig} initialViewMode={viewMode} />
 );
 
-export const Rangefinder: React.FC = () => (
-  <SensorWidget config={rangefinderConfig} />
+export const Rangefinder: React.FC<BuiltinSensorProps> = ({ viewMode = 'data' }) => (
+  <SensorWidget config={rangefinderConfig} initialViewMode={viewMode} />
 );
 
-export const Reflectance: React.FC = () => (
-  <SensorWidget config={reflectanceConfig} />
+export const Reflectance: React.FC<BuiltinSensorProps> = ({ viewMode = 'data' }) => (
+  <SensorWidget config={reflectanceConfig} initialViewMode={viewMode} />
 );
 
-export const Voltage: React.FC = () => (
-  <SensorWidget config={voltageConfig} />
+export const Voltage: React.FC<BuiltinSensorProps> = ({ viewMode = 'data' }) => (
+  <SensorWidget config={voltageConfig} initialViewMode={viewMode} />
 );
