@@ -330,6 +330,39 @@ export default class AppMgr {
     }
 
     /**
+     * IsFileExistsAtPath - check if a file already exists at the given full path
+     * in the current folder tree (used by Save As conflict detection).
+     * @param fullPath destination path including filename, e.g. /users/foo/bar.py
+     */
+    public IsFileExistsAtPath(fullPath: string): boolean {
+        if (!this._folderDataJson) {
+            return false;
+        }
+
+        const target = fullPath.startsWith('/') ? fullPath : `/${fullPath}`;
+        const normalizedTarget = target.replace(/\/+/g, '/');
+
+        const walk = (nodes: FolderItem[]): boolean => {
+            for (const node of nodes) {
+                if (node.children === null) {
+                    const parent = node.path.endsWith('/') ? node.path.slice(0, -1) : node.path;
+                    const nodePath = `${parent}/${node.name}`.replace(/\/+/g, '/');
+                    if (nodePath === normalizedTarget) {
+                        return true;
+                    }
+                } else if (node.children?.length) {
+                    if (walk(node.children)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+
+        return walk(JSON.parse(this._folderDataJson));
+    }
+
+    /**
      * getFolderList - return a list of XRP folder except the 'lib' directory
      */
     public getFolderList() : FolderItem[] | null {
