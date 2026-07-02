@@ -215,10 +215,14 @@ export class CommandToXRPMgr {
 
     /**
      * getBoardId - map the connected XRP's processor to the firmware-loader board id.
-     * RP2040 boards are the "xrp-beta"; everything else (RP2350) is "xrp-2350".
+     * RP2040 boards are the "xrp-beta" (or "xrp-nano" for the NanoXRP variant);
+     * everything else (RP2350) is "xrp-2350".
      */
     private getBoardId(): string {
-        return this.PROCESSOR === 2040 ? 'xrp-beta' : 'xrp-2350';
+        if (this.PROCESSOR !== 2040) {
+            return 'xrp-2350';
+        }
+        return this.is_NanoXRP ? 'xrp-nano' : 'xrp-beta';
     }
 
     /**
@@ -368,10 +372,13 @@ export class CommandToXRPMgr {
 
     /**
      * Set RP2040 vs RP2350 before UF2 install when the user has not connected yet
-     * (getVersionInfo would not have run).
+     * (getVersionInfo would not have run). isNanoXRP distinguishes the NanoXRP
+     * from the beta board (both RP2040).
      */
-    public setProcessorTypeForFirmwareLoader(processor: 2040 | 2350) {
+    public setProcessorTypeForFirmwareLoader(processor: 2040 | 2350, isNanoXRP: boolean = false) {
         this.PROCESSOR = processor;
+        this.is_NanoXRP = processor === 2040 && isNanoXRP;
+        this.connection?.setNanoXRP(this.is_NanoXRP);
     }
 
     /**

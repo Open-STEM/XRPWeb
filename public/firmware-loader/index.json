@@ -15,6 +15,13 @@
             "description": "XRP robot headers",
             "image": "/firmware-loader/images/board-xrp-2350.jpg",
             "nextLevel": "boards/xrp-2350.json"
+        },
+        {
+            "id": "xrp-nano",
+            "name": "NanoXRP",
+            "description": "NanoXRP with the RP2040 controller",
+            "image": "/firmware-loader/images/board-xrp-beta.jpg",
+            "nextLevel": "boards/xrp-nano.json"
         }
     ]
 }

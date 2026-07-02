@@ -26,6 +26,11 @@ function boardIdToProcessor(boardId: string): 2040 | 2350 {
     return boardId === 'xrp-2350' ? 2350 : 2040;
 }
 
+/** The NanoXRP is RP2040-based but runs its own firmware build. */
+function boardIdIsNanoXRP(boardId: string): boolean {
+    return boardId === 'xrp-nano';
+}
+
 /** BOOTSEL mass-storage drive name for the given XRP board. */
 function expectedDriveForBoard(boardId: string): string {
     return boardId === 'xrp-2350' ? 'RP2350' : 'RPI-RP2';
@@ -158,7 +163,7 @@ export default function FirmwareInstallWizard({
     const cmd = CommandToXRPMgr.getInstance();
 
     useEffect(() => {
-        cmd.setProcessorTypeForFirmwareLoader(boardIdToProcessor(boardId));
+        cmd.setProcessorTypeForFirmwareLoader(boardIdToProcessor(boardId), boardIdIsNanoXRP(boardId));
     }, [boardId, cmd]);
 
     const [phase, setPhase] = useState<WizardUiPhase>({ kind: 'instruction', step: 1 });
@@ -238,7 +243,7 @@ export default function FirmwareInstallWizard({
         setError(null);
         setPhase({ kind: 'uf2' });
         setUf2Pct(0);
-        cmd.setProcessorTypeForFirmwareLoader(boardIdToProcessor(boardId));
+        cmd.setProcessorTypeForFirmwareLoader(boardIdToProcessor(boardId), boardIdIsNanoXRP(boardId));
 
         try {
             if (!dirHandle) {
