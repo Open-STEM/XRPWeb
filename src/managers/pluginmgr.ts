@@ -1,7 +1,16 @@
 import { CommandToXRPMgr } from './commandstoxrpmgr';
 import AppMgr, { EventType } from './appmgr';
-import BlocklyConfigs from '@components/blockly/xrp_blockly_configs';
+import BlocklyConfigs, { BlocklyCategoryIds } from '@components/blockly/xrp_blockly_configs';
 import * as Blockly from 'blockly/core';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ToolboxCategory = Record<string, any>;
+
+function findCategoryById(categories: ToolboxCategory[], categoryId: string): ToolboxCategory | undefined {
+    return categories.find(
+        (cat) => cat.kind === 'CATEGORY' && cat.categoryId === categoryId,
+    );
+}
 
 interface PluginBlock {
     kind: string;
@@ -120,14 +129,15 @@ export default class PluginMgr {
         const contents = toolbox.contents as any[];
 
         // Check if "3rd Party" category already exists
-        const thirdPartyCategory = contents.find(cat => 
-            cat.kind === "CATEGORY" && cat.name === "3rd Party"
+        const thirdPartyCategory = contents.find(cat =>
+            cat.kind === "CATEGORY" && cat.categoryId === BlocklyCategoryIds.THIRD_PARTY
         );
 
         if (!thirdPartyCategory) {
             // Add "3rd Party" category after the Gamepad category
             const thirdPartyCat = {
                 "kind": "CATEGORY",
+                "categoryId": BlocklyCategoryIds.THIRD_PARTY,
                 "name": "3rd Party",
                 "colour": "#5b80a5", // blue color
                 "contents": []
@@ -136,7 +146,7 @@ export default class PluginMgr {
             // Find the Gamepad category and insert after it
             let gamepadIndex = -1;
             for (let i = 0; i < contents.length; i++) {
-                if (contents[i].kind === "CATEGORY" && contents[i].name === "Gamepad") {
+                if (contents[i].kind === "CATEGORY" && contents[i].categoryId === BlocklyCategoryIds.GAMEPAD) {
                     gamepadIndex = i;
                     break;
                 }
@@ -175,9 +185,7 @@ export default class PluginMgr {
         const contents = toolbox.contents as any[];
 
         // Find the "3rd Party" category
-        const thirdPartyCategory = contents.find(cat => 
-            cat.kind === "CATEGORY" && cat.name === "3rd Party"
-        );
+        const thirdPartyCategory = findCategoryById(contents, BlocklyCategoryIds.THIRD_PARTY);
 
         if (!thirdPartyCategory) {
             console.error('3rd Party category not found');
@@ -274,14 +282,12 @@ export default class PluginMgr {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const contents = toolbox.contents as any[];
 
-        const sensorsCategory = contents.find(cat =>
-            cat.kind === "CATEGORY" && cat.name === "Sensors"
-        );
+        const sensorsCategory = findCategoryById(contents, BlocklyCategoryIds.SENSORS);
 
         if (sensorsCategory) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const reflectanceCategory = sensorsCategory.contents.find((cat: any) =>
-                cat.kind === "CATEGORY" && cat.name === "Reflectance"
+            const reflectanceCategory = findCategoryById(
+                sensorsCategory.contents,
+                BlocklyCategoryIds.REFLECTANCE,
             );
 
             if (reflectanceCategory) {
@@ -318,9 +324,7 @@ export default class PluginMgr {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const contents = toolbox.contents as any[];
 
-        const controlBoardCategory = contents.find(cat => 
-            cat.kind === "CATEGORY" && cat.name === "Control Board"
-        );
+        const controlBoardCategory = findCategoryById(contents, BlocklyCategoryIds.CONTROL_BOARD);
 
         if (!controlBoardCategory) {
             return false;
@@ -363,9 +367,9 @@ export default class PluginMgr {
                 Blockly.Blocks['xrp_servo_deg'] = {
                     init: function () {
                         this.appendDummyInput()
-                            .appendField('Servo:')
+                            .appendField(Blockly.Msg['XRP_SERVO'] ?? 'Servo:')
                             .appendField(new Blockly.FieldDropdown([["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"]]), "SERVO")
-                            .appendField('Deg:');
+                            .appendField(Blockly.Msg['XRP_DEG'] ?? 'Deg:');
                         this.appendValueInput("degrees")
                             .setCheck("Number")
                         this.setInputsInline(true);

@@ -56,7 +56,7 @@
     "selectUserOption": "Seleccione un Usuario",
     "myview": "Mi Vista",
     "settings": "Configuración",
-    "firmwareLoader": "Cargador de firmware",
+    "firmwareLoader": "Firmware",
     "firmwareBackupPromptTitle": "¿Hacer una copia de seguridad antes de continuar?",
     "firmwareBackupPromptBody1": "Actualizar el firmware o cambiar a otro proyecto puede reemplazar o eliminar los archivos que están actualmente en su XRP.",
     "firmwareBackupPromptBody2": "Si su XRP está ejecutando un proyecto que le permite conectarse a XRPCode, quizá quiera conectarse y respaldar sus archivos primero para no perder ningún trabajo.",
@@ -240,7 +240,7 @@
         "dark": "Oscuro"
     },
     "backup-restore": {
-        "title": "Respaldo/Restauración",
+        "title": "Copia/Restaurar",
         "description": "Respalda o restaura tus archivos XRP. Haz clic en el botón de abajo para comenzar. Tenga en cuenta que su XRP debe estar conectado y su cuenta de Google Drive debe estar iniciada sesión antes de realizar un respaldo o restauración.",
         "backup": "Respaldo",
         "restore": "Restauración",
@@ -258,7 +258,5 @@
         "description": "Restaura tus archivos XRP desde tu XRP Robot a Google Drive.",
         "processing": "Procesando...",
         "begin": "Comenzar Restauración"
-    },
-    "_commentBlockly": "Esto no necesita ser traducido - agregar traducción específica de blockly a continuación",
-    "individualMotors": "Motores Individuales"
+    }
 }

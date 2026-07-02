@@ -4,16 +4,18 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 import enLang from '@/utils/i18n/locales/en/en.json';
 import esLang from '@/utils/i18n/locales/es/es.json';
+import enBlockly from '@/utils/i18n/locales/en/blockly.json';
+import esBlockly from '@/utils/i18n/locales/es/blockly.json';
 
 // the translations
 // (tip move them in a JSON file and import them,
 // or even better, manage them separated from your code: https://react.i18next.com/guides/multiple-translation-files)
 const resources = {
     en: {
-        translation: enLang,
+        translation: { ...enLang, blockly: enBlockly },
     },
     es: {
-        translation: esLang,
+        translation: { ...esLang, blockly: esBlockly },
     },
 };
 
