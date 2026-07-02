@@ -423,14 +423,24 @@ export class CommandToXRPMgr {
         };
         for (const dir of wipeDirs) {
             if (urls.some(([dest]) => destStartsWithDir(dest, dir))) {
-                await this.deleteFileOrDir(dir);
+                // Skip the per-delete FS-tree walk; getOnBoardFSTree() runs once at the end.
+                await this.deleteFileOrDir(dir, false);
             }
+        }
+
+        // Build each unique destination directory once instead of once per file.
+        const uniqueDirs = new Set<string>();
+        for (const [deviceDest] of urls) {
+            uniqueDirs.add(deviceDest.substring(0, deviceDest.lastIndexOf('/')));
+        }
+        for (const dir of uniqueDirs) {
+            await this.buildPath(dir);
         }
 
         for (let i = 0; i < urls.length; i++) {
             const [deviceDest, sourceRel] = urls[i];
             const fetchUrl = resolveSourceUrl(sourceRel) + '?version=' + cacheToken;
-            await this.uploadFile(deviceDest, await this.downloadFile(fetchUrl));
+            await this.uploadFile(deviceDest, await this.downloadFile(fetchUrl), false, false);
             emitProgress(cur_percent);
             cur_percent += percent_per;
         }
@@ -764,13 +774,15 @@ export class CommandToXRPMgr {
     }
 
 
-    async uploadFile(filePath: string, fileContents: string | Uint8Array, usePercent: boolean = false) {
+    async uploadFile(filePath: string, fileContents: string | Uint8Array, usePercent: boolean = false, ensurePath: boolean = true) {
         if (this.BUSY == true) {
             return true;
         }
 
-        const pathToFile = filePath.substring(0, filePath.lastIndexOf('/'));
-        await this.buildPath(pathToFile);
+        if (ensurePath) {
+            const pathToFile = filePath.substring(0, filePath.lastIndexOf('/'));
+            await this.buildPath(pathToFile);
+        }
 
         this.BUSY = true;
         if (usePercent)
@@ -962,7 +974,7 @@ export class CommandToXRPMgr {
     
 
     // Given a path, delete it on XRP
-    async deleteFileOrDir(path: string) {
+    async deleteFileOrDir(path: string, refreshTree: boolean = true) {
         if (path != undefined) {
             if (this.BUSY == true) {
                 return;
@@ -996,7 +1008,9 @@ export class CommandToXRPMgr {
             this.BUSY = false;
 
             // Make sure to update the filesystem after modifying it
-            await this.getOnBoardFSTree();
+            if (refreshTree) {
+                await this.getOnBoardFSTree();
+            }
             //window.setPercent?.(100); TODO:
             //window.resetPercentDelay?.();
         }

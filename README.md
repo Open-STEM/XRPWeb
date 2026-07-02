@@ -56,7 +56,18 @@ The XRP software platform is an integrated development environment where you can
    npm install
    ```
 
-3. **Start the development server**
+3. **Create the environment file**
+
+   Create a `.env` file in the project root:
+   ```
+   GOOGLE_CHATAPI_PROXY_TARGET=http://localhost:8000
+   GOOGLE_AUTH_URL=
+   ```
+
+   - `GOOGLE_CHATAPI_PROXY_TARGET` — URL of the AI chat API backend (proxied under `/api`)
+   - `GOOGLE_AUTH_URL` — Base URL of the Google Auth backend (used to fetch the OAuth client ID)
+
+4. **Start the development server**
    ```bash
    npm run dev
    ```
