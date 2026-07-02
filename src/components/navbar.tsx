@@ -59,6 +59,7 @@ import UploadFileDlg from '@/components/dialogs/uploadfiledlg';
 import EditorMgr, { EditorSession, EdSearchParams } from '@/managers/editormgr';
 import { useLocalStorage } from 'usehooks-ts';
 import { StorageKeys } from '@/utils/localstorage';
+import { isAiBuddyMenuEnabled } from '@/utils/aiBuddyAccess';
 import FileSaver from 'file-saver';
 import PowerSwitchAlert from '@/components/dialogs/power-switchdlg';
 import ViewPythonDlg from '@/components/dialogs/view-pythondlg';
@@ -1368,11 +1369,13 @@ function NavBar({ layoutref }: NavBarProps) {
     ];
 
     const moreMenu: MenuDataItem[] = [
-        {
-            label: t('ai-chat'),
-            iconImage: chatbot,
-            clicked: onAiClicked,
-        },
+        ...(isAiBuddyMenuEnabled()
+            ? [{
+                label: t('ai-chat'),
+                iconImage: chatbot,
+                clicked: onAiClicked,
+            }]
+            : []),
         {
             label: t('dashboard'),
             iconImage: dashboard,

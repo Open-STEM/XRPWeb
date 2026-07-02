@@ -3,9 +3,12 @@ import { createRoot } from 'react-dom/client';
 import '@/index.css';
 import '@/utils/i18n';
 import '@/utils/blockly-global'; // Expose Blockly globally for external plugins
+import { initAiBuddyAccess } from '@/utils/aiBuddyAccess';
 import App from '@/App.tsx';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ThemeInit } from '../.flowbite-react/init';
+
+initAiBuddyAccess();
 
 function Root() {
     const [googleClientId, setGoogleClientId] = useState<string | null>(null);
