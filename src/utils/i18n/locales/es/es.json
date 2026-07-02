@@ -156,6 +156,7 @@
     "update-lib-complete": "El proceso de actualización de la biblioteca XRP se ha completado con éxito.",
     "dashboard": "Panel",
     "no-editor-run": "Seleccione una pestaña con código antes de presionar Ejecutar.",
+    "program-not-saved-to-xrp": "Este programa no se ha guardado en el XRP. Guárdelo en el XRP antes de ejecutarlo.",
     "FilesystemStorage": "Sistema de archivos XRP: {{ capacity }} MB",
     "GoogleDriveStorage": "Sistema de archivos de Google Drive",
     "sensors": "Sensores",

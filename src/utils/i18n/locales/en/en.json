@@ -158,6 +158,7 @@
     "update-lib-complete": "The XRP library update process has completed successfully.",
     "dashboard": "Dashboard",
     "no-editor-run": "Please select a tab with code before pressing Run.",
+    "program-not-saved-to-xrp": "This program has not been saved to the XRP. Please save it to the XRP before running.",
     "FilesystemStorage": "XRP Filesystem: {{ capacity }} MB",
     "GoogleDriveStorage": "Google Drive Filesystem",
     "sensors": "Sensors",
