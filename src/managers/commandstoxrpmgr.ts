@@ -423,7 +423,8 @@ export class CommandToXRPMgr {
         };
         for (const dir of wipeDirs) {
             if (urls.some(([dest]) => destStartsWithDir(dest, dir))) {
-                await this.deleteFileOrDir(dir);
+                // Skip the per-delete FS-tree walk; getOnBoardFSTree() runs once at the end.
+                await this.deleteFileOrDir(dir, false);
             }
         }
 
@@ -962,7 +963,7 @@ export class CommandToXRPMgr {
     
 
     // Given a path, delete it on XRP
-    async deleteFileOrDir(path: string) {
+    async deleteFileOrDir(path: string, refreshTree: boolean = true) {
         if (path != undefined) {
             if (this.BUSY == true) {
                 return;
@@ -996,7 +997,9 @@ export class CommandToXRPMgr {
             this.BUSY = false;
 
             // Make sure to update the filesystem after modifying it
-            await this.getOnBoardFSTree();
+            if (refreshTree) {
+                await this.getOnBoardFSTree();
+            }
             //window.setPercent?.(100); TODO:
             //window.resetPercentDelay?.();
         }
