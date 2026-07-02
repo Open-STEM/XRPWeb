@@ -2,12 +2,12 @@
     "powerOff": {
         "xrp-beta": "/firmware-loader/images/board-xrp-beta_poweroff.jpg",
         "xrp-2350": "/firmware-loader/images/board-xrp-2350_poweroff.jpg",
-        "xrp-nano": "/firmware-loader/images/board-xrp-beta_poweroff.jpg"
+        "xrp-nano": "/firmware-loader/images/board-xrp-nano_poweroff.jpg"
     },
     "bootSel": {
         "xrp-beta": "/firmware-loader/images/board-xrp-beta_bootsel.jpg",
         "xrp-2350": "/firmware-loader/images/board-xrp-2350_bootsel.jpg",
-        "xrp-nano": "/firmware-loader/images/board-xrp-beta_bootsel.jpg"
+        "xrp-nano": "/firmware-loader/images/board-xrp-nano_bootsel.jpg"
     },
     "selectDir": {
         "xrp-beta-win": "/firmware-loader/images/board-xrp-beta-selectdir-win.png",

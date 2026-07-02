@@ -20,7 +20,7 @@
             "id": "xrp-nano",
             "name": "NanoXRP",
             "description": "NanoXRP with the RP2040 controller",
-            "image": "/firmware-loader/images/board-xrp-beta.jpg",
+            "image": "/firmware-loader/images/board-xrp-nano.jpg",
             "nextLevel": "boards/xrp-nano.json"
         }
     ]
