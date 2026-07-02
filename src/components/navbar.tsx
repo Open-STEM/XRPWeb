@@ -23,6 +23,7 @@ import drivers from '@assets/images/drivers.svg';
 import forum from '@assets/images/forum.svg';
 import curriculum from '@assets/images/curriculum.svg';
 import changelog from '@assets/images/changelog.svg';
+import privacy from '@assets/images/privacy.svg';
 import settings from '@assets/images/settings.svg';
 import chatbot from '@assets/images/chatbot.svg';
 import gamepad from '@assets/images/gamepad.svg';
@@ -59,6 +60,7 @@ import UploadFileDlg from '@/components/dialogs/uploadfiledlg';
 import EditorMgr, { EditorSession, EdSearchParams } from '@/managers/editormgr';
 import { useLocalStorage } from 'usehooks-ts';
 import { StorageKeys } from '@/utils/localstorage';
+import { isAiBuddyMenuEnabled } from '@/utils/aiBuddyAccess';
 import FileSaver from 'file-saver';
 import PowerSwitchAlert from '@/components/dialogs/power-switchdlg';
 import ViewPythonDlg from '@/components/dialogs/view-pythondlg';
@@ -1363,16 +1365,23 @@ function NavBar({ layoutref }: NavBarProps) {
                     iconImage: changelog,
                     clicked: ChangeLog,
                 },
+                {
+                    label: t('privacyPolicy'),
+                    iconImage: privacy,
+                    link: 'https://www.experiential.bot/privacy',
+                },
             ],
         },
     ];
 
     const moreMenu: MenuDataItem[] = [
-        {
-            label: t('ai-chat'),
-            iconImage: chatbot,
-            clicked: onAiClicked,
-        },
+        ...(isAiBuddyMenuEnabled()
+            ? [{
+                label: t('ai-chat'),
+                iconImage: chatbot,
+                clicked: onAiClicked,
+            }]
+            : []),
         {
             label: t('dashboard'),
             iconImage: dashboard,
@@ -1533,7 +1542,7 @@ function NavBar({ layoutref }: NavBarProps) {
                         <MdMoreVert size={'1.5em'} />
                     </button>
                     {isMoreMenuOpen && (
-                        <div className="absolute right-0 top-11 z-[100] mx-auto flex w-48 flex-col bg-curious-blue-700 py-3 shadow-md transition-all dark:bg-mountain-mist-950 dark:group-hover:bg-mountain-mist-950">
+                        <div className="absolute right-0 top-11 z-[100] mx-auto flex w-max min-w-56 flex-col bg-curious-blue-700 py-3 shadow-md transition-all dark:bg-mountain-mist-950 dark:group-hover:bg-mountain-mist-950">
                             <ul id="pythonId" className="flex cursor-pointer flex-col">
                                 {moreMenu.map((item, ci) => (
                                     <li

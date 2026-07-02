@@ -23,6 +23,7 @@
     "curriculum": "Curriculum",
     "userHelpForum": "User Help Forum",
     "changeLog": "Change Log",
+    "privacyPolicy": "Privacy Policy",
     "okButton": "OK",
     "cancelButton": "Cancel",
     "connections": "Connections",
@@ -257,7 +258,5 @@
         "description": "Restore XRP Robot files from Google Drive.",
         "processing": "Processing {{ filename }}",
         "begin": "Begin Restore"
-    },
-    "_commentBlockly": "This does not need to be translated - blockly specific translation add below",
-    "individualMotors": "Individual Motors"
+    }
 }

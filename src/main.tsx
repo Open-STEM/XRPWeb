@@ -2,10 +2,16 @@ import { StrictMode, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import '@/index.css';
 import '@/utils/i18n';
+import { applyBlocklyLocale } from '@/utils/blockly-locales';
+import i18n from '@/utils/i18n';
 import '@/utils/blockly-global'; // Expose Blockly globally for external plugins
+import { initAiBuddyAccess } from '@/utils/aiBuddyAccess';
 import App from '@/App.tsx';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ThemeInit } from '../.flowbite-react/init';
+
+initAiBuddyAccess();
+applyBlocklyLocale(i18n.language);
 
 function Root() {
     const [googleClientId, setGoogleClientId] = useState<string | null>(null);

@@ -3,7 +3,7 @@ import { registerFieldColour } from '@blockly/field-colour';
 import { BlocklyWorkspace, Workspace } from 'react-blockly';
 import BlocklyConfigs from '@components/blockly/xrp_blockly_configs';
 import * as Blockly from 'blockly/core';
-import { setBlocklyLocale } from '@/utils/blockly-locales';
+import { applyBlocklyLocale, refreshBlocklyWorkspace } from '@/utils/blockly-locales';
 import AppMgr, { EventType, LoginStatus, Themes } from '@/managers/appmgr';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -214,8 +214,9 @@ function blocklyToPython(ws: Workspace) {
  * @returns
  */
 function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
-    /** Bumped when the shared toolbox JSON is updated (e.g. after XRP connect). */
+    /** Bumped when the shared toolbox JSON is updated (e.g. after XRP connect or language change). */
     const [toolboxRevision, setToolboxRevision] = useState(0);
+    const [language, setLanguage] = useState(i18n.language);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [name, setName] = useState<string>(tabName);
     const nameRef = useRef(name);
@@ -259,8 +260,8 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
 
     // Shallow copy gives react-blockly a new reference so its updateToolbox effect runs.
     const toolboxConfiguration = useMemo(
-        () => ({ ...BlocklyConfigs.ToolboxJson }),
-        [toolboxRevision],
+        () => ({ ...BlocklyConfigs.getLocalizedToolboxJson() }) as typeof BlocklyConfigs.ToolboxJson,
+        [toolboxRevision, language],
     );
 
     useEffect(() => {
@@ -438,16 +439,26 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
             }
         }
 
-        // Set up language based on stored preference
-        const setupLanguage = () => {
-            const storedLanguage = localStorage.getItem(StorageKeys.LANGUAGE) || 'en';
-            setBlocklyLocale(storedLanguage);
-        };
-        
-        // Call setupLanguage to initialize Blockly locale
-        setupLanguage();
+        applyBlocklyLocale(i18n.language);
 
     }, [saveEditor, tabId, restoreViewportForTab, persistViewport, evaluateEditBlocked]);
+
+    useEffect(() => {
+        const handleLanguageChanged = (lang: string) => {
+            applyBlocklyLocale(lang);
+            setLanguage(lang);
+            setToolboxRevision((prev) => prev + 1);
+            const ws = EditorMgr.getInstance().getEditorSession(tabId)?.workspace;
+            if (ws) {
+                refreshBlocklyWorkspace(ws);
+            }
+        };
+
+        i18n.on('languageChanged', handleLanguageChanged);
+        return () => {
+            i18n.off('languageChanged', handleLanguageChanged);
+        };
+    }, [tabId]);
 
     useEffect(() => {
         evaluateEditBlocked();
