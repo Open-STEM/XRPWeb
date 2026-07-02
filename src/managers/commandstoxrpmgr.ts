@@ -428,10 +428,19 @@ export class CommandToXRPMgr {
             }
         }
 
+        // Build each unique destination directory once instead of once per file.
+        const uniqueDirs = new Set<string>();
+        for (const [deviceDest] of urls) {
+            uniqueDirs.add(deviceDest.substring(0, deviceDest.lastIndexOf('/')));
+        }
+        for (const dir of uniqueDirs) {
+            await this.buildPath(dir);
+        }
+
         for (let i = 0; i < urls.length; i++) {
             const [deviceDest, sourceRel] = urls[i];
             const fetchUrl = resolveSourceUrl(sourceRel) + '?version=' + cacheToken;
-            await this.uploadFile(deviceDest, await this.downloadFile(fetchUrl));
+            await this.uploadFile(deviceDest, await this.downloadFile(fetchUrl), false, false);
             emitProgress(cur_percent);
             cur_percent += percent_per;
         }
@@ -765,13 +774,15 @@ export class CommandToXRPMgr {
     }
 
 
-    async uploadFile(filePath: string, fileContents: string | Uint8Array, usePercent: boolean = false) {
+    async uploadFile(filePath: string, fileContents: string | Uint8Array, usePercent: boolean = false, ensurePath: boolean = true) {
         if (this.BUSY == true) {
             return true;
         }
 
-        const pathToFile = filePath.substring(0, filePath.lastIndexOf('/'));
-        await this.buildPath(pathToFile);
+        if (ensurePath) {
+            const pathToFile = filePath.substring(0, filePath.lastIndexOf('/'));
+            await this.buildPath(pathToFile);
+        }
 
         this.BUSY = true;
         if (usePercent)
