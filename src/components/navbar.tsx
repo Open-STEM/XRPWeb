@@ -309,12 +309,16 @@ function NavBar({ layoutref }: NavBarProps) {
             });
 
             AppMgr.getInstance().on(EventType.EVENT_SHOWBLUETOOTH_CONNECTING, () => {
-                setDialogContent(<BusyDialog title={t('connecting-bluetooth')} />);
-                toggleDialog();
+                openDialog(<BusyDialog title={t('connecting-bluetooth')} />);
             });
 
             AppMgr.getInstance().on(EventType.EVENT_HIDE_BLUETOOTH_CONNECTING, () => {
-                toggleDialog();
+                closeDialog();
+                if (stoppingRef.current) {
+                    setIsStopping(false);
+                    setRunning(false);
+                    broadcastRunningState(false);
+                }
             });
 
             hasSubscribed = true;
@@ -933,12 +937,19 @@ function NavBar({ layoutref }: NavBarProps) {
 
         const resetRunButtonStates = () => {
             AppMgr.getInstance().on(EventType.EVENT_PROGRAM_EXECUTED, () => {
-                if (stoppingRef.current === true) {
-                    toggleDialog();
+                if (stoppingRef.current) {
+                    // BLE stop reboots and reconnects; keep the spinner until reconnect
+                    // finishes (EVENT_HIDE_BLUETOOTH_CONNECTING).
+                    if (AppMgr.getInstance().getConnectionType() !== ConnectionType.BLUETOOTH) {
+                        closeDialog();
+                        setIsStopping(false);
+                        setRunning(false);
+                        broadcastRunningState(false);
+                    }
+                } else {
+                    setRunning(false);
+                    broadcastRunningState(false);
                 }
-                setRunning(false);
-                setIsStopping(false);
-                broadcastRunningState(false);
                 AppMgr.getInstance().eventOff(EventType.EVENT_PROGRAM_EXECUTED);
             });
         };
@@ -1077,9 +1088,8 @@ function NavBar({ layoutref }: NavBarProps) {
                 });
         } else {
             setIsStopping(true);
+            openDialog(<BusyDialog title={t('stopRunningProgram')} />);
             CommandToXRPMgr.getInstance().stopProgram();
-            setDialogContent(<BusyDialog title={t('stopRunningProgram')} />);
-            toggleDialog();
         }
     }
 
@@ -1195,6 +1205,21 @@ function NavBar({ layoutref }: NavBarProps) {
         setDialogContent(<div />);
     }
 
+    function openDialog(content: React.ReactNode) {
+        setDialogContent(content);
+        if (dialogRef.current && !dialogRef.current.open) {
+            dialogRef.current.showModal();
+        }
+    }
+
+    /** Close the dialog if open; never opens it (avoids ghost backdrop after BLE reconnect). */
+    function closeDialog() {
+        if (dialogRef.current?.open) {
+            setDialogContent(null);
+            dialogRef.current.close();
+        }
+    }
+
     /**
      * toggleDialog - toggle the dialog open and closed
      */
@@ -1202,10 +1227,11 @@ function NavBar({ layoutref }: NavBarProps) {
         if (!dialogRef.current) {
             return;
         }
-        if (dialogRef.current.hasAttribute('open')) {
-            setDialogContent(<div />);
-            dialogRef.current.close();
-        } else dialogRef.current.showModal();
+        if (dialogRef.current.open) {
+            closeDialog();
+        } else {
+            dialogRef.current.showModal();
+        }
     }
 
     /**

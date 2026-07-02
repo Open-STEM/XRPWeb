@@ -33,6 +33,9 @@ export default class PluginMgr {
     private static instance: PluginMgr;
     private cmdToXRPMgr: CommandToXRPMgr = CommandToXRPMgr.getInstance();
     private loadedScripts: Set<string> = new Set();
+    private appliedPluginKeys: Set<string> = new Set();
+    private nonBetaApplied = false;
+    private nanoXRPApplied = false;
     private pluginConfig: PluginConfig | null = null;
 
     constructor() {}
@@ -46,24 +49,28 @@ export default class PluginMgr {
 
     // --- Public Methods ---
     public async pluginCheck(): Promise<void> {
-        let needsUpdate = false;
+        let hadChanges = false;
 
         // Check for RP2350 board special case
         if (this.cmdToXRPMgr.getXRPDrive() === "RP2350") {
-            await this.configNonBeta();
-            needsUpdate = true;
+            if (await this.configNonBeta()) {
+                hadChanges = true;
+            }
         }
 
         // Add NanoXRP-specific blocks
         if (this.cmdToXRPMgr.isNanoXRP()) {
-            this.configNanoXRP();
-            needsUpdate = true;
+            if (this.configNanoXRP()) {
+                hadChanges = true;
+            }
         }
 
         // Load and process plugins from plugin.json
-        await this.loadPlugins();
-        
-        if (needsUpdate || this.pluginConfig) {
+        if (await this.loadPlugins()) {
+            hadChanges = true;
+        }
+
+        if (hadChanges) {
             this.updateAllBlocklyEditors();
         }
     }
@@ -71,33 +78,37 @@ export default class PluginMgr {
     /**
      * Load plugins from plugin.json file
      */
-    private async loadPlugins(): Promise<void> {
+    private async loadPlugins(): Promise<boolean> {
         try {
             // Try to read plugin.json from the XRP device
             const pluginContent = await this.cmdToXRPMgr.getFileContents('lib/plugins/plugins.json');
             if (pluginContent && pluginContent.length > 0) {
                 const pluginText = new TextDecoder().decode(new Uint8Array(pluginContent));
                 this.pluginConfig = JSON.parse(pluginText);
-                await this.processPlugins();
+                return await this.processPlugins();
             }
         } catch (error) {
             console.log('No plugin.json found or error loading plugins:', error);
         }
+        return false;
     }
 
     /**
      * Process loaded plugins and add blocks to toolbox
      */
-    private async processPlugins(): Promise<void> {
-        if (!this.pluginConfig) return;
+    private async processPlugins(): Promise<boolean> {
+        if (!this.pluginConfig) return false;
 
         // Ensure "3rd Party" category exists
         this.ensureThirdPartyCategory();
 
-        // Process each plugin
+        let hadChanges = false;
         for (const plugin of this.pluginConfig.plugins) {
-            await this.addPluginToToolbox(plugin);
+            if (await this.addPluginToToolbox(plugin)) {
+                hadChanges = true;
+            }
         }
+        return hadChanges;
     }
 
     /**
@@ -153,7 +164,12 @@ export default class PluginMgr {
     /**
      * Add a plugin's blocks to the toolbox
      */
-    private async addPluginToToolbox(plugin: Plugin): Promise<void> {
+    private async addPluginToToolbox(plugin: Plugin): Promise<boolean> {
+        const pluginKey = plugin.blocks_url;
+        if (this.appliedPluginKeys.has(pluginKey)) {
+            return false;
+        }
+
         const toolbox = BlocklyConfigs.ToolboxJson;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const contents = toolbox.contents as any[];
@@ -165,14 +181,23 @@ export default class PluginMgr {
 
         if (!thirdPartyCategory) {
             console.error('3rd Party category not found');
-            return;
+            return false;
+        }
+
+        // Skip if this plugin category was already added (e.g. prior connect)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (thirdPartyCategory.contents.some((cat: any) =>
+            cat.kind === "CATEGORY" && cat.name === plugin.friendly_name
+        )) {
+            this.appliedPluginKeys.add(pluginKey);
+            return false;
         }
 
         // Load blocks from the blocks URL
         const blocks = await this.loadPluginBlocks(plugin.blocks_url);
         if (!blocks) {
             console.error(`Failed to load blocks from ${plugin.blocks_url}`);
-            return;
+            return false;
         }
 
         // Create plugin subcategory
@@ -184,9 +209,11 @@ export default class PluginMgr {
         };
 
         thirdPartyCategory.contents.push(pluginCategory);
+        this.appliedPluginKeys.add(pluginKey);
 
         // Load the supporting script (normalized path)
         await this.loadScript(plugin.script_url);
+        return true;
     }
 
     /**
@@ -238,7 +265,11 @@ export default class PluginMgr {
     /**
      * Add NanoXRP-specific blocks to the toolbox (middle reflectance sensor)
      */
-    private configNanoXRP(): void {
+    private configNanoXRP(): boolean {
+        if (this.nanoXRPApplied) {
+            return false;
+        }
+
         const toolbox = BlocklyConfigs.ToolboxJson;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const contents = toolbox.contents as any[];
@@ -254,20 +285,35 @@ export default class PluginMgr {
             );
 
             if (reflectanceCategory) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const alreadyAdded = reflectanceCategory.contents.some((block: any) =>
+                    block.kind === "BLOCK" && block.type === "xrp_m_refl"
+                );
+                if (alreadyAdded) {
+                    this.nanoXRPApplied = true;
+                    return false;
+                }
+
                 reflectanceCategory.contents.push({
                     "kind": "BLOCK",
                     "type": "xrp_m_refl"
                 });
+                this.nanoXRPApplied = true;
+                return true;
             }
         }
+        return false;
     }
 
     /**
      * Configure non-beta blocks for RP2350 board
      */
-    private async configNonBeta(): Promise<void> {
+    private async configNonBeta(): Promise<boolean> {
+        if (this.nonBetaApplied) {
+            return false;
+        }
+
         const pluginRootUrl = 'plugins/2350/';
-        // Add color LED block to Control Board category
         const toolbox = BlocklyConfigs.ToolboxJson;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const contents = toolbox.contents as any[];
@@ -276,16 +322,33 @@ export default class PluginMgr {
             cat.kind === "CATEGORY" && cat.name === "Control Board"
         );
 
-        if (controlBoardCategory) {
-            const colorLEDBlock = await this.loadPluginBlocks(pluginRootUrl + 'nonbeta_blocks.json');
-            controlBoardCategory.contents.push(colorLEDBlock);
+        if (!controlBoardCategory) {
+            return false;
         }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const alreadyAdded = controlBoardCategory.contents.some((item: any) =>
+            item.kind === "BLOCK" && item.type === "xrp_color_LED"
+        );
+        if (alreadyAdded) {
+            this.nonBetaApplied = true;
+            return false;
+        }
+
+        const colorLEDBlock = await this.loadPluginBlocks(pluginRootUrl + 'nonbeta_blocks.json');
+        if (!colorLEDBlock) {
+            return false;
+        }
+
+        controlBoardCategory.contents.push(colorLEDBlock);
 
         // Extend servo array to support 4 servos for RP2350
         this.extendServoArrayForRP2350();
 
         // Load the supporting script (use Vite public root)
         await this.loadScript(pluginRootUrl + 'nonbeta_blocks.js');
+        this.nonBetaApplied = true;
+        return true;
     }
 
     /**
