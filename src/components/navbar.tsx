@@ -23,6 +23,7 @@ import drivers from '@assets/images/drivers.svg';
 import forum from '@assets/images/forum.svg';
 import curriculum from '@assets/images/curriculum.svg';
 import changelog from '@assets/images/changelog.svg';
+import privacy from '@assets/images/privacy.svg';
 import settings from '@assets/images/settings.svg';
 import chatbot from '@assets/images/chatbot.svg';
 import gamepad from '@assets/images/gamepad.svg';
@@ -1363,6 +1364,11 @@ function NavBar({ layoutref }: NavBarProps) {
                     label: t('changeLog'),
                     iconImage: changelog,
                     clicked: ChangeLog,
+                },
+                {
+                    label: t('privacyPolicy'),
+                    iconImage: privacy,
+                    link: 'https://www.experiential.bot/privacy',
                 },
             ],
         },
