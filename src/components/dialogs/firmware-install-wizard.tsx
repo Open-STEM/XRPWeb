@@ -160,6 +160,8 @@ export default function FirmwareInstallWizard({
     const { t } = useTranslation();
     const os = useMemo(() => detectOsFamily(), []);
 
+    const boardCtx = boardIdIsNanoXRP(boardId) ? { context: 'nano' } : undefined;
+
     const cmd = CommandToXRPMgr.getInstance();
 
     useEffect(() => {
@@ -447,28 +449,28 @@ export default function FirmwareInstallWizard({
                 <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-6">
                     {phase.step === 1 && (
                         <>
-                            <h2 className="text-center text-lg font-semibold">{t('firmwareWizardStep1Title')}</h2>
+                            <h2 className="text-center text-lg font-semibold">{t('firmwareWizardStep1Title', boardCtx)}</h2>
                             <img src={imgPowerOff} alt="" className="max-h-72 w-full rounded-lg object-contain" />
                             <p className="text-center text-sm text-mountain-mist-700 dark:text-shark-300">
-                                {t('firmwareWizardStep1Body')}
+                                {t('firmwareWizardStep1Body', boardCtx)}
                             </p>
                         </>
                     )}
                     {phase.step === 2 && (
                         <>
-                            <h2 className="text-center text-lg font-semibold">{t('firmwareWizardStep2Title')}</h2>
+                            <h2 className="text-center text-lg font-semibold">{t('firmwareWizardStep2Title', boardCtx)}</h2>
                             <img src={imgBootSel} alt="" className="max-h-72 w-full rounded-lg object-contain" />
                             <p className="text-center text-sm text-mountain-mist-700 dark:text-shark-300">
-                                {t('firmwareWizardStep2Body')}
+                                {t('firmwareWizardStep2Body', boardCtx)}
                             </p>
                         </>
                     )}
                     {phase.step === 3 && (
                         <>
-                            <h2 className="text-center text-lg font-semibold">{t('firmwareWizardStep3Title')}</h2>
+                            <h2 className="text-center text-lg font-semibold">{t('firmwareWizardStep3Title', boardCtx)}</h2>
                             <img src={imgSelectDir} alt="" className="max-h-72 w-full rounded-lg object-contain" />
                             <p className="mb-2 text-center text-sm text-mountain-mist-700 dark:text-shark-300">
-                                {t('firmwareWizardStep3Body', { drive: cmd.getXRPDrive() })}
+                                {t('firmwareWizardStep3Body', { drive: cmd.getXRPDrive(), ...boardCtx })}
                             </p>
                             <button
                                 type="button"
