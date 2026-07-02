@@ -332,6 +332,10 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                         if (editorType !== undefined) {
                             AppMgr.getInstance().emit(EventType.EVENT_EDITOR, editorType);
                         }
+                        AppMgr.getInstance().emit(
+                            EventType.EVENT_EDITOR_TAB_SELECTED,
+                            action.data.tabNode,
+                        );
                         setActiveTab(action.data.tabNode);
                     }
                 }
@@ -395,7 +399,10 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                     style={{ width: '16px', height: '16px', marginRight: '0px' }}
                 />
             );
-        } else if (EditorMgr.getInstance().getEditorSession(node.getId())?.gpath !== undefined) {
+        } else if (EditorMgr.getInstance().getEditorSession(node.getId())?.gpath) {
+            // Only Google Drive files carry a real gpath (file id). New local/XRP
+            // files and the Dashboard/AI Buddy tabs use an empty gpath, so a
+            // truthy check keeps the Drive icon off of them.
             renderValues.leading = (
                 <img src={GoogleDriveLogo} alt="icon" style={{ width: '16px', height: '16px' }} />
             );

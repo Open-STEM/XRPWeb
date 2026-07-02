@@ -4,13 +4,13 @@ import { BlocklyWorkspace, Workspace } from 'react-blockly';
 import BlocklyConfigs from '@components/blockly/xrp_blockly_configs';
 import * as Blockly from 'blockly/core';
 import { setBlocklyLocale } from '@/utils/blockly-locales';
-import AppMgr, { EventType, Themes } from '@/managers/appmgr';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import AppMgr, { EventType, LoginStatus, Themes } from '@/managers/appmgr';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { StorageKeys } from '@/utils/localstorage';
 import EditorMgr, { EditorSession } from '@/managers/editormgr';
+import i18n from '@/utils/i18n';
 import moment from 'moment';
-import { EditorType } from '@/utils/types';
 
 registerFieldColour(); //Plugin needs to be registered. Used for the Color LED on the non beta board. 
 
@@ -126,6 +126,72 @@ interface BlocklyEditorProps {
     tabName: string;
 }
 
+type BlocklyViewport = { scrollX: number; scrollY: number; scale: number };
+
+type BlocklyWorkspaceSvg = Workspace & {
+    scrollX: number;
+    scrollY: number;
+    scale: number;
+    resize: () => void;
+    setScale: (scale: number) => void;
+    scroll: (x: number, y: number) => void;
+    scrollCenter: () => void;
+    zoomToFit: () => void;
+};
+
+function asSvgWorkspace(ws: Workspace): BlocklyWorkspaceSvg | null {
+    if (
+        'scrollX' in ws &&
+        'scrollY' in ws &&
+        'scale' in ws &&
+        typeof (ws as BlocklyWorkspaceSvg).scroll === 'function'
+    ) {
+        return ws as BlocklyWorkspaceSvg;
+    }
+    return null;
+}
+
+function captureViewport(ws: Workspace): BlocklyViewport | undefined {
+    const svgWs = asSvgWorkspace(ws);
+    if (!svgWs) {
+        return undefined;
+    }
+    return { scrollX: svgWs.scrollX, scrollY: svgWs.scrollY, scale: svgWs.scale };
+}
+
+function restoreViewport(ws: Workspace, viewport: BlocklyViewport) {
+    const svgWs = asSvgWorkspace(ws);
+    if (!svgWs) {
+        return;
+    }
+    // Recompute the SVG size for the now-visible container before scrolling,
+    // otherwise Blockly clamps scroll against stale (0x0) metrics.
+    Blockly.svgResize(svgWs as unknown as Blockly.WorkspaceSvg);
+    svgWs.setScale(viewport.scale);
+    // scroll() takes an absolute target position (not a delta).
+    svgWs.scroll(viewport.scrollX, viewport.scrollY);
+}
+
+/** Zoom to fit and center all blocks — used only when a file is first opened. */
+function centerAndFit(ws: Workspace) {
+    const svgWs = asSvgWorkspace(ws);
+    if (!svgWs) {
+        return;
+    }
+    Blockly.svgResize(svgWs as unknown as Blockly.WorkspaceSvg);
+    svgWs.zoomToFit();
+    svgWs.scrollCenter();
+}
+
+function loadBlocksIntoWorkspace(ws: Workspace, session: EditorSession) {
+    if (!session.content) {
+        return;
+    }
+    const lines = session.content.split('##XRPBLOCKS ');
+    const blockContent = lines.length > 1 ? lines[1]! : lines[0]!;
+    Blockly.serialization.workspaces.load(JSON.parse(blockContent), ws);
+}
+
 /**
  * blocklyToPython
  * @param ws
@@ -148,12 +214,54 @@ function blocklyToPython(ws: Workspace) {
  * @returns
  */
 function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
-    const [toolboxKey, setToolboxKey] = useState(0); // Force re-render when toolbox updates
+    /** Bumped when the shared toolbox JSON is updated (e.g. after XRP connect). */
+    const [toolboxRevision, setToolboxRevision] = useState(0);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [name, setName] = useState<string>(tabName);
     const nameRef = useRef(name);
     const isLoadingRef = useRef(isLoading);
     const [workspace, setWorkspace] = useState<Workspace | null>(null);
+    // True when this is a Google Drive file (session.gpath) but the user is
+    // signed out of Google Drive. The file cannot be saved, so editing is
+    // blocked until they sign back in.
+    const [editBlocked, setEditBlocked] = useState<boolean>(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    const evaluateEditBlocked = useCallback(() => {
+        const session = EditorMgr.getInstance().getEditorSession(tabId);
+        setEditBlocked(!!session?.gpath && !AppMgr.getInstance().authService.isLogin);
+    }, [tabId]);
+
+    const persistViewport = useCallback((ws: Workspace) => {
+        // When FlexLayout hides this tab (display:none) the container is 0x0 and
+        // Blockly fires a VIEWPORT_CHANGE with a reset scroll. Ignore it so we
+        // never overwrite the good saved viewport with the hidden-state values.
+        const el = containerRef.current;
+        if (!el || el.clientWidth === 0 || el.clientHeight === 0) {
+            return;
+        }
+        const session = EditorMgr.getInstance().getEditorSession(tabId);
+        const viewport = captureViewport(ws);
+        if (session && viewport) {
+            session.viewport = viewport;
+        }
+    }, [tabId]);
+
+    const restoreViewportForTab = useCallback(
+        (ws: Workspace) => {
+            const session = EditorMgr.getInstance().getEditorSession(tabId);
+            if (session?.viewport) {
+                restoreViewport(ws, session.viewport);
+            }
+        },
+        [tabId],
+    );
+
+    // Shallow copy gives react-blockly a new reference so its updateToolbox effect runs.
+    const toolboxConfiguration = useMemo(
+        () => ({ ...BlocklyConfigs.ToolboxJson }),
+        [toolboxRevision],
+    );
 
     useEffect(() => {
         isLoadingRef.current = isLoading;
@@ -170,12 +278,30 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
      * handleOnInject
      */
     function handleOnInject(ws: Workspace) {
-        // save the ws for this editor session
         const editorSession = EditorMgr.getInstance().getEditorSession(tabId);
         if (editorSession) {
             editorSession.workspace = ws;
+            // FlexLayout can remount a hidden tab with an empty workspace while the
+            // session still has saved block data — reload without resetting hasBeenLoaded.
+            if (
+                editorSession.hasBeenLoaded &&
+                editorSession.content &&
+                ws.getAllBlocks(false).length === 0
+            ) {
+                try {
+                    isLoadingRef.current = true;
+                    Blockly.Events.disable();
+                    loadBlocksIntoWorkspace(ws, editorSession);
+                } finally {
+                    Blockly.Events.enable();
+                    isLoadingRef.current = false;
+                }
+            }
         }
         setWorkspace(ws);
+        if (editorSession?.viewport) {
+            requestAnimationFrame(() => restoreViewportForTab(ws));
+        }
     }
     
     /**
@@ -224,18 +350,21 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
                     EditorMgr.getInstance().getEditorSession(tabId);
                 if (loadContent.name !== nameRef.current || loadContent.path !== session?.path) return;
                 const ws = session?.workspace;
-                if (ws && session?.hasBeenLoaded !== true) {
+                if (ws && session && session.hasBeenLoaded !== true) {
                     try {
                         Blockly.Events.disable();
                         Blockly.serialization.workspaces.load(JSON.parse(loadContent.content), ws);
                         session.hasBeenLoaded = true;
-                        // @ts-expect-error - it is a valid function
-                        ws.scrollCenter();
-                        // @ts-expect-error - it is a valid function
-                        ws.zoomToFit();
                     } finally {
                         Blockly.Events.enable();
                     }
+                    // First open of this file (no existing tab): fit + center the
+                    // blocks, then save that as the tab's viewport. Deferred so the
+                    // container has its real size before fitting.
+                    requestAnimationFrame(() => {
+                        centerAndFit(ws);
+                        session.viewport = captureViewport(ws);
+                    });
                 }
                 if (session) {
                     EditorMgr.getInstance().SaveToLocalStorage(session, loadContent.content);
@@ -244,47 +373,22 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
                 isLoadingRef.current = false;
             });
 
-            AppMgr.getInstance().on(EventType.EVENT_EDITOR, (type) => {
-                if (type === EditorType.BLOCKLY) {
-                    setTimeout(() => {
-                        const ws = EditorMgr.getInstance().getEditorSession(tabId)?.workspace;
-                        if (ws) {
-                            // @ts-expect-error - it is a valid function
-                            ws.scrollCenter();
-                            // @ts-expect-error - it is a valid function
-                            ws.zoomToFit();
-                        }
-                    }, 100);
-                }
+            AppMgr.getInstance().on(EventType.EVENT_BLOCKLY_TOOLBOX_UPDATED, () => {
+                // react-blockly calls workspace.updateToolbox when toolboxConfiguration changes.
+                // Do not remount — remounting resets scroll/zoom and moves blocks on screen.
+                setToolboxRevision((prev) => prev + 1);
             });
 
-            AppMgr.getInstance().on(EventType.EVENT_BLOCKLY_TOOLBOX_UPDATED, () => {
-                // Force a re-render of the Blockly workspace to show new blocks
+            AppMgr.getInstance().on(EventType.EVENT_EDITOR_TAB_SELECTED, (selectedTabId) => {
                 const ws = EditorMgr.getInstance().getEditorSession(tabId)?.workspace;
-                if (ws) {
-                    // Save current workspace content
-                    const content = Blockly.serialization.workspaces.save(ws);
-                    
-                    // Force component re-render with new toolbox
-                    setToolboxKey(prev => prev + 1);
-                    
-                    // Restore workspace content after re-render
-                    setTimeout(() => {
-                        const newWs = Blockly.getMainWorkspace();
-                        if (newWs) {
-                            try {
-                                Blockly.Events.disable();
-                                Blockly.serialization.workspaces.load(content, newWs);
-                                // @ts-expect-error - it is a valid function
-                                newWs.scrollCenter();
-                                // @ts-expect-error - it is a valid function
-                                newWs.zoomToFit();
-                            } finally {
-                                Blockly.Events.enable();
-                            }
-                        }
-                    }, 100);
+                if (!ws) {
+                    return;
                 }
+                if (selectedTabId !== tabId) {
+                    persistViewport(ws);
+                    return;
+                }
+                requestAnimationFrame(() => restoreViewportForTab(ws));
             });
 
             AppMgr.getInstance().on(EventType.EVENT_GENPYTHON, (activeTab) => {
@@ -310,6 +414,12 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
                 if (newNames.oldId !== nameRef.current) return;
                 setName(newNames.newId);
             });            
+
+            AppMgr.getInstance().on(EventType.EVENT_LOGIN_STATUS, (status) => {
+                if (status === LoginStatus.LOGGED_IN || status === LoginStatus.LOGGED_OUT) {
+                    evaluateEditBlocked();
+                }
+            });
 
             EditorMgr.getInstance().setSubscription(tabId);
 
@@ -337,7 +447,11 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
         // Call setupLanguage to initialize Blockly locale
         setupLanguage();
 
-    }, [saveEditor, tabId]);
+    }, [saveEditor, tabId, restoreViewportForTab, persistViewport, evaluateEditBlocked]);
+
+    useEffect(() => {
+        evaluateEditBlocked();
+    }, [evaluateEditBlocked]);
 
     useEffect(() => {
         if (!workspace) return;
@@ -347,10 +461,19 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
             if (event.type === Blockly.Events.FINISHED_LOADING) {
                 setIsLoading(false);
                 isLoadingRef.current = false;
+                persistViewport(workspace);
                 return;
             }
-            if (isLoadingRef.current) { return; }
-            if (event.type === Blockly.Events.VIEWPORT_CHANGE || event.isUiEvent) { return; }
+            if (event.type === Blockly.Events.VIEWPORT_CHANGE) {
+                persistViewport(workspace);
+                return;
+            }
+            if (isLoadingRef.current) {
+                return;
+            }
+            if (event.isUiEvent) {
+                return;
+            }
             try {
                 console.log('Workspace changed, saving session:', nameRef.current);
                 EditorMgr.getInstance().updateEditorSessionChange(tabId, true);
@@ -368,13 +491,49 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
             console.log('Removing workspace change listener for tab:', tabId);
             workspace.removeChangeListener(changeListener);
         };
-    }, [workspace, tabId]);
+    }, [workspace, tabId, persistViewport]);
+
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el || !workspace) {
+            return;
+        }
+
+        // Restore the saved pan/zoom whenever this tab transitions from hidden
+        // (0x0, display:none) back to visible — the moment Blockly would
+        // otherwise render the blocks at the top-left origin.
+        let wasVisible = el.clientWidth > 0 && el.clientHeight > 0;
+        const observer = new ResizeObserver((entries) => {
+            const { width, height } = entries[0]?.contentRect ?? { width: 0, height: 0 };
+            const visible = width > 0 && height > 0;
+            if (visible && !wasVisible) {
+                requestAnimationFrame(() => restoreViewportForTab(workspace));
+            }
+            wasVisible = visible;
+        });
+
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [workspace, restoreViewportForTab]);
 
     return (
+        <div ref={containerRef} className="relative h-full">
+        {editBlocked && (
+            <div
+                className="absolute inset-0 z-10 cursor-not-allowed"
+                onPointerDownCapture={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    AppMgr.getInstance().emit(
+                        EventType.EVENT_ALERT,
+                        i18n.t('editGoogleLoginRequired'),
+                    );
+                }}
+            />
+        )}
         <BlocklyWorkspace
-            key={toolboxKey} // Force re-render when toolbox updates
-            className="h-full" // you can use whatever classes are appropriate for your app's CSS
-            toolboxConfiguration={BlocklyConfigs.ToolboxJson} // this must be a JSON toolbox definition
+            className="h-full"
+            toolboxConfiguration={toolboxConfiguration}
             workspaceConfiguration={{
                 move:{
                     scrollbars: {horizontal: true, vertical: true},
@@ -399,6 +558,7 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
             initialJson={BlocklyConfigs.InitialJson}
             onInject={handleOnInject}
         />
+        </div>
     );
 }
 

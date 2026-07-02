@@ -1,13 +1,15 @@
 import FolderTree from '@/components/folder-tree';
 import DialogFooter from './dialog-footer';
 import { FileType, FolderItem, NewFileData } from '@/utils/types';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useReadLocalStorage } from 'usehooks-ts';
 import { StorageKeys } from '@/utils/localstorage';
 import EditorMgr from '@/managers/editormgr';
 import { useTranslation } from 'react-i18next';
 import AppMgr from '@/managers/appmgr';
 import { Constants } from '@/utils/constants';
+import { getUsernameFromEmail } from '@/utils/google-utils';
+import { EditorType } from '@/utils/types';
 
 type FileSaveAsProps = {
     saveCallback: (fileData: NewFileData) => void;
@@ -29,25 +31,90 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
     const [filename, setFilename] = useState<string>('');
     const [folderList, setFolderList] = useState<FolderItem[] | null>(null);
 
+    const buildDestinationPath = (folderPath: string, name: string): string => {
+        if (!folderPath || folderPath === '/') {
+            return `/${name}`;
+        }
+        const folder = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
+        return `${folder}${name}`.replace(/\/+/g, '/');
+    };
+
+    const toTreeFolderPath = (folderPath: string): string => {
+        if (folderPath.includes(Constants.GUSERS_FOLDER)) {
+            const username = getUsernameFromEmail(
+                AppMgr.getInstance().authService.userProfile.email,
+            );
+            if (username) {
+                return folderPath.replace(
+                    `${Constants.GUSERS_FOLDER}${username}/`,
+                    '/XRPCode/',
+                );
+            }
+        }
+        return folderPath;
+    };
+
+    const findFolderByPath = (
+        items: FolderItem[],
+        targetPath: string,
+    ): FolderItem | null => {
+        const normalizedTarget = targetPath.endsWith('/') ? targetPath : `${targetPath}/`;
+        for (const item of items) {
+            if (item.children === null) {
+                continue;
+            }
+            const itemPath = item.path.endsWith('/') ? item.path : `${item.path}/`;
+            if (itemPath === normalizedTarget) {
+                return item;
+            }
+            if (item.children) {
+                const folders = item.children.filter((child) => child.children !== null);
+                const found = findFolderByPath(folders, targetPath);
+                if (found) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    };
+
     /**
      * get folder list from AppMgr
      */
     useEffect(() => {
         const appMgr = AppMgr.getInstance();
         setFolderList(appMgr.getFolderList());
-    }, []);    
+    }, []);
+
+    const validateFilename = useCallback((name: string, folderPath: string) => {
+        const isValid = Constants.REGEX_FILENAME.test(name);
+        const destinationPath = buildDestinationPath(folderPath, name);
+        if (!isValid || AppMgr.getInstance().IsFileExistsAtPath(destinationPath)) {
+            setIsFileExists(true);
+            setIsOkayToSubmit(false);
+        } else {
+            setIsFileExists(false);
+            setIsOkayToSubmit(true);
+        }
+    }, []);
 
     /**
      * handleFileSave - collects the selected file and save to XRP
      */
     const handleFileSave = () => {
+        const tabId = activeTab?.replace(/^"|"$/g, '') ?? '';
+        const session = tabId ? EditorMgr.getInstance().getEditorSession(tabId) : undefined;
+        const filetype =
+            filename.includes('.blocks') || session?.type === EditorType.BLOCKLY
+                ? FileType.BLOCKLY
+                : FileType.PYTHON;
         const fileData: NewFileData = {
             name: filename,
             path: selectedFolder,
             gpath: selectedFolder,
             gparentId: gFolderId,
             parentId: '',
-            filetype: activeTab?.includes('.blocks') ? FileType.BLOCKLY : FileType.PYTHON,
+            filetype,
         }
         fileSaveAsProps.saveCallback(fileData);
     };
@@ -60,6 +127,7 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
         const path = selectedItem.path === '/' ? `` : selectedItem.path;
         setSelectedFolder(path);
         setGFolderId(selectedItem.id);
+        validateFilename(filename, path);
     };
 
     /**
@@ -67,29 +135,33 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
      * @param e 
      */
     const handleFilenameInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFilename(e.target.value);
         const inputName = e.target.value;
-        const isValid = Constants.REGEX_FILENAME.test(inputName);
-        const parts = selectedFolder.split('/').filter((part) => part !== '');
-        const foldername = parts[parts.length - 1];
-        if (!isValid || AppMgr.getInstance().IsFileExists(foldername || '', inputName)) {
-            setIsFileExists(true);
-            setIsOkayToSubmit(false);
-        } else {
-            setIsFileExists(false);
-            setIsOkayToSubmit(true);
-        }
+        setFilename(inputName);
+        validateFilename(inputName, selectedFolder);
     };
 
     useEffect(() => {
-        if (activeTab !== null) {
-            const session = EditorMgr.getInstance().getEditorSession(activeTab);
-            if (session) {
-                setSelectedFolder('/' + session.path.split('/')[1]);
-                setFilename(session.name); 
-            }
+        const tabId = activeTab?.replace(/^"|"$/g, '') ?? '';
+        if (!tabId || !folderList) {
+            return;
         }
-    }, [activeTab]);
+        const session = EditorMgr.getInstance().getEditorSession(tabId);
+        if (session) {
+            const parentEnd = session.path.lastIndexOf('/');
+            const parentFolder =
+                parentEnd > 0 ? session.path.substring(0, parentEnd + 1) : '/';
+            const treeFolderPath = toTreeFolderPath(parentFolder);
+            const folderItem = findFolderByPath(folderList, treeFolderPath);
+            const folderPath =
+                folderItem?.path === '/'
+                    ? ''
+                    : folderItem?.path ?? (treeFolderPath === '/' ? '' : treeFolderPath);
+            setSelectedFolder(folderPath);
+            setGFolderId(folderItem?.id ?? '');
+            setFilename(session.name);
+            validateFilename(session.name, folderPath);
+        }
+    }, [activeTab, folderList, validateFilename]);
 
     /**
      * handleFocus - selects the filename without the extension when the input is focused.

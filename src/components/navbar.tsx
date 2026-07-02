@@ -309,12 +309,16 @@ function NavBar({ layoutref }: NavBarProps) {
             });
 
             AppMgr.getInstance().on(EventType.EVENT_SHOWBLUETOOTH_CONNECTING, () => {
-                setDialogContent(<BusyDialog title={t('connecting-bluetooth')} />);
-                toggleDialog();
+                openDialog(<BusyDialog title={t('connecting-bluetooth')} />);
             });
 
             AppMgr.getInstance().on(EventType.EVENT_HIDE_BLUETOOTH_CONNECTING, () => {
-                toggleDialog();
+                closeDialog();
+                if (stoppingRef.current) {
+                    setIsStopping(false);
+                    setRunning(false);
+                    broadcastRunningState(false);
+                }
             });
 
             hasSubscribed = true;
@@ -420,6 +424,10 @@ function NavBar({ layoutref }: NavBarProps) {
                     const session = editorMgr.getEditorSessionByName(searchParams);
                     if (session) {
                         session.gpath = file?.id;
+                        // gpath is assigned after the tab was first rendered, so
+                        // force a tab re-render to show the Google Drive icon now
+                        // instead of waiting for the next tab switch.
+                        editorMgr.SelectEditorTab(session.id);
                     }
                 });
             await fireGoogleUserTree(getUsernameFromEmail(authService.userProfile.email) ?? '');
@@ -651,35 +659,42 @@ function NavBar({ layoutref }: NavBarProps) {
                 };
 
                 if (authService.isLogin) {
-                    // trash the file
-                    await driveService.trashFile(newFileData.gpath ?? '').then(async () => {
-                        const minetype = 'text/x-python';
-                        const blob = new Blob([code], { type: minetype });
-                        await driveService
-                            .uploadFile(
-                                blob,
-                                newFileData.name,
-                                minetype,
-                                newFileData.gparentId ?? undefined,
-                            )
-                            .then(() => {
-                                EditorMgr.getInstance().RemoveEditor(activeTab);
-                                const tabId = CreateEditorTab(newFileData, layoutref);
-                                setActiveTab(tabId);
-                                const loadContent = {
-                                    name: newFileData.name,
-                                    path: newFileData.path,
-                                    content: code,
-                                };
-                                AppMgr.getInstance().emit(
-                                    EventType.EVENT_EDITOR_LOAD,
-                                    JSON.stringify(loadContent),
-                                );
-                            });
-                        await fireGoogleUserTree(
-                            getUsernameFromEmail(authService.userProfile.email) ?? '',
-                        );
-                    });
+                    const blocksFileId = editorSession.gpath;
+                    const blocksParentId = editorSession.gparentId;
+
+                    const trashFolderId = await driveService.ensureTrashFolder();
+                    if (trashFolderId && blocksFileId && blocksParentId) {
+                        await driveService.moveFile(blocksFileId, blocksParentId, trashFolderId);
+                    }
+
+                    const minetype = 'text/x-python';
+                    const blob = new Blob([code], { type: minetype });
+                    const uploaded = await driveService.uploadFile(
+                        blob,
+                        newFileData.name,
+                        minetype,
+                        blocksParentId ?? undefined,
+                    );
+
+                    newFileData.gpath = uploaded?.id;
+                    newFileData.gparentId = blocksParentId;
+                    newFileData.path = editorSession.path.split('.blocks')[0] + '.py';
+
+                    EditorMgr.getInstance().RemoveEditor(activeTab);
+                    const tabId = CreateEditorTab(newFileData, layoutref);
+                    setActiveTab(tabId);
+                    const loadContent = {
+                        name: newFileData.name,
+                        path: newFileData.path,
+                        content: code,
+                    };
+                    AppMgr.getInstance().emit(
+                        EventType.EVENT_EDITOR_LOAD,
+                        JSON.stringify(loadContent),
+                    );
+                    await fireGoogleUserTree(
+                        getUsernameFromEmail(authService.userProfile.email) ?? '',
+                    );
                 } else if (isConnected) {
                     // move the converted blockly file to /trash
                     await CommandToXRPMgr.getInstance().buildPath(Constants.TRASH_FOLDER); // ensure the trash folder exists
@@ -820,6 +835,8 @@ function NavBar({ layoutref }: NavBarProps) {
         if (EditorMgr.getInstance().hasEditorSession(Constants.DASHBOARD_TAB_ID)) {
             const layoutModel = EditorMgr.getInstance().getLayoutModel();
             layoutModel?.doAction(Actions.selectTab(Constants.DASHBOARD_TAB_ID));
+            setIsOtherTab(true);
+            setActiveTab(Constants.DASHBOARD_TAB_ID);
             return;
         }
         const tabInfo: IJsonTabNode = {
@@ -842,7 +859,7 @@ function NavBar({ layoutref }: NavBarProps) {
             isModified: false,
         });
         setIsOtherTab(true);
-        setActiveTab('Dashboard');
+        setActiveTab(Constants.DASHBOARD_TAB_ID);
     }
 
     /**
@@ -853,7 +870,8 @@ function NavBar({ layoutref }: NavBarProps) {
         if (EditorMgr.getInstance().hasEditorSession(Constants.AI_CHAT_TAB_ID)) {
             const layoutModel = EditorMgr.getInstance().getLayoutModel();
             layoutModel?.doAction(Actions.selectTab(Constants.AI_CHAT_TAB_ID));
-            setActiveTab(t('ai-chat'));
+            setIsOtherTab(true);
+            setActiveTab(Constants.AI_CHAT_TAB_ID);
             return;
         }
         const tabInfo: IJsonTabNode = {
@@ -876,7 +894,7 @@ function NavBar({ layoutref }: NavBarProps) {
             isModified: false,
         });
         setIsOtherTab(true);
-        setActiveTab(t('ai-chat'));
+        setActiveTab(Constants.AI_CHAT_TAB_ID);
     }
 
     /**
@@ -919,12 +937,19 @@ function NavBar({ layoutref }: NavBarProps) {
 
         const resetRunButtonStates = () => {
             AppMgr.getInstance().on(EventType.EVENT_PROGRAM_EXECUTED, () => {
-                if (stoppingRef.current === true) {
-                    toggleDialog();
+                if (stoppingRef.current) {
+                    // BLE stop reboots and reconnects; keep the spinner until reconnect
+                    // finishes (EVENT_HIDE_BLUETOOTH_CONNECTING).
+                    if (AppMgr.getInstance().getConnectionType() !== ConnectionType.BLUETOOTH) {
+                        closeDialog();
+                        setIsStopping(false);
+                        setRunning(false);
+                        broadcastRunningState(false);
+                    }
+                } else {
+                    setRunning(false);
+                    broadcastRunningState(false);
                 }
-                setRunning(false);
-                setIsStopping(false);
-                broadcastRunningState(false);
                 AppMgr.getInstance().eventOff(EventType.EVENT_PROGRAM_EXECUTED);
             });
         };
@@ -941,9 +966,11 @@ function NavBar({ layoutref }: NavBarProps) {
                 return;
             }
 
-            // make sure this is not the dashboard tab or AI chat tab
-            const hasEditorSession = EditorMgr.getInstance().hasEditorSession(activeTab);
-            if (!hasEditorSession) {
+            // Only run from a Python or Blockly tab — not Dashboard or AI Buddy
+            const tabId = (activeTab ?? '').replace(/^"|"$/g, '');
+            const canRun =
+                !isOtherTab && EditorMgr.getInstance().isRunnableCodeTab(tabId);
+            if (!canRun) {
                 setDialogContent(
                     <AlertDialog alertMessage={t('no-editor-run')} toggleDialog={toggleDialog} />,
                 );
@@ -1061,9 +1088,8 @@ function NavBar({ layoutref }: NavBarProps) {
                 });
         } else {
             setIsStopping(true);
+            openDialog(<BusyDialog title={t('stopRunningProgram')} />);
             CommandToXRPMgr.getInstance().stopProgram();
-            setDialogContent(<BusyDialog title={t('stopRunningProgram')} />);
-            toggleDialog();
         }
     }
 
@@ -1179,6 +1205,21 @@ function NavBar({ layoutref }: NavBarProps) {
         setDialogContent(<div />);
     }
 
+    function openDialog(content: React.ReactNode) {
+        setDialogContent(content);
+        if (dialogRef.current && !dialogRef.current.open) {
+            dialogRef.current.showModal();
+        }
+    }
+
+    /** Close the dialog if open; never opens it (avoids ghost backdrop after BLE reconnect). */
+    function closeDialog() {
+        if (dialogRef.current?.open) {
+            setDialogContent(null);
+            dialogRef.current.close();
+        }
+    }
+
     /**
      * toggleDialog - toggle the dialog open and closed
      */
@@ -1186,10 +1227,11 @@ function NavBar({ layoutref }: NavBarProps) {
         if (!dialogRef.current) {
             return;
         }
-        if (dialogRef.current.hasAttribute('open')) {
-            setDialogContent(<div />);
-            dialogRef.current.close();
-        } else dialogRef.current.showModal();
+        if (dialogRef.current.open) {
+            closeDialog();
+        } else {
+            dialogRef.current.showModal();
+        }
     }
 
     /**

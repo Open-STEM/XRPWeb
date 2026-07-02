@@ -11,7 +11,11 @@ import { SensorConfig, SensorChannel } from './types';
 
 interface SensorWidgetProps<TData, THistoryEntry> {
   config: SensorConfig<TData, THistoryEntry>;
+  /** Initial display mode; defaults to data view for new widgets. */
+  initialViewMode?: 'data' | 'graph';
 }
+
+export type DashboardViewMode = 'data' | 'graph';
 
 /**
  * Default number view: renders a responsive grid of channel values.
@@ -55,10 +59,11 @@ function DefaultNumberView<TData>({
  */
 function SensorWidget<TData, THistoryEntry>({
   config,
+  initialViewMode = 'data',
 }: SensorWidgetProps<TData, THistoryEntry>) {
   const { t } = useTranslation();
   const { handleDelete } = useGridStackWidget();
-  const [viewMode, setViewMode] = useState<'number' | 'graph'>('number');
+  const [viewMode, setViewMode] = useState<DashboardViewMode>(initialViewMode);
 
   const {
     currentData,
@@ -72,10 +77,15 @@ function SensorWidget<TData, THistoryEntry>({
     config.toHistoryEntry
   );
 
-  const handleViewChange = (mode: 'number' | 'graph') => {
+  const handleViewChange = (mode: DashboardViewMode) => {
     setViewMode(mode);
     requestSensors([config.sensorName]);
   };
+
+  // Always show either data or graph — never a blank content area. Graph mode
+  // requires history; until then, fall back to the data view.
+  const displayMode: DashboardViewMode =
+    viewMode === 'graph' && history.length > 0 ? 'graph' : 'data';
 
   const tooltipFormatter = config.tooltipFormatter
     ?? ((value: number) => value.toFixed(2));
@@ -104,10 +114,10 @@ function SensorWidget<TData, THistoryEntry>({
               <span>{t('graph')}</span>
             </div>
           </DropdownItem>
-          <DropdownItem onClick={() => handleViewChange('number')}>
+          <DropdownItem onClick={() => handleViewChange('data')}>
             <div className="flex items-center space-x-2">
               <FaHashtag size={12} />
-              <span>{t('number')}</span>
+              <span>{t('data')}</span>
             </div>
           </DropdownItem>
         </Dropdown>
@@ -130,11 +140,10 @@ function SensorWidget<TData, THistoryEntry>({
         </div>
       ) : (
         <div className="flex flex-col w-full h-full relative pt-12">
-          {viewMode === 'graph' ? (
-            history.length > 0 && (
-              <div className="mt-4 w-full h-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={(history as Record<string, unknown>[]).slice(-50)}>
+          {displayMode === 'graph' ? (
+            <div className="mt-4 w-full h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={(history as Record<string, unknown>[]).slice(-50)}>
                     <XAxis dataKey="timestamp" tick={false} label={t('time')} />
                     <YAxis />
                     <Tooltip
@@ -161,7 +170,6 @@ function SensorWidget<TData, THistoryEntry>({
                   {history.length} {t('readings-stored')}
                 </div>
               </div>
-            )
           ) : config.renderNumberView ? (
             config.renderNumberView(currentData, config.channels)
           ) : (
