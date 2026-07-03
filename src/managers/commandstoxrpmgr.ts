@@ -187,14 +187,17 @@ export class CommandToXRPMgr {
 
         if (hiddenLines != undefined && hiddenLines.length > 0) {
             if (hiddenLines[0].substring(2) != 'ERROR') {
-                if (this.PROCESSOR == undefined) {
-                    if (hiddenLines[1].includes('RP2350')) {
-                        this.PROCESSOR = 2350;
-                    } else if (hiddenLines[1].includes('RP2040')) {
-                        this.PROCESSOR = 2040;
-                        this.is_NanoXRP = hiddenLines[1].includes('NanoXRP');
-                        this.connection?.setNanoXRP(this.is_NanoXRP);
-                    }
+                // Always recompute from the live version string: checkIfNeedUpdate
+                // resets is_NanoXRP on every new attach, and the user may have
+                // swapped boards since PROCESSOR was last set.
+                if (hiddenLines[1].includes('RP2350')) {
+                    this.PROCESSOR = 2350;
+                    this.is_NanoXRP = false;
+                    this.connection?.setNanoXRP(false);
+                } else if (hiddenLines[1].includes('RP2040')) {
+                    this.PROCESSOR = 2040;
+                    this.is_NanoXRP = hiddenLines[1].includes('NanoXRP');
+                    this.connection?.setNanoXRP(this.is_NanoXRP);
                 }
                 if(hiddenLines[1].includes('XRP')){ //is this an XRP version of microPython?
                     this.is_XRP_MP = true;
