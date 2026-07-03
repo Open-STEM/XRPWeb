@@ -1141,7 +1141,7 @@ export class CommandToXRPMgr {
    
     getFirmwareFilename(): string {
         if (this.PROCESSOR === 2350) return 'firmware2350.uf2';
-        if (this.is_NanoXRP) return 'firnware2040nanoxrp.uf2';
+        if (this.is_NanoXRP) return 'firmware2040nanoxrp.uf2';
         return 'firmware2040.uf2';
     }
 
@@ -1154,7 +1154,8 @@ export class CommandToXRPMgr {
      * @returns the XRP type
      */
      getXRPType(): string {
-        return (this.PROCESSOR! === 2350) ? "V1" : "beta";
+        if (this.PROCESSOR! === 2350) return "V1";
+        return this.is_NanoXRP ? "nano" : "beta";
     }
 
 }
