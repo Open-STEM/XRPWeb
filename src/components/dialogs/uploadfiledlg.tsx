@@ -18,8 +18,6 @@ function UploadFileDlg({ files, toggleDialog }: UploadFileDlgProps) {
     const [folderItem, setFolderItem] = useState<FolderItem[] | null>(null);
     const [fileList, setFileList] = useState<FileData[] | null >(null);
     const [selectedFolder, setSelectedFolder] = useState<string>('');
-    const [isConnected, setConnected] = useState(false);
-    const [isLogin, setIsLogin] = useState(false);
     const [gFolderId, setGFolderId] = useState<string>('');
 
     /**
@@ -79,9 +77,6 @@ function UploadFileDlg({ files, toggleDialog }: UploadFileDlgProps) {
     useEffect(() => {
         setFileList(files);
         setFolderItem(AppMgr.getInstance().getFolderList());
-        setConnected(AppMgr.getInstance().getConnection()?.isConnected() ?? false);
-        setIsLogin(AppMgr.getInstance().authService.isLogin);
-
     }, [files]);
 
     return (

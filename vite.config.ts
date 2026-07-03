@@ -5,7 +5,6 @@ import { visualizer } from "rollup-plugin-visualizer";
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 import { fileURLToPath, URL } from 'url';
 import { resolve } from 'path';
-import flowbiteReact from "flowbite-react/plugin/vite";
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -32,7 +31,7 @@ export default defineConfig(({ mode }) => {
                     src: 'node_modules/gridstack/dist/gridstack.css',
                     dest: './node_modules/gridstack/dist/'
                 }        ]
-        }), flowbiteReact()],
+        })],
         resolve: {
             alias: [
                 { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
