@@ -1,11 +1,13 @@
 {
     "powerOff": {
         "xrp-beta": "/firmware-loader/images/board-xrp-beta_poweroff.jpg",
-        "xrp-2350": "/firmware-loader/images/board-xrp-2350_poweroff.jpg"
+        "xrp-2350": "/firmware-loader/images/board-xrp-2350_poweroff.jpg",
+        "xrp-nano": "/firmware-loader/images/board-xrp-nano_poweroff.jpg"
     },
     "bootSel": {
         "xrp-beta": "/firmware-loader/images/board-xrp-beta_bootsel.jpg",
-        "xrp-2350": "/firmware-loader/images/board-xrp-2350_bootsel.jpg"
+        "xrp-2350": "/firmware-loader/images/board-xrp-2350_bootsel.jpg",
+        "xrp-nano": "/firmware-loader/images/board-xrp-nano_bootsel.jpg"
     },
     "selectDir": {
         "xrp-beta-win": "/firmware-loader/images/board-xrp-beta-selectdir-win.png",
@@ -13,6 +15,9 @@
         "xrp-beta-linux": "/firmware-loader/images/board-xrp-beta-selectdir-linux.png",
         "xrp-2350-win": "/firmware-loader/images/board-xrp-2350-selectdir-win.png",
         "xrp-2350-mac": "/firmware-loader/images/board-xrp-2350-selectdir-mac.jpg",
-        "xrp-2350-linux": "/firmware-loader/images/board-xrp-2350-selectdir-linux.png"
+        "xrp-2350-linux": "/firmware-loader/images/board-xrp-2350-selectdir-linux.png",
+        "xrp-nano-win": "/firmware-loader/images/board-xrp-beta-selectdir-win.png",
+        "xrp-nano-mac": "/firmware-loader/images/board-xrp-beta-selectdir-mac.jpg",
+        "xrp-nano-linux": "/firmware-loader/images/board-xrp-beta-selectdir-linux.png"
     }
 }
