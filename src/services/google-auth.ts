@@ -127,6 +127,25 @@ class GoogleAuthService {
     }
 
     /**
+     * Wait until the backend handshake token is available before exchanging OAuth codes.
+     */
+    async ensureHandshakeReady(): Promise<void> {
+        if (this._handshakeToken) {
+            return;
+        }
+        const maxAttempts = 15;
+        const delayMs = 200;
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            await this.initHandshake();
+            if (this._handshakeToken) {
+                return;
+            }
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+        throw new Error('Google Auth handshake not ready');
+    }
+
+    /**
      * Refreshes the access token using the stored refresh token.
      * @returns A Promise that resolves to the new access token.
      */
@@ -226,8 +245,12 @@ class GoogleAuthService {
      * @returns A Promise that resolves to an object containing access_token, refresh_token, and expires_in.
      */
     async getRefreshToken() {
-        if (!this._handshakeToken || !this._code) {
-            throw new Error('Handshake token or authorization code not available.');
+        if (!this._code) {
+            throw new Error('Authorization code not available.');
+        }
+        await this.ensureHandshakeReady();
+        if (!this._handshakeToken) {
+            throw new Error('Handshake token not available.');
         }
 
         try {

@@ -107,6 +107,7 @@
     "user-folder": "User Folder Name",
     "google-drive-folder": "Google Drive Folder Name",
     "googleLoginTooltip": "Sign in with your Google account to access files stored in Google Drive.",
+    "googleSigningIn": "Signing in...",
     "googlogoutTooltip": "Sign out of your Google account.",
     "not-google-drive-file": "This file can not be saved to Google Drive because it was not associated with Google Drive! Please try saving it to XRP!",
     "editGoogleLoginRequired": "This file is stored in Google Drive. Please sign back in to Google Drive to edit and save it.",

@@ -191,6 +191,7 @@
     "username": "Nombre de Usuario",
     "googlesignin": "Iniciar sesión con Google",
     "googleLoginTooltip": "Inicie sesión con su cuenta de Google para acceder a los archivos almacenados en Google Drive.",
+    "googleSigningIn": "Iniciando sesión...",
     "googlogoutTooltip": "Cerrar sesión de su cuenta de Google.",
     "login": "Inicio de Sesión de Google",
     "login-desc": "El modo de usuario está configurado actualmente en Usuario de Google. Por favor inicie sesión en su cuenta de Google para editar sus archivos. Haga clic en el botón Iniciar Sesión en Google a continuación.",
