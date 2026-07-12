@@ -61,6 +61,7 @@ import EditorMgr, { EditorSession, EdSearchParams } from '@/managers/editormgr';
 import { useLocalStorage } from 'usehooks-ts';
 import { StorageKeys } from '@/utils/localstorage';
 import { isAiBuddyMenuEnabled } from '@/utils/aiBuddyAccess';
+import { firmwareLoaderUrl } from '@/utils/firmware-loader';
 import FileSaver from 'file-saver';
 import PowerSwitchAlert from '@/components/dialogs/power-switchdlg';
 import ViewPythonDlg from '@/components/dialogs/view-pythondlg';
@@ -1187,7 +1188,7 @@ function NavBar({ layoutref }: NavBarProps) {
         setDialogContent(
             <ChangeLogDlg
                 closeDialog={toggleDialog}
-                changelogUrl="firmware-loader/boards/xrp-2350/micropython/CHANGELOG.txt"
+                changelogUrl={firmwareLoaderUrl('boards/xrp-2350/micropython/CHANGELOG.txt')}
             />,
         );
         toggleDialog();

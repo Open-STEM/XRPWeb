@@ -13,7 +13,55 @@
 //
 // See public/firmware-loader/spec.md for the on-disk format.
 
-export const FIRMWARE_LOADER_BASE = '/firmware-loader/';
+/** App asset base: dev serves from /public/; production uses relative paths. */
+const APP_BASE = process.env.NODE_ENV === 'development' ? '/public/' : './';
+
+/** Build a URL for a static asset relative to the app deployment root. */
+export function appAssetUrl(relativePath: string): string {
+    const clean = relativePath.replace(/^\//, '');
+    return `${APP_BASE}${clean}`;
+}
+
+export const FIRMWARE_LOADER_BASE = appAssetUrl('firmware-loader/');
+
+/** Build a URL for a file under the firmware-loader public directory. */
+export function firmwareLoaderUrl(relativeToFirmwareRoot: string): string {
+    const clean = relativeToFirmwareRoot.replace(/^\//, '');
+    return `${FIRMWARE_LOADER_BASE}${clean}`;
+}
+
+/**
+ * Resolve image/path strings from firmware-loader JSON manifests.
+ * Accepts legacy `/firmware-loader/...`, `firmware-loader/...`, or paths
+ * relative to the firmware-loader root (e.g. `images/board-xrp-beta.jpg`).
+ */
+export function resolveFirmwareLoaderPublicPath(urlOrPath: string): string {
+    if (!urlOrPath) {
+        return urlOrPath;
+    }
+    if (urlOrPath.startsWith('http://') || urlOrPath.startsWith('https://')) {
+        return urlOrPath;
+    }
+    const absolutePrefix = '/firmware-loader/';
+    if (urlOrPath.startsWith(absolutePrefix)) {
+        return firmwareLoaderUrl(urlOrPath.slice(absolutePrefix.length));
+    }
+    if (urlOrPath.startsWith('firmware-loader/')) {
+        return appAssetUrl(urlOrPath);
+    }
+    if (!urlOrPath.startsWith('/')) {
+        return firmwareLoaderUrl(urlOrPath);
+    }
+    return urlOrPath;
+}
+
+export type WizardAssetMap = Record<string, string>;
+
+export function normalizeWizardAssetMap(map: WizardAssetMap): WizardAssetMap {
+    return Object.fromEntries(
+        Object.entries(map).map(([key, value]) => [key, resolveFirmwareLoaderPublicPath(value)]),
+    );
+}
 
 /** One entry in a version registry (boards/XRPLib/index.json, micropython/index.json). */
 export type FirmwareVersionEntry = {
@@ -137,12 +185,14 @@ export async function resolveInstall(
     let uf2Url: string;
     if (doc.micropython) {
         const idx = await fetchJson(
-            `${FIRMWARE_LOADER_BASE}boards/${boardId}/micropython-firmware/index.json`,
+            firmwareLoaderUrl(`boards/${boardId}/micropython-firmware/index.json`),
         );
         const entry = findVersionEntry(idx, doc.micropython, `${boardId} micropython registry`);
-        uf2Url = `${FIRMWARE_LOADER_BASE}boards/${boardId}/micropython-firmware/${entry.dir}/${entry.uf2 ?? 'firmware.uf2'}`;
+        uf2Url = firmwareLoaderUrl(
+            `boards/${boardId}/micropython-firmware/${entry.dir}/${entry.uf2 ?? 'firmware.uf2'}`,
+        );
     } else if (doc.uf2) {
-        uf2Url = `${FIRMWARE_LOADER_BASE}${projectBaseDir}${doc.uf2}`;
+        uf2Url = firmwareLoaderUrl(`${projectBaseDir}${doc.uf2}`);
     } else {
         throw new Error('Project specifies no firmware (need "micropython" id or local "uf2")');
     }
@@ -155,11 +205,11 @@ export async function resolveInstall(
     // (XRPLib/, ble/, phew/, XRPExamples/); its files.json already carries the
     // device destination for each file.
     if (doc.xrplib) {
-        const idx = await fetchJson(`${FIRMWARE_LOADER_BASE}boards/XRPLib/index.json`);
+        const idx = await fetchJson(firmwareLoaderUrl('boards/XRPLib/index.json'));
         const entry = findVersionEntry(idx, doc.xrplib, 'XRPLib registry');
         xrplibVersion = entry.version;
         const verDir = `boards/XRPLib/${entry.dir}/`;
-        const files = await fetchJson(`${FIRMWARE_LOADER_BASE}${verDir}files.json`);
+        const files = await fetchJson(firmwareLoaderUrl(`${verDir}files.json`));
         if (Array.isArray(files)) {
             for (const e of files) {
                 if (

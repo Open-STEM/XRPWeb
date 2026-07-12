@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { resolveFirmwareLoaderPublicPath } from '@/utils/firmware-loader';
 import { useTranslation } from 'react-i18next';
 import { IoWarning } from 'react-icons/io5';
 import AppMgr, { EventType } from '@/managers/appmgr';
@@ -170,9 +171,10 @@ export default function FirmwareInstallWizard({
     const needsLibraryPhase = libraryEntries.length > 0;
 
     const selectDirKey = `${boardId}-${os}`;
-    const fallbackBoardImg =
-        pickImage(assets.powerOff, boardId, '/firmware-loader/images/board-xrp-beta.jpg') ||
-        '/firmware-loader/images/board-xrp-beta.jpg';
+    const fallbackBoardImg = resolveFirmwareLoaderPublicPath(
+        pickImage(assets.powerOff, boardId, 'images/board-xrp-beta.jpg') ||
+            'images/board-xrp-beta.jpg',
+    );
 
     const imgPowerOff = pickImage(assets.powerOff, boardId, fallbackBoardImg);
     const imgBootSel = pickImage(assets.bootSel, boardId, fallbackBoardImg);

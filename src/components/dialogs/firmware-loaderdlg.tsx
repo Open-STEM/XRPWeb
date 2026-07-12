@@ -3,13 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { IoClose } from 'react-icons/io5';
 import FirmwareInstallWizard, { type WizardAssets } from '@/components/dialogs/firmware-install-wizard';
 import {
+    firmwareLoaderUrl,
     isInstallable,
+    normalizeWizardAssetMap,
     parseProjectDoc,
+    resolveFirmwareLoaderPublicPath,
     resolveInstall,
     type ResolvedInstall,
 } from '@/utils/firmware-loader';
 
-const FIRMWARE_LOADER_BASE = '/firmware-loader/';
 const ROOT_MANIFEST = 'index.json';
 
 export type FirmwareBoardEntry = {
@@ -157,7 +159,7 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
     const loadManifest = useCallback(async (relativePath: string) => {
         setLoading(true);
         setLoadError(null);
-        const url = `${FIRMWARE_LOADER_BASE}${relativePath}`;
+        const url = firmwareLoaderUrl(relativePath);
         try {
             const response = await fetch(url);
             if (!response.ok) {
@@ -179,13 +181,19 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
 
     useEffect(() => {
         let cancelled = false;
-        fetch(`${FIRMWARE_LOADER_BASE}wizard-assets.json`)
+        fetch(firmwareLoaderUrl('wizard-assets.json'))
             .then((r) => {
                 if (!r.ok) throw new Error(String(r.status));
                 return r.json() as Promise<WizardAssets>;
             })
             .then((data) => {
-                if (!cancelled) setWizardAssets(data);
+                if (!cancelled) {
+                    setWizardAssets({
+                        powerOff: normalizeWizardAssetMap(data.powerOff),
+                        bootSel: normalizeWizardAssetMap(data.bootSel),
+                        selectDir: normalizeWizardAssetMap(data.selectDir),
+                    });
+                }
             })
             .catch(() => {
                 if (!cancelled) {
@@ -217,7 +225,7 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
         setLoadError(null);
         setProjectLoading(true);
         try {
-            const response = await fetch(`${FIRMWARE_LOADER_BASE}${next}`);
+            const response = await fetch(firmwareLoaderUrl(next));
             if (!response.ok) {
                 throw new Error(`${response.status} ${response.statusText}`);
             }
@@ -344,7 +352,7 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
                                 key={board.id}
                                 name={board.name}
                                 description={board.description}
-                                image={board.image}
+                                image={resolveFirmwareLoaderPublicPath(board.image)}
                                 onClick={() => handleBoardClick(board)}
                                 disabled={!board.nextLevel}
                             />
@@ -365,7 +373,7 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
                                     key={project.id}
                                     name={project.name}
                                     description={project.description}
-                                    image={project.image}
+                                    image={resolveFirmwareLoaderPublicPath(project.image)}
                                     onClick={() => void handleProjectClick(project)}
                                     disabled={!project.nextLevel || projectLoading}
                                 />

@@ -10,6 +10,7 @@ import Connection from '@/connections/connection';
 import { FolderItem, Versions } from '@/utils/types';
 import AppMgr, { EventType } from '@/managers/appmgr';
 import logger from '@/utils/logger';
+import { firmwareLoaderUrl } from '@/utils/firmware-loader';
 
 declare global {
     interface Window {
@@ -261,7 +262,7 @@ export class CommandToXRPMgr {
         xrplibVersion: string | undefined;
     }> {
         const boardId = this.getBoardId();
-        const projectUrl = `firmware-loader/boards/${boardId}/micropython/project.json`;
+        const projectUrl = firmwareLoaderUrl(`boards/${boardId}/micropython/project.json`);
         try {
             const response = await fetch(projectUrl);
             if (!response.ok) {
@@ -269,11 +270,11 @@ export class CommandToXRPMgr {
             }
             const project = await response.json();
             const micropythonVersion = await this.resolveVersionFromIndex(
-                `firmware-loader/boards/${boardId}/micropython-firmware/index.json`,
+                firmwareLoaderUrl(`boards/${boardId}/micropython-firmware/index.json`),
                 typeof project.micropython === 'string' ? project.micropython : undefined,
             );
             const xrplibVersion = await this.resolveVersionFromIndex(
-                'firmware-loader/boards/XRPLib/index.json',
+                firmwareLoaderUrl('boards/XRPLib/index.json'),
                 typeof project.xrplib === 'string' ? project.xrplib : undefined,
             );
             return { micropythonVersion, xrplibVersion };
