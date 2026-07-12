@@ -55,6 +55,10 @@ share/python-wheels/
 .installed.cfg
 *.egg
 
+# Firmware-loader boards content is loaded dynamically and is never checked in,
+# even when present locally for testing.
+/public/firmware-loader/boards
+
 # Virtual environments
 venv/
 env/
