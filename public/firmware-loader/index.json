@@ -6,14 +6,14 @@
             "id": "xrp-beta",
             "name": "XRP Beta",
             "description": "XRP with the green pico W on board",
-            "image": "/firmware-loader/images/board-xrp-beta.jpg",
+            "image": "images/board-xrp-beta.jpg",
             "nextLevel": "boards/xrp-beta.json"
         },
         {
             "id": "xrp-2350",
             "name": "XRP",
             "description": "XRP robot headers",
-            "image": "/firmware-loader/images/board-xrp-2350.jpg",
+            "image": "images/board-xrp-2350.jpg",
             "nextLevel": "boards/xrp-2350.json"
         },
         {

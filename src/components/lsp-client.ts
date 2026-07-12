@@ -10,8 +10,9 @@ import {
 import { Uri } from 'vscode';
 import * as JSZip from 'jszip';
 
+import { firmwareLoaderUrl } from '@/utils/firmware-loader';
+
 const languageId = 'python';
-const FIRMWARE_LOADER_BASE = '/firmware-loader/';
 let files: { [id: string]: string } = {};
 
 /** Compare dotted version strings; returns >0 when `a` is newer than `b`. */
@@ -38,7 +39,7 @@ function compareVersions(a: string, b: string): number {
  */
 async function resolveLatestXrplibZipUrl(): Promise<string | null> {
     try {
-        const res = await fetch(`${FIRMWARE_LOADER_BASE}boards/XRPLib/index.json`);
+        const res = await fetch(firmwareLoaderUrl('boards/XRPLib/index.json'));
         if (!res.ok) return null;
         const json = await res.json();
         const versions: { dir?: string; version?: string }[] = Array.isArray(json?.versions)
@@ -53,7 +54,7 @@ async function resolveLatestXrplibZipUrl(): Promise<string | null> {
                 latestDir = v.dir;
             }
         }
-        return latestDir ? `${FIRMWARE_LOADER_BASE}boards/XRPLib/${latestDir}/xrplib.zip` : null;
+        return latestDir ? firmwareLoaderUrl(`boards/XRPLib/${latestDir}/xrplib.zip`) : null;
     } catch (e) {
         console.error('resolveLatestXrplibZipUrl failed', e);
         return null;

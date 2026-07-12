@@ -1,14 +1,57 @@
+import { readFile } from 'fs/promises';
 import { defineConfig, type PluginOption, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import importMetaUrlPlugin from '@codingame/esbuild-import-meta-url-plugin';
 import { visualizer } from "rollup-plugin-visualizer";
 import { viteStaticCopy } from 'vite-plugin-static-copy'
 import { fileURLToPath, URL } from 'url';
-import { resolve } from 'path';
+import { extname, join, normalize, resolve } from 'path';
+
+const MIME_BY_EXT: Record<string, string> = {
+    '.json': 'application/json',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.svg': 'image/svg+xml',
+    '.uf2': 'application/octet-stream',
+    '.txt': 'text/plain',
+    '.zip': 'application/zip',
+};
+
+/** In dev, firmware-loader fetches use /public/... — mirror the public folder there. */
+function devPublicPrefixPlugin(): PluginOption {
+    return {
+        name: 'dev-public-prefix',
+        apply: 'serve',
+        configureServer(server) {
+            const publicRoot = resolve(__dirname, 'public');
+            server.middlewares.use(async (req, res, next) => {
+                const url = req.url ?? '';
+                if (!url.startsWith('/public/')) {
+                    return next();
+                }
+                const rel = decodeURIComponent(url.slice('/public/'.length).split('?')[0] ?? '');
+                const file = normalize(join(publicRoot, rel));
+                if (!file.startsWith(publicRoot)) {
+                    return next();
+                }
+                try {
+                    const data = await readFile(file);
+                    const ext = extname(file).toLowerCase();
+                    res.setHeader('Content-Type', MIME_BY_EXT[ext] ?? 'application/octet-stream');
+                    res.end(data);
+                } catch {
+                    next();
+                }
+            });
+        },
+    };
+}
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
+    const isDev = mode === 'development';
     return {
         base: './',
         esbuild: {
@@ -21,7 +64,10 @@ export default defineConfig(({ mode }) => {
             rootDirectory: JSON.stringify(__dirname),
             global: 'globalThis',
         },
-        plugins: [react(), visualizer() as PluginOption, viteStaticCopy({
+        plugins: [
+            react(),
+            ...(isDev ? [devPublicPrefixPlugin()] : []),
+            visualizer() as PluginOption, viteStaticCopy({
             targets: [
                 {
                     src: 'node_modules/flexlayout-react/style',
