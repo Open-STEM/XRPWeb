@@ -480,6 +480,19 @@ abstract class Connection {
         this.connLogger.debug('Writing to device' + str);
     }
 
+    /**
+     * writeToDataDevice - write binary (XPP) data to the device.
+     *    Transports with a dedicated binary channel override this: over BLE
+     *    the robot only feeds XPP from the DATA characteristic (the REPL
+     *    characteristic is dupterm'd into stdin, where XPP bytes would be
+     *    lost). Over USB there is a single stream, so the default of writing
+     *    to the normal device stream is correct.
+     * @param data
+     */
+    public async writeToDataDevice(data: Uint8Array) {
+        await this.writeToDevice(data);
+    }
+
     // Goes into raw mode and writes a command according to the XRP_SEND_BLOCK_SIZE then executes
     public async writeUtilityCmdRaw(
         cmdStr: string,

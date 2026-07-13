@@ -49,7 +49,10 @@ export function buildVarUpdatePacket(meta: CustomVarMeta, value: number): Uint8A
 
 /**
  * Send a variable update to the XRP.
- * Uses the active connection's writeToDevice.
+ * Uses the active connection's writeToDataDevice: over BLE that is the
+ * dedicated binary DATA characteristic (the only input the robot's puppet
+ * protocol listens to on BLE); over USB it falls through to the normal
+ * serial stream, which the puppet polls directly.
  * Returns true if sent, false if no connection available.
  */
 export async function sendVariableUpdate(meta: CustomVarMeta, value: number): Promise<boolean> {
@@ -61,7 +64,7 @@ export async function sendVariableUpdate(meta: CustomVarMeta, value: number): Pr
 
   const packet = buildVarUpdatePacket(meta, value);
   try {
-    await connection.writeToDevice(packet);
+    await connection.writeToDataDevice(packet);
     return true;
   } catch (err) {
     console.error('Error sending variable update:', err);

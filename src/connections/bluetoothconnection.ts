@@ -440,21 +440,24 @@ export class BluetoothConnection extends Connection {
     }
 
      /**
-     * writeToDataDevice
-     * @param Uint8Array 
+     * writeToDataDevice - write binary (XPP) data to the DATA characteristic,
+     * the only input the robot's puppet protocol listens to over BLE.
+     * Chained on the same queue as the REPL writes: GATT allows only one
+     * operation at a time per device, so an unqueued write here would race
+     * shell/REPL traffic and get dropped with "operation already in progress".
+     * @param data
      */
      public async writeToDataDevice(data: Uint8Array) {
         this.connLogger.debug('writeToDataDevice BLE: ' + data);
 
-        try {
-            //this.connLogger.debug("writing: " + this.TEXT_DECODER.decode(str));
-            await this.bleDataWriter?.writeValue(data as BufferSource);
-            
-        } catch (error) {
-            this.connLogger.debug(error);
-        }
-
-        return Promise.resolve(); // Indicate success
+        this.Queue = this.Queue.then(async () => {
+            try {
+                await this.bleDataWriter?.writeValue(data as BufferSource);
+            } catch (error) {
+                console.error('ble data write failed:', error);
+            }
+        });
+        return this.Queue;
     }
 
     /**
