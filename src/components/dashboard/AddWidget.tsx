@@ -109,6 +109,27 @@ const AddWidgets: React.FC = () => {
         >
           {'Custom Variable'}
         </DropdownItem>
+
+        {/* Robot Control (puppet mode: drive motors, servos and LED from the dashboard) */}
+        <DropdownItem
+          icon={FaCog}
+          onClick={() => {
+            addWidget(() => ({
+              h: 9,
+              w: 4,
+              x: 0,
+              y: 2,
+              minW: 2,
+              minH: 5,
+              content: JSON.stringify({
+                name: 'PuppetControl',
+                props: {},
+              }),
+            }));
+          }}
+        >
+          {'Robot Control'}
+        </DropdownItem>
         {customSensors.length > 0 && (
           <>
             <hr className="my-1 border-gray-200" />

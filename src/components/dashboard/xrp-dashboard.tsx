@@ -10,6 +10,7 @@ import {
 } from "./sensors";
 import CustomXPPSensor from "./sensors/CustomXPPSensor";
 import CustomVariableWidget from "./sensors/CustomVariableWidget";
+import PuppetControlWidget from "./sensors/PuppetControlWidget";
 import { getCustomSensor } from "./sensors/customRegistry";
 import { GridStackOptions } from "gridstack";
 import AddWidgets from "./AddWidget";
@@ -69,6 +70,8 @@ const COMPONENT_MAP = {
   CustomVariable: ({ initialVarName }: { initialVarName?: string }) => (
     <CustomVariableWidget initialVarName={initialVarName} />
   ),
+
+  PuppetControl: () => <PuppetControlWidget />,
 };
 
 const gridOptions: GridStackOptions = {
