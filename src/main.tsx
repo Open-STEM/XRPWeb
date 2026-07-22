@@ -8,6 +8,7 @@ import '@/utils/blockly-global'; // Expose Blockly globally for external plugins
 import { initAiBuddyAccess } from '@/utils/aiBuddyAccess';
 import App from '@/App.tsx';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import { GoogleClientIdContext } from '@/utils/google-client-id';
 import { ThemeInit } from '../.flowbite-react/init';
 
 initAiBuddyAccess();
@@ -41,9 +42,11 @@ function Root() {
     return (
         <StrictMode>
             <ThemeInit />
-            <GoogleOAuthProvider clientId={googleClientId}>
-                <App />
-            </GoogleOAuthProvider>
+            <GoogleClientIdContext.Provider value={googleClientId}>
+                <GoogleOAuthProvider clientId={googleClientId}>
+                    <App />
+                </GoogleOAuthProvider>
+            </GoogleClientIdContext.Provider>
         </StrictMode>
     );
 }

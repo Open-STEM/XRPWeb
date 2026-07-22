@@ -6,6 +6,7 @@ import logger from '@/utils/logger';
 import { UserProfile } from '@/services/google-auth';
 import { useTranslation } from 'react-i18next';
 import { Constants } from '@/utils/constants';
+import { useGoogleClientId } from '@/utils/google-client-id';
 import GoogleLogo from '@assets/images/google-logo.svg';
 
 type LoginProps = {
@@ -53,9 +54,6 @@ function mapDriveAboutUser(data: DriveAboutResponse): UserProfile | null {
         verified_email: true,
     };
 }
-
-/** Without an auth backend there is no OAuth client ID to sign in with. */
-const isGoogleAuthConfigured = Boolean(import.meta.env.GOOGLE_AUTH_URL);
 
 function GoogleLoginButton({ logoutCallback, onSuccess }: LoginProps) {
     const { t } = useTranslation();
@@ -288,12 +286,14 @@ function GoogleLoginButton({ logoutCallback, onSuccess }: LoginProps) {
 }
 
 /**
- * Google sign-in button. When Google auth is not configured the button is left
- * out entirely - useGoogleLogin throws on an empty client ID, which would take
- * down the file tree that hosts this widget.
+ * Google sign-in button. Held back until the OAuth client ID has been fetched -
+ * useGoogleLogin throws on an empty ID, which would take down the file tree
+ * that hosts this widget.
  */
 function Login(props: LoginProps) {
-    return isGoogleAuthConfigured ? <GoogleLoginButton {...props} /> : null;
+    const clientId = useGoogleClientId();
+
+    return clientId ? <GoogleLoginButton {...props} /> : null;
 }
 
 export default Login;
