@@ -54,7 +54,10 @@ function mapDriveAboutUser(data: DriveAboutResponse): UserProfile | null {
     };
 }
 
-function Login({ logoutCallback, onSuccess }: LoginProps) {
+/** Without an auth backend there is no OAuth client ID to sign in with. */
+const isGoogleAuthConfigured = Boolean(import.meta.env.GOOGLE_AUTH_URL);
+
+function GoogleLoginButton({ logoutCallback, onSuccess }: LoginProps) {
     const { t } = useTranslation();
     const [isLogin, setIsLogin] = useState<boolean>(false);
     const [isSigningIn, setIsSigningIn] = useState<boolean>(false);
@@ -282,6 +285,15 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
             </div>
         </>
     );
+}
+
+/**
+ * Google sign-in button. When Google auth is not configured the button is left
+ * out entirely - useGoogleLogin throws on an empty client ID, which would take
+ * down the file tree that hosts this widget.
+ */
+function Login(props: LoginProps) {
+    return isGoogleAuthConfigured ? <GoogleLoginButton {...props} /> : null;
 }
 
 export default Login;

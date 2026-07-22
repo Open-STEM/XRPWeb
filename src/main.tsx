@@ -14,10 +14,14 @@ initAiBuddyAccess();
 applyBlocklyLocale(i18n.language);
 
 function Root() {
-    const [googleClientId, setGoogleClientId] = useState<string | null>(null);
+    const [googleClientId, setGoogleClientId] = useState<string>('');
     const googleAuthBackendUrl = import.meta.env.GOOGLE_AUTH_URL;
 
     useEffect(() => {
+        if (!googleAuthBackendUrl) {
+            console.warn('GOOGLE_AUTH_URL is not set - Google sign-in is disabled.');
+            return;
+        }
         const fetchClientId = async () => {
             try {
                 const response = await fetch(`${googleAuthBackendUrl}/google-auth/client-id`);
@@ -25,19 +29,14 @@ function Root() {
                     throw new Error(`Failed to fetch client ID: ${response.statusText}`);
                 }
                 const data = await response.json();
-                setGoogleClientId(data.client_id);
+                setGoogleClientId(data.client_id ?? '');
             } catch (error) {
+                // The IDE stays usable without Google - only Drive sign-in is lost.
                 console.error('Error fetching Google Client ID:', error);
-                // Handle error appropriately, e.g., show an error message to the user
             }
         };
         fetchClientId();
-    }, []);
-
-    if (!googleClientId) {
-        // Optionally render a loading spinner or message
-        return <div>Loading Google authentication...</div>;
-    }
+    }, [googleAuthBackendUrl]);
 
     return (
         <StrictMode>
