@@ -34,7 +34,8 @@ function BackupRestoreDlg({toggleDialog, onBackup, onRestore}: BackupRestoreDlgP
     const [isBluetoothConnection, setIsBluetoothConnection] = useState(false);
 
     useEffect(() => {
-        if (AppMgr.getInstance().getConnection()?.isConnected && AppMgr.getInstance().authService.isLogin) {
+        const isConnected = AppMgr.getInstance().getConnection()?.isConnected() ?? false;
+        if (isConnected && AppMgr.getInstance().authService.isLogin) {
             setIsBackRestoreDisabled(false);
             if (AppMgr.getInstance().getConnection() instanceof BluetoothConnection) {
                 setIsBluetoothConnection(true);

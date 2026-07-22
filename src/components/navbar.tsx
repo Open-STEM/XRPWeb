@@ -1115,11 +1115,21 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
-     * openBackupDialog - swap the current dialog out for the backup flow
+     * openBackupDialog - swap the firmware-loader warning prompt out for the
+     * Backup/Restore entry screen. This is the start of the backup flow: it
+     * verifies an XRP is connected and Google Drive is logged in (disabling the
+     * actions and explaining what to do when it is not) before the user can
+     * begin the actual backup.
      */
     function openBackupDialog() {
         toggleDialog();
-        setDialogContent(<BackupDlg toggleDialog={toggleDialog} />);
+        setDialogContent(
+            <BackupRestoreDlg
+                toggleDialog={toggleDialog}
+                onBackup={onBackup}
+                onRestore={onRestore}
+            />,
+        );
         toggleDialog();
     }
 
