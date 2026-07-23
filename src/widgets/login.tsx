@@ -6,6 +6,7 @@ import logger from '@/utils/logger';
 import { UserProfile } from '@/services/google-auth';
 import { useTranslation } from 'react-i18next';
 import { Constants } from '@/utils/constants';
+import { useGoogleClientId } from '@/utils/google-client-id';
 import GoogleLogo from '@assets/images/google-logo.svg';
 
 type LoginProps = {
@@ -54,7 +55,7 @@ function mapDriveAboutUser(data: DriveAboutResponse): UserProfile | null {
     };
 }
 
-function Login({ logoutCallback, onSuccess }: LoginProps) {
+function GoogleLoginButton({ logoutCallback, onSuccess }: LoginProps) {
     const { t } = useTranslation();
     const [isLogin, setIsLogin] = useState<boolean>(false);
     const [isSigningIn, setIsSigningIn] = useState<boolean>(false);
@@ -282,6 +283,17 @@ function Login({ logoutCallback, onSuccess }: LoginProps) {
             </div>
         </>
     );
+}
+
+/**
+ * Google sign-in button. Held back until the OAuth client ID has been fetched -
+ * useGoogleLogin throws on an empty ID, which would take down the file tree
+ * that hosts this widget.
+ */
+function Login(props: LoginProps) {
+    const clientId = useGoogleClientId();
+
+    return clientId ? <GoogleLoginButton {...props} /> : null;
 }
 
 export default Login;
