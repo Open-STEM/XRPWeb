@@ -348,7 +348,7 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
                 {!installContext && !loading && !loadError && !unavailableProject && hasBoards && (
                     <div className={selectionGridClass}>
                         {doc!.boards
-                            .filter((board) => board.id !== 'xrp-nano' || localStorage.getItem('xrpNanoSeen') === 'true')
+                            .filter((board) => board.id !== 'xrp-nano' || sessionStorage.getItem('xrpNanoSeen') === 'true')
                             .map((board) => (
                             <SelectionCard
                                 key={board.id}
