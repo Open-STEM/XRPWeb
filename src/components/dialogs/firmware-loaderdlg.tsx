@@ -370,7 +370,7 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
                             .filter(
                                 (board) =>
                                     board.id !== 'xrp-nano' ||
-                                    localStorage.getItem('xrpNanoSeen') === 'true',
+                                    sessionStorage.getItem('xrpNanoSeen') === 'true',
                             )
                             .map((board) => (
                                 <SelectionCard

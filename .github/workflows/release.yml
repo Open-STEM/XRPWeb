@@ -21,11 +21,21 @@ jobs:
             # Same staging as deploy.yml: the /firmware-loader/boards content
             # is never checked in, so pull it from the firmware repo before
             # the build or the released site 404s on all firmware loader data.
+            - name: Resolve latest XRP_Firmware release
+              id: firmware
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  TAG=$(gh release view --repo Open-STEM/XRP_Firmware --json tagName --jq .tagName)
+                  echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+                  echo "Using XRP_Firmware release $TAG"
             - name: Checkout firmware-loader content (XRP_Firmware)
               uses: actions/checkout@v4
               with:
-                  # Change repository/ref to a fork or branch to ship unreleased firmware
+                  # Pull the latest published release. To ship unreleased firmware, override
+                  # repository/ref to a fork or branch.
                   repository: Open-STEM/XRP_Firmware
+                  ref: ${{ steps.firmware.outputs.tag }}
                   path: xrp-firmware
             - name: Stage firmware-loader boards content
               run: |
