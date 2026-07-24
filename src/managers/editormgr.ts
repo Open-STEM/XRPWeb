@@ -25,6 +25,8 @@ export type EditorSession = {
     fontsize: number;
     content?: string;
     workspace?: Workspace;
+    /** Saved pan/zoom so tab switches do not reset the Blockly viewport. */
+    viewport?: { scrollX: number; scrollY: number; scale: number };
     lastUpdated?: Date;
 };
 
@@ -269,6 +271,27 @@ export default class EditorMgr {
     }
 
     /**
+     * True when the tab is a Python or Blockly file that can be executed on the XRP.
+     * Dashboard, AI Buddy, and other non-code tabs are excluded.
+     */
+    public isRunnableCodeTab(id: string): boolean {
+        if (
+            id === Constants.DASHBOARD_TAB_ID ||
+            id === Constants.AI_CHAT_TAB_ID
+        ) {
+            return false;
+        }
+        const session = this.editorSessions.get(id);
+        if (!session || !session.path) {
+            return false;
+        }
+        return (
+            session.type === EditorType.PYTHON ||
+            session.type === EditorType.BLOCKLY
+        );
+    }
+
+    /**
      * hasEditorSessionByName - Check if an editor session exists by name
      * @param searchParams - Editor session search parameters
      * @returns 
@@ -342,6 +365,14 @@ export default class EditorMgr {
     public async saveEditor(id: string, code: string) {
         const session = this.editorSessions.get(id);
         if (session) {
+            // Google Drive files can only be saved while signed in to Google
+            // Drive. When signed out, block the save (menu/Ctrl-S) and tell the
+            // user to sign back in.
+            if (session.gpath && !AppMgr.getInstance().authService.isLogin) {
+                AppMgr.getInstance().emit(EventType.EVENT_ALERT, i18n.t('editGoogleLoginRequired'));
+                return;
+            }
+
             const isConnected = AppMgr.getInstance().getConnection()?.isConnected() ?? false;
             if (!isConnected && !AppMgr.getInstance().authService.isLogin) {
                 // show a dialog to inform user to connect to XRP or login to Google Drive

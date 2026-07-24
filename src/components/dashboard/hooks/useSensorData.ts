@@ -45,25 +45,25 @@ const useSensorData = () => {
     AppMgr.getInstance().on(EventType.EVENT_DASHBOARD_DATA, handleSensorData);
   }, [handleSensorData]);
 
-  const stopSensor = (sensor: string) => {
+  const stopSensor = useCallback((sensor: string) => {
     setActiveSensors(prev => {
       const newSet = new Set(prev);
       newSet.delete(sensor);
       return newSet;
     });
-  };
+  }, []);
 
-  const getSensorData = <T,>(sensor: string): T | null => {
-    const data = sensorData.get(sensor);
-    return data ? data.value as T : null;
-  };
-
-  const requestSensors = (sensors: string[]) => {
+  const requestSensors = useCallback((sensors: string[]) => {
     setActiveSensors(prev => {
       const newSet = new Set(prev);
       sensors.forEach(sensor => newSet.add(sensor));
       return newSet;
     });
+  }, []);
+
+  const getSensorData = <T,>(sensor: string): T | null => {
+    const data = sensorData.get(sensor);
+    return data ? data.value as T : null;
   };
 
   return {

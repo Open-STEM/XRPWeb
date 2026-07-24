@@ -59,6 +59,7 @@ export enum EventType {
     EVENT_SHOWBLUETOOTH_CONNECTING = 'show-bluetooth-connecting', // Show Bluetooth connecting dialog
     EVENT_HIDE_BLUETOOTH_CONNECTING = 'hide-bluetooth-connecting', // Hide Bluetooth connecting dialog
     EVENT_EDITOR_NAME_CHANGED = 'editor-name-changed', // Editor name changed
+    EVENT_EDITOR_TAB_SELECTED = 'editor-tab-selected', // Editor tab id selected in layout
 }
 
 type Events = {
@@ -96,6 +97,7 @@ type Events = {
     [EventType.EVENT_SHOWBLUETOOTH_CONNECTING]: string;
     [EventType.EVENT_HIDE_BLUETOOTH_CONNECTING]: string;
     [EventType.EVENT_EDITOR_NAME_CHANGED]: string;
+    [EventType.EVENT_EDITOR_TAB_SELECTED]: string;
 };
 
 /**
@@ -249,6 +251,15 @@ export default class AppMgr {
     }
 
     /**
+     * republishConnectionId - re-publish the connected XRP's identity (shown next
+     * to the RUN button). Used by flows that connect outside the normal connect
+     * path (e.g. the firmware install wizard). No-op when not connected.
+     */
+    public async republishConnectionId(): Promise<void> {
+        await this._connectionMgr?.publishConnectionInfo();
+    }
+
+    /**
      * getConnectionType - return the type of active connection, i.e., bluetooth or USB
      * @returns ConnectionType
      */
@@ -316,6 +327,39 @@ export default class AppMgr {
         };
 
         return checkFileInFolders(JSON.parse(this._folderDataJson));
+    }
+
+    /**
+     * IsFileExistsAtPath - check if a file already exists at the given full path
+     * in the current folder tree (used by Save As conflict detection).
+     * @param fullPath destination path including filename, e.g. /users/foo/bar.py
+     */
+    public IsFileExistsAtPath(fullPath: string): boolean {
+        if (!this._folderDataJson) {
+            return false;
+        }
+
+        const target = fullPath.startsWith('/') ? fullPath : `/${fullPath}`;
+        const normalizedTarget = target.replace(/\/+/g, '/');
+
+        const walk = (nodes: FolderItem[]): boolean => {
+            for (const node of nodes) {
+                if (node.children === null) {
+                    const parent = node.path.endsWith('/') ? node.path.slice(0, -1) : node.path;
+                    const nodePath = `${parent}/${node.name}`.replace(/\/+/g, '/');
+                    if (nodePath === normalizedTarget) {
+                        return true;
+                    }
+                } else if (node.children?.length) {
+                    if (walk(node.children)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+
+        return walk(JSON.parse(this._folderDataJson));
     }
 
     /**

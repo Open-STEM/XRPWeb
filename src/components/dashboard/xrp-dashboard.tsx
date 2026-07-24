@@ -38,15 +38,15 @@ const BREAKPOINTS = [
 // ─── Component Map ──────────────────────────────────────────────
 
 const COMPONENT_MAP = {
-  Accelerometer: () => <Accelerometer />,
-  Gyroscope: () => <Gyroscope />,
-  Current: () => <Current />,
-  Encoder: () => <Encoder />,
-  Reflectance: () => <Reflectance />,
-  Voltage: () => <Voltage />,
-  Rangefinder: () => <Rangefinder />,
+  Accelerometer: (props: { viewMode?: 'data' | 'graph' }) => <Accelerometer {...props} />,
+  Gyroscope: (props: { viewMode?: 'data' | 'graph' }) => <Gyroscope {...props} />,
+  Current: (props: { viewMode?: 'data' | 'graph' }) => <Current {...props} />,
+  Encoder: (props: { viewMode?: 'data' | 'graph' }) => <Encoder {...props} />,
+  Reflectance: (props: { viewMode?: 'data' | 'graph' }) => <Reflectance {...props} />,
+  Voltage: (props: { viewMode?: 'data' | 'graph' }) => <Voltage {...props} />,
+  Rangefinder: (props: { viewMode?: 'data' | 'graph' }) => <Rangefinder {...props} />,
 
-  CustomSensor: ({ sensorName }: { sensorName: string }) => {
+  CustomSensor: ({ sensorName, viewMode }: { sensorName: string; viewMode?: 'data' | 'graph' }) => {
     const def = getCustomSensor(sensorName);
     if (!def) {
       return (
@@ -61,6 +61,7 @@ const COMPONENT_MAP = {
         title={def.title}
         channels={def.channels}
         parser={def.parser}
+        viewMode={viewMode}
       />
     );
   },

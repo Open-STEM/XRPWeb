@@ -14,7 +14,7 @@ import getConfigurationServiceOverride, {
 import 'vscode/localExtensionHost';
 import { ExtensionHostKind, registerExtension } from '@codingame/monaco-vscode-api/extensions';
 import { initializedAndStartLanguageClient } from '@components/lsp-client';
-import AppMgr, { EventType, Themes } from '@/managers/appmgr';
+import AppMgr, { EventType, LoginStatus, Themes } from '@/managers/appmgr';
 import { StorageKeys } from '@/utils/localstorage';
 import EditorMgr, { EditorSession } from '@/managers/editormgr';
 import { FontSize } from '@/utils/types';
@@ -194,6 +194,22 @@ const MonacoEditor = ({
     const nameRef = useRef(name);
     const [isReady, setIsReady] = useState(false);
 
+    /**
+     * Google Drive files (sessions with a gpath) can only be saved while the
+     * user is signed in to Google Drive. When signed out, put the editor into
+     * read-only mode so the file cannot be edited, and surface a message
+     * prompting the user to sign back in when they try to type.
+     */
+    const updateReadOnlyState = () => {
+        if (!editor.current) return;
+        const session = EditorMgr.getInstance().getEditorSession(tabId);
+        const blocked = !!session?.gpath && !AppMgr.getInstance().authService.isLogin;
+        editor.current.updateOptions({
+            readOnly: blocked,
+            readOnlyMessage: blocked ? { value: t('editGoogleLoginRequired') } : undefined,
+        });
+    };
+
     useEffect(() => {
         let mounted = true;
         console.log('[MonacoEditor] useEffect mounting');
@@ -271,6 +287,7 @@ const MonacoEditor = ({
                 if (session) {
                     EditorMgr.getInstance().SaveToLocalStorage(session, loadContent.content);
                 }
+                updateReadOnlyState();
             });
 
             AppMgr.getInstance().on(EventType.EVENT_FONTCHANGE, (change) => {
@@ -300,6 +317,12 @@ const MonacoEditor = ({
                 const newNames = JSON.parse(names);
                 if (newNames.oldId !== nameRef.current) return;
                 setName(newNames.newId);
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_LOGIN_STATUS, (status) => {
+                if (status === LoginStatus.LOGGED_IN || status === LoginStatus.LOGGED_OUT) {
+                    updateReadOnlyState();
+                }
             });
 
             EditorMgr.getInstance().setFontsize(tabId, Constants.DEFAULT_FONTSIZE);
@@ -356,6 +379,8 @@ const MonacoEditor = ({
                         }
                     },
                 });
+
+                updateReadOnlyState();
             }
         }
     }, [language, value, t, childWidth, childHeight, tabId, isReady]);

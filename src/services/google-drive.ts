@@ -1,4 +1,5 @@
 import logger from '@/utils/logger';
+import { Constants } from '@/utils/constants';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 interface GoogleDriveFileMetadata {
@@ -683,6 +684,25 @@ class GoogleDriveService {
             }
         }
 
+    }
+
+    /**
+     * ensureTrashFolder - find or create the trash folder under XRPCode in Google Drive.
+     * Mirrors the on-device /trash folder used when converting blocks to Python on XRP.
+     */
+    async ensureTrashFolder(): Promise<string | null> {
+        const xrpCodeFolder = await this.findFolderByName(Constants.XRPCODE);
+        if (!xrpCodeFolder?.id) {
+            this._modeLogger.error('XRPCode folder not found in Google Drive');
+            return null;
+        }
+
+        const trashName = Constants.TRASH_FOLDER.slice(1);
+        let trashFolder = await this.findFolderByName(trashName, xrpCodeFolder.id);
+        if (!trashFolder) {
+            trashFolder = await this.createFolder(trashName, xrpCodeFolder.id);
+        }
+        return trashFolder?.id ?? null;
     }
 
     /**

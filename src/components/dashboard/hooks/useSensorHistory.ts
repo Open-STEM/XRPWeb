@@ -22,8 +22,10 @@ export function useSensorHistory<TData, THistoryEntry>(
   useEffect(() => {
     if (currentData && lastUpdated) {
       const timestamp = typeof lastUpdated === 'string'
-        ? Number(lastUpdated)
+        ? Date.parse(lastUpdated)
         : lastUpdated;
+      if (Number.isNaN(timestamp)) return;
+
       const entry = toHistoryEntry(currentData, timestamp);
       setHistory(prev => {
         const next = [...prev, entry];
@@ -33,6 +35,15 @@ export function useSensorHistory<TData, THistoryEntry>(
       });
     }
   }, [currentData, lastUpdated, toHistoryEntry]);
+
+  // Subscribe to this sensor as soon as the widget mounts so data appears
+  // without requiring the user to open settings and pick a view mode.
+  useEffect(() => {
+    requestSensors([sensorName]);
+    return () => {
+      stopSensor(sensorName);
+    };
+  }, [sensorName, requestSensors, stopSensor]);
 
   const handleStart = useCallback(() => {
     setHistory([]);

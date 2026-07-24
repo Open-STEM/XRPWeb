@@ -139,43 +139,63 @@ export class USBConnection extends Connection {
         return false;
     }
 
+    /**
+     * Attempt to auto-connect to a previously authorized XRP serial port.
+     *
+     * Behavior:
+     *   - If exactly ONE authorized port matches our vendor/product IDs,
+     *     connect to it silently (no UI prompt).
+     *   - If ZERO matching ports are authorized (first-time XRP), or MORE
+     *     THAN ONE matching port is authorized, return false so the caller
+     *     can fall back to navigator.serial.requestPort() — which shows the
+     *     browser's port picker and requires a fresh user gesture.
+     *
+     * The single-port autoselect covers the common case (one XRP previously
+     * authorized) without prompting; the picker covers first-time setup and
+     * disambiguation between multiple boards.
+     */
     private async tryAutoConnect(): Promise<boolean> {
         this.connLogger.debug('Entering tryAutoConnection');
         if (this.connectionStates === ConnectionState.Busy) {
             return false;
         }
-        this.connectionStates = ConnectionState.Connected;
 
-        //window.ATERM.writeln("Connecting to XRP..."); //let the user know that we are trying to connect.
-        const ports = await navigator.serial.getPorts();
-        if (Array.isArray(ports)) {
-            for (let ip = 0; ip < ports.length; ip++) {
-                if (this.checkPortMatching(ports[ip])) {
-                    this.port = ports[ip];
-                    if (await this.openPort()) {
-                        this.onConnected();
-                        this.connectionStates = ConnectionState.Connected;
-                        return true;
-                    }
-                }
-            }
-        } else {
-            if (this.checkPortMatching(ports)) {
-                this.port = ports;
-                if (await this.openPort()) {
-                    this.onConnected();
-                    this.connectionStates = ConnectionState.Connected;
-                }
-                return true;
-            }
+        const rawPorts = await navigator.serial.getPorts();
+        const portList: SerialPort[] = Array.isArray(rawPorts)
+            ? rawPorts
+            : rawPorts
+              ? [rawPorts as SerialPort]
+              : [];
+        const matching = portList.filter((p) => this.checkPortMatching(p));
+
+        if (matching.length !== 1) {
+            this.connLogger.debug(
+                `tryAutoConnect: ${matching.length} matching XRP port(s) — deferring to manual selection`,
+            );
+            return false;
         }
 
-        //document.getElementById('IDConnectBTN')!.style.display = "block";
-        //TODO: report error
+        this.port = matching[0];
         this.connectionStates = ConnectionState.Connected;
+        if (await this.openPort()) {
+            this.onConnected();
+            this.connectionStates = ConnectionState.Connected;
+            this.connLogger.debug('tryAutoConnect: connected to sole matching port');
+            return true;
+        }
 
-        this.connLogger.debug('Existing tryAutoConnect');
+        this.connLogger.debug('tryAutoConnect: openPort failed on sole matching port');
         return false;
+    }
+
+    /**
+     * Public wrapper around tryAutoConnect for callers (e.g. the firmware
+     * install wizard) that want to attempt a silent reconnection without
+     * triggering the navigator.serial.requestPort() fallback that connect()
+     * normally falls through to. Returns true on success.
+     */
+    public async tryAutoConnectIfSingle(): Promise<boolean> {
+        return await this.tryAutoConnect();
     }
 
     private async openPort(): Promise<boolean> {

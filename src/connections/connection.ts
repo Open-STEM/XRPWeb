@@ -1,5 +1,7 @@
 import ConnectionMgr from "@/managers/connectionmgr";
+import AppMgr, { EventType } from "@/managers/appmgr";
 import logger from "@/utils/logger";
+import i18n from "@/utils/i18n";
 import Joystick from '@/managers/joystickmgr';
 import TableMgr from '@/managers/tablemgr';
 
@@ -546,6 +548,12 @@ abstract class Connection {
                 if (result[i].includes("[Errno", 0)) {
                     this.runError = result[i];
                     console.log("run time error: " + this.runError);
+                    if (this.runError.includes('[Errno 2] ENOENT')) {
+                        AppMgr.getInstance().emit(
+                            EventType.EVENT_ALERT,
+                            i18n.t('program-not-saved-to-xrp'),
+                        );
+                    }
                 }
             }
         }
@@ -640,6 +648,7 @@ abstract class Connection {
         this.startReaduntil("KeyboardInterrupt:");
         await this.writeToDevice("\r" + this.CTRL_CMD_KINTERRUPT);  // ctrl-C to interrupt any running program
         let result = await this.haltUntilRead(1, 20);
+    
         if (result == undefined) {
             this.startReaduntil(">>>");
             await this.writeToDevice("\r" + this.CTRL_CMD_NORMALMODE);  // ctrl-C to interrupt any running program
@@ -648,17 +657,22 @@ abstract class Connection {
                 return true;
             }
         }
+    
         //try multiple times to get to the prompt
         let gotToPrompt = false;
         for (let i = 0; i < 20; i++) {
             this.startReaduntil(">>>");
-            await this.writeToDevice("\r" + this.CTRL_CMD_KINTERRUPT);
-            result = await this.haltUntilRead(2, 5); //this should be fast
-            if (result != undefined) {
+            await this.writeToDevice("\r" + this.CTRL_CMD_KINTERRUPT + this.CTRL_CMD_KINTERRUPT);
+            result = await this.haltUntilRead(0, 5); //this should be fast
+            if (result != undefined && result.length > 0) {
                 gotToPrompt = true;
                 break;
             }
         }
+
+        this.startReaduntil(">>>");
+        await this.writeToDevice("\r" + this.CTRL_CMD_NORMALMODE);  // ctrl-C to interrupt any running program
+        result = await this.haltUntilRead(1, 20);
         return gotToPrompt;
     }
     async prepareForStop() {

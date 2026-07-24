@@ -18,8 +18,6 @@ function UploadFileDlg({ files, toggleDialog }: UploadFileDlgProps) {
     const [folderItem, setFolderItem] = useState<FolderItem[] | null>(null);
     const [fileList, setFileList] = useState<FileData[] | null >(null);
     const [selectedFolder, setSelectedFolder] = useState<string>('');
-    const [isConnected, setConnected] = useState(false);
-    const [isLogin, setIsLogin] = useState(false);
     const [gFolderId, setGFolderId] = useState<string>('');
 
     /**
@@ -28,30 +26,43 @@ function UploadFileDlg({ files, toggleDialog }: UploadFileDlgProps) {
     const handleFileUpload = async () => {
         toggleDialog();
         if (!fileList) return;
-        AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
-        
-        for (const file of fileList) {
-            const path = selectedFolder + '/' + file.name;
-            if (isLogin) {
-                const minetype = file.name.includes('.py')
-                            ? 'text/x-python' : file.name.includes('.blocks')
-                            ? 'application/json' : 'text/plain';
-                const blob = new Blob([file.content], { type: minetype });
 
-                AppMgr.getInstance().driveService.uploadFile(blob, file.name, minetype, gFolderId);
-            } else if (isConnected) {
-                await CommandToXRPMgr.getInstance().uploadFile(path, file.content, true);
+        const appMgr = AppMgr.getInstance();
+        const loginNow = appMgr.authService.isLogin;
+        const connectedNow = appMgr.getConnection()?.isConnected() ?? false;
+
+        appMgr.emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
+
+        try {
+            for (const file of fileList) {
+                const path = selectedFolder + '/' + file.name;
+                if (loginNow) {
+                    const minetype = file.name.includes('.py')
+                        ? 'text/x-python'
+                        : file.name.includes('.blocks')
+                          ? 'application/json'
+                          : 'text/plain';
+                    const blob = new Blob([file.content], { type: minetype });
+
+                    await appMgr.driveService.uploadFile(blob, file.name, minetype, gFolderId);
+                } else if (connectedNow) {
+                    await CommandToXRPMgr.getInstance().uploadFile(path, file.content, true);
+                }
             }
-        };
 
-        if (isConnected) {
-            await CommandToXRPMgr.getInstance().getOnBoardFSTree();
-        } else if (isLogin) {
-            const username = getUsernameFromEmail(AppMgr.getInstance().authService.userProfile.email);
-            fireGoogleUserTree(username ?? '');
+            // Refresh the tree for the destination that received the upload.
+            // When logged in to Google Drive the sidebar shows the Drive tree, so
+            // refresh Drive — not the XRP tree (which would be ignored anyway).
+            if (loginNow) {
+                const username = getUsernameFromEmail(appMgr.authService.userProfile.email);
+                await fireGoogleUserTree(username ?? '');
+            } else if (connectedNow) {
+                await CommandToXRPMgr.getInstance().getOnBoardFSTree();
+            }
+        } finally {
+            appMgr.emit(EventType.EVENT_UPLOAD_DONE, '');
         }
-        toggleDialog();
-    }
+    };
 
     /**
      * handleFolderSelection - callback function to handle the selected folder
@@ -66,9 +77,6 @@ function UploadFileDlg({ files, toggleDialog }: UploadFileDlgProps) {
     useEffect(() => {
         setFileList(files);
         setFolderItem(AppMgr.getInstance().getFolderList());
-        setConnected(AppMgr.getInstance().getConnection()?.isConnected() ?? false);
-        setIsLogin(AppMgr.getInstance().authService.isLogin);
-
     }, [files]);
 
     return (

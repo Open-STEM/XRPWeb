@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" width="320" height="200" role="img" aria-label="SparkFun Red Vision Board">
+  <rect width="320" height="200" fill="#7f1d1d" rx="8"/>
+  <rect x="48" y="52" width="224" height="96" fill="#E31E24" rx="4"/>
+  <rect x="108" y="72" width="104" height="56" fill="#1c1917" rx="3" opacity="0.85"/>
+  <text x="160" y="98" fill="#ffffff" font-family="system-ui,sans-serif" font-size="15" font-weight="bold" text-anchor="middle">SparkFun</text>
+  <text x="160" y="122" fill="#fecaca" font-family="system-ui,sans-serif" font-size="13" font-weight="600" text-anchor="middle">Red Vision</text>
+</svg>

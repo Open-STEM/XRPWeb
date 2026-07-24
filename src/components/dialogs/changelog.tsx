@@ -6,6 +6,11 @@ type changelogProps = {
      * A function to close the dialog.
      */
     closeDialog: () => void;
+    /**
+     * Optional URL of the changelog file to fetch. Defaults to the
+     * application-wide CHANGELOG.txt at the site root.
+     */
+    changelogUrl?: string;
 };
 
 const md = new MarkdownIt({
@@ -19,12 +24,12 @@ const md = new MarkdownIt({
  * ChangeLogDlg - A component that displays the changelog of the application.
  * @returns ChangeLogDlg
  */
-function ChangeLogDlg({ closeDialog }: changelogProps) {
+function ChangeLogDlg({ closeDialog, changelogUrl = 'CHANGELOG.txt' }: changelogProps) {
     const [markdown, setMarkdown] = useState<string>('');
 
     useEffect(() => {
         const fetchMarkdown = async () => {
-            const response = await fetch('CHANGELOG.txt');
+            const response = await fetch(changelogUrl);
             if (!response.ok) {
                 console.error('Failed to fetch changelog:', response.statusText);
                 return;
@@ -35,7 +40,7 @@ function ChangeLogDlg({ closeDialog }: changelogProps) {
             setMarkdown(html);
         };
         fetchMarkdown();
-    }, []);
+    }, [changelogUrl]);
 
     return (
         <>

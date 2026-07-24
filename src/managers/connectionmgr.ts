@@ -94,10 +94,12 @@ export default class ConnectionMgr {
         //ID this would be a good spot to send window.xrpID to the database
         if (this.xrpID != undefined) {
             const isBLE = connType === ConnectionType.BLUETOOTH;
+            const xrpType = this.cmdToXRPMgr.getXRPType();
             const data = {
                 XRPID: this.xrpID.slice(-5),
                 platform: 'XRP-react',
                 BLE: isBLE,
+                XRPType: xrpType,
             };
 
             // Send this information back to the WPI server
@@ -116,6 +118,30 @@ export default class ConnectionMgr {
             this.appMgr.emit(EventType.EVENT_ID, JSON.stringify(data));
         }
     };
+
+    /**
+     * publishConnectionInfo - (re)publish the connected XRP's identity (the ID
+     * shown to the left of the RUN button).
+     *
+     * Some flows connect to the XRP outside the normal connect-button path —
+     * notably the firmware install wizard, which reconnects after a reboot and
+     * then soft-resets the board. In those cases the EVENT_ID may never have
+     * been emitted (the reconnect can land before the board is ready to answer
+     * a version query). Calling this once the board has settled fills the ID in.
+     *
+     * No-op when not connected. Re-queries the board only if the id is unknown.
+     */
+    public async publishConnectionInfo(): Promise<void> {
+        const conn = this.activeConnection;
+        if (!conn || !conn.isConnected()) {
+            return;
+        }
+        const connType = conn instanceof USBConnection ? ConnectionType.USB : ConnectionType.BLUETOOTH;
+        if (this.xrpID === undefined) {
+            this.xrpID = await this.cmdToXRPMgr.checkIfNeedUpdate();
+        }
+        this.IDSet(connType);
+    }
 
     /**
      * getConnection

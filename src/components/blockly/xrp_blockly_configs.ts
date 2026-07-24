@@ -1,14 +1,53 @@
 
 import '@components/blockly/xrp_blocks';
-import '@components/blockly/xrp_blocks_python'
+import '@components/blockly/xrp_blocks_python';
+import i18n from '@/utils/i18n';
 
 const InitialJson = {};
+
+export const BlocklyCategoryIds = {
+    INDIVIDUAL_MOTORS: 'individualMotors',
+    DRIVE_TRAIN: 'driveTrain',
+    SERVOS: 'servos',
+    SENSORS: 'sensors',
+    REFLECTANCE: 'reflectance',
+    CONTROL_BOARD: 'controlBoard',
+    GAMEPAD: 'gamepad',
+    THIRD_PARTY: 'thirdParty',
+} as const;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ToolboxCategory = Record<string, any>;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function localizeToolboxCategory(category: ToolboxCategory): ToolboxCategory {
+    const localized = { ...category };
+    if (localized.categoryId) {
+        localized.name = i18n.t(`blockly.toolbox.${localized.categoryId}`);
+    }
+    if (Array.isArray(localized.contents)) {
+        localized.contents = localized.contents.map((item: ToolboxCategory) =>
+            item.kind === 'CATEGORY' ? localizeToolboxCategory(item) : item,
+        );
+    }
+    return localized;
+}
+
+export function getLocalizedToolboxJson() {
+    return {
+        ...ToolboxJson,
+        contents: (ToolboxJson.contents as ToolboxCategory[]).map((item) =>
+            item.kind === 'CATEGORY' ? localizeToolboxCategory(item) : item,
+        ),
+    };
+}
 
 const ToolboxJson = {
     kind: "categoryToolbox",
     "contents": [
         {
             "kind": "CATEGORY",
+            "categoryId": "individualMotors",
             "name": "Individual Motors",
             "colour": "#a55b65", // crimson red
             "contents": [
@@ -50,6 +89,7 @@ const ToolboxJson = {
         },
         {
             "kind": "CATEGORY",
+            "categoryId": "driveTrain",
             "name": "DriveTrain",
             "colour": "#a5675b", // rust orange
             "contents": [
@@ -113,6 +153,7 @@ const ToolboxJson = {
         },
         {
             "kind": "CATEGORY",
+            "categoryId": "servos",
             "name": "Servos",
             "colour": "#a55ba5", // purple/pink
             "contents": [
@@ -127,11 +168,13 @@ const ToolboxJson = {
         },
         {
             "kind": "CATEGORY",
+            "categoryId": "sensors",
             "name": "Sensors",
             "colour": "#80a55b", // LIGHT GREEN
             "contents": [
                 {
                 "kind": "CATEGORY",
+                "categoryId": "distance",
                 "name": "Distance",
                 "colour": "#80a55b",
                 "contents": [
@@ -142,6 +185,7 @@ const ToolboxJson = {
                 ]},
                 {
                     "kind": "CATEGORY",
+                    "categoryId": "reflectance",
                     "name": "Reflectance",
                     "colour": "#80a55b",
                     "contents": [
@@ -156,6 +200,7 @@ const ToolboxJson = {
                 ]},
                 {
                     "kind": "CATEGORY",
+                    "categoryId": "gyro",
                     "name": "Gyro",
                     "colour": "#80a55b",
                     "contents": [
@@ -174,6 +219,7 @@ const ToolboxJson = {
                 ]},
                 {
                     "kind": "CATEGORY",
+                    "categoryId": "accelerometer",
                     "name": "Accelerometer",
                     "colour": "#80a55b",
                     "contents": [
@@ -194,6 +240,7 @@ const ToolboxJson = {
         },
         {
             "kind": "CATEGORY",
+            "categoryId": "controlBoard",
             "name": "Control Board",
             "colour": "#5ba580", // cool green
             "contents": [
@@ -217,6 +264,7 @@ const ToolboxJson = {
         },
         {
             "kind": "CATEGORY",
+            "categoryId": "webServer",
             "name": "Web Server",
             "colour": "#5b99a5", // turquoise
             "contents": [
@@ -264,6 +312,7 @@ const ToolboxJson = {
             ]
         },{
             "kind": "CATEGORY",
+            "categoryId": "dashboard",
             "name": "Dashboard",
             "colour": "#0080ff", // bright blue
             "contents": [
@@ -291,6 +340,7 @@ const ToolboxJson = {
         },
         {
             "kind": "CATEGORY",
+            "categoryId": "gamepad",
             "name": "Gamepad",
             "colour": "#ff9248", // turquoise
             "contents": [
@@ -346,6 +396,7 @@ const ToolboxJson = {
                     "type": "logic_ternary"
                 }
             ],
+            "categoryId": "logic",
             "name": "Logic",
             "colour": "#5b80a5" // slate blue
         },
@@ -383,6 +434,7 @@ const ToolboxJson = {
                     "type": "controls_flow_statements"
                 }
             ],
+            "categoryId": "loops",
             "name": "Loops",
             "colour": "#5ba55b" // grass green
         },
@@ -449,6 +501,7 @@ const ToolboxJson = {
                     "type": "math_random_float"
                 }
             ],
+            "categoryId": "math",
             "name": "Math",
             "colour": "#5b67a5" // indigo blue
         },
@@ -520,6 +573,7 @@ const ToolboxJson = {
                     "type": "text_prompt_ext"
                 }
             ],
+            "categoryId": "text",
             "name": "Text",
             "colour": "#5ba58c" // seafoam green
         },
@@ -582,17 +636,20 @@ const ToolboxJson = {
                     "type": "lists_sort"
                 }
             ],
+            "categoryId": "lists",
             "name": "Lists",
             "colour": "#745ba5" // eggplant purple
         },
         {
             "kind": "CATEGORY",
+            "categoryId": "variables",
             "name": "Variables",
             "colour": "#a55b80", // fuschia
             "custom": "VARIABLE"
         },
         {
             "kind": "CATEGORY",
+            "categoryId": "functions",
             "name": "Functions",
             "colour": "#995ba5", // purple
             "custom": "PROCEDURE"
@@ -608,7 +665,9 @@ const ToolboxJson = {
 
 const BlocklyConfigs = {
     InitialJson,
-    ToolboxJson
-}
+    ToolboxJson,
+    getLocalizedToolboxJson,
+    BlocklyCategoryIds,
+};
 
 export default BlocklyConfigs;

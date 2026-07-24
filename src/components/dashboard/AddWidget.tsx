@@ -2,7 +2,7 @@ import React from "react";
 import { useGridStackContext } from "./lib/grid-stack-context";
 import { Dropdown, DropdownItem } from "flowbite-react";
 import { MdSpeed } from 'react-icons/md';
-import { FaBatteryHalf, FaBolt, FaCog, FaEye, FaGlobe, FaPlug, FaPlus, FaSlidersH } from 'react-icons/fa';
+import { FaBatteryHalf, FaCog, FaEye, FaGlobe, FaPlug, FaPlus, FaSlidersH } from 'react-icons/fa';
 import { BsRulers } from 'react-icons/bs';
 import { FlowBiteConstants } from "@/utils/constants";
 import { useTranslation } from "react-i18next";
@@ -22,7 +22,6 @@ interface BuiltinSensorDef {
 
 const BUILTIN_SENSORS: BuiltinSensorDef[] = [
   { action: 'accelerometer', icon: MdSpeed, titleKey: 'accelerometer', gridH: 5, gridW: 4, minW: 2, minH: 5, componentName: 'Accelerometer' },
-  { action: 'current', icon: FaBolt, titleKey: 'current', gridH: 4, gridW: 4, minW: 1, minH: 5, componentName: 'Current' },
   { action: 'gyroscope', icon: FaGlobe, titleKey: 'gyroscope', gridH: 4, gridW: 4, minW: 2, minH: 5, componentName: 'Gyroscope' },
   { action: 'encoder', icon: FaCog, titleKey: 'encoders', gridH: 5, gridW: 4, minW: 1, minH: 4, componentName: 'Encoder' },
   { action: 'reflectance', icon: FaEye, titleKey: 'reflectance', gridH: 5, gridW: 4, minW: 2, minH: 5, componentName: 'Reflectance' },
@@ -46,7 +45,7 @@ const AddWidgets: React.FC = () => {
       minH: def.minH,
       content: JSON.stringify({
         name: def.componentName,
-        props: { isActive: true },
+        props: { viewMode: 'data' },
       }),
     }));
   };
@@ -65,7 +64,7 @@ const AddWidgets: React.FC = () => {
       minH: grid.minH ?? 5,
       content: JSON.stringify({
         name: 'CustomSensor',
-        props: { sensorName: def.sensorName },
+        props: { sensorName: def.sensorName, viewMode: 'data' },
       }),
     }));
   };

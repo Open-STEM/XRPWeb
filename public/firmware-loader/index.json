@@ -1,0 +1,27 @@
+{
+    "title": "Select your board",
+    "description": "Choose the hardware you want to update. Each option opens the next step for that board.",
+    "boards": [
+        {
+            "id": "xrp-beta",
+            "name": "XRP Beta",
+            "description": "XRP with the green pico W on board",
+            "image": "images/board-xrp-beta.jpg",
+            "nextLevel": "boards/xrp-beta.json"
+        },
+        {
+            "id": "xrp-2350",
+            "name": "XRP",
+            "description": "XRP robot headers",
+            "image": "images/board-xrp-2350.jpg",
+            "nextLevel": "boards/xrp-2350.json"
+        },
+        {
+            "id": "xrp-nano",
+            "name": "NanoXRP",
+            "description": "NanoXRP with the RP2040 controller",
+            "image": "/firmware-loader/images/board-xrp-nano.jpg",
+            "nextLevel": "boards/xrp-nano.json"
+        }
+    ]
+}

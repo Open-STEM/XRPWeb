@@ -16,6 +16,8 @@ interface CustomXPPSensorProps {
   title: string;
   /** Channel definitions */
   channels: SensorChannel[];
+  /** Initial widget view mode */
+  viewMode?: 'data' | 'graph';
   /** Optional icon (defaults to a plug icon) */
   icon?: React.ReactNode;
   /** Optional custom tooltip formatter */
@@ -37,6 +39,7 @@ const CustomXPPSensor: React.FC<CustomXPPSensorProps> = ({
   sensorName,
   title,
   channels,
+  viewMode = 'data',
   icon,
   tooltipFormatter,
   renderNumberView,
@@ -74,7 +77,7 @@ const CustomXPPSensor: React.FC<CustomXPPSensorProps> = ({
     [sensorName, title, channels, icon, tooltipFormatter, renderNumberView]
   );
 
-  return <SensorWidget config={config} />;
+  return <SensorWidget config={config} initialViewMode={viewMode} />;
 };
 
 export default CustomXPPSensor;
