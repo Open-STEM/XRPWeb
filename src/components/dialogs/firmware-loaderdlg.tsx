@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoClose } from 'react-icons/io5';
-import FirmwareInstallWizard, { type WizardAssets } from '@/components/dialogs/firmware-install-wizard';
+import FirmwareInstallWizard, {
+    type WizardAssets,
+} from '@/components/dialogs/firmware-install-wizard';
 import {
     firmwareLoaderUrl,
     isInstallable,
@@ -11,6 +13,7 @@ import {
     resolveInstall,
     type ResolvedInstall,
 } from '@/utils/firmware-loader';
+import logo from '@assets/images/xrpstickerbot.png';
 
 const ROOT_MANIFEST = 'index.json';
 
@@ -65,8 +68,15 @@ function parseLevelDocument(raw: unknown): FirmwareLevelDocument {
     const projects = (projectsRaw ?? []) as FirmwareProjectSummary[];
 
     for (const p of projects) {
-        if (!p.id || typeof p.name !== 'string' || typeof p.description !== 'string' || typeof p.image !== 'string') {
-            throw new Error(`Invalid project summary: ${p.id ?? 'unknown'} (need id, name, description, image)`);
+        if (
+            !p.id ||
+            typeof p.name !== 'string' ||
+            typeof p.description !== 'string' ||
+            typeof p.image !== 'string'
+        ) {
+            throw new Error(
+                `Invalid project summary: ${p.id ?? 'unknown'} (need id, name, description, image)`,
+            );
         }
     }
 
@@ -120,7 +130,7 @@ function SelectionCard({ name, description, image, onClick, disabled }: Selectio
             type="button"
             onClick={onClick}
             disabled={disabled}
-            className="group flex w-full max-w-sm flex-col rounded-xl border border-mountain-mist-200 bg-white text-left shadow-sm transition hover:border-curious-blue-400 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-curious-blue-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-shark-700 dark:bg-shark-900 dark:hover:border-curious-blue-600"
+            className="bg-white group flex w-full max-w-sm flex-col rounded-xl border border-mountain-mist-200 text-left shadow-sm transition hover:border-curious-blue-400 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-curious-blue-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-shark-700 dark:bg-shark-900 dark:hover:border-curious-blue-600"
         >
             <div className="flex h-56 w-full items-center justify-center overflow-hidden rounded-t-xl bg-mountain-mist-100 dark:bg-shark-800">
                 <img src={image} alt="" className="h-52 w-full object-contain p-2" />
@@ -269,28 +279,33 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
 
     const headerTitle = installContext
         ? t('firmwareWizardTitle')
-        : doc?.title ??
+        : (doc?.title ??
           (loadError
               ? t('firmwareLoaderLoadError')
               : loading
                 ? t('firmwareLoaderLoading')
-                : t('firmwareLoader'));
+                : t('firmwareLoader')));
 
     return (
         <div className="fixed inset-0 z-[1001] flex h-[100dvh] w-screen flex-col overflow-hidden bg-shark-50 text-mountain-mist-900 dark:bg-shark-950 dark:text-shark-100">
-            <header className="flex shrink-0 items-center justify-between gap-4 border-b border-mountain-mist-200 px-4 py-3 dark:border-shark-700">
+            <header className="flex shrink-0 items-center justify-between gap-4 border-b border-mountain-mist-200 bg-curious-blue-700 px-2 py-1 dark:border-shark-700 dark:bg-mountain-mist-950">
                 <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-mountain-mist-500 dark:text-shark-400">
-                        {t('firmwareLoader')}
-                    </p>
-                    <h1 className="truncate text-lg font-semibold text-mountain-mist-900 dark:text-shark-100 sm:text-xl">
-                        {headerTitle}
-                    </h1>
+                    <div className="flex items-center gap-2">
+                        <img src={logo} alt="logo" width="100" height="50" />
+                        <div className="flex flex-col items-start">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-shark-100 dark:text-shark-400">
+                                {t('firmwareLoader')}
+                            </p>
+                            <h1 className="truncate text-lg font-semibold text-shark-100 dark:text-shark-100 sm:text-xl">
+                                {headerTitle}
+                            </h1>
+                        </div>
+                    </div>
                 </div>
                 <button
                     type="button"
                     onClick={toggleDialog}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-mountain-mist-600 hover:bg-mountain-mist-200 hover:text-mountain-mist-900 dark:text-shark-300 dark:hover:bg-shark-800 dark:hover:text-shark-100"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-shark-100 hover:bg-curious-blue-300 hover:text-shark-600 dark:text-shark-400 dark:hover:bg-shark-800 dark:hover:text-shark-100"
                     aria-label={t('firmwareLoaderClose')}
                 >
                     <IoClose className="h-7 w-7" />
@@ -299,10 +314,12 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
 
             <main className="flex flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-8">
                 {installContext && wizardAssets === undefined && (
-                    <p className="text-mountain-mist-600 dark:text-shark-400">{t('firmwareWizardAssetsLoading')}</p>
+                    <p className="text-mountain-mist-600 dark:text-shark-400">
+                        {t('firmwareWizardAssetsLoading')}
+                    </p>
                 )}
                 {installContext && wizardAssets === null && (
-                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+                    <div className="dark:bg-red-950/40 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:text-red-200">
                         <p className="font-medium">{t('firmwareWizardAssetsError')}</p>
                         <button
                             type="button"
@@ -335,11 +352,13 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
                 )}
 
                 {!installContext && !unavailableProject && loading && (
-                    <p className="text-mountain-mist-600 dark:text-shark-400">{t('firmwareLoaderLoading')}</p>
+                    <p className="text-mountain-mist-600 dark:text-shark-400">
+                        {t('firmwareLoaderLoading')}
+                    </p>
                 )}
 
                 {!installContext && loadError && !loading && (
-                    <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
+                    <div className="dark:bg-red-950/40 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:text-red-200">
                         <p className="font-medium">{t('firmwareLoaderLoadError')}</p>
                         <p className="mt-1 text-sm">{loadError}</p>
                     </div>
@@ -348,54 +367,66 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
                 {!installContext && !loading && !loadError && !unavailableProject && hasBoards && (
                     <div className={selectionGridClass}>
                         {doc!.boards
-                            .filter((board) => board.id !== 'xrp-nano' || localStorage.getItem('xrpNanoSeen') === 'true')
+                            .filter(
+                                (board) =>
+                                    board.id !== 'xrp-nano' ||
+                                    localStorage.getItem('xrpNanoSeen') === 'true',
+                            )
                             .map((board) => (
-                            <SelectionCard
-                                key={board.id}
-                                name={board.name}
-                                description={board.description}
-                                image={resolveFirmwareLoaderPublicPath(board.image)}
-                                onClick={() => handleBoardClick(board)}
-                                disabled={!board.nextLevel}
-                            />
-                        ))}
-                    </div>
-                )}
-
-                {!installContext && !loading && !loadError && !unavailableProject && hasProjects && (
-                    <div className={hasBoards ? 'mt-12' : ''}>
-                        {hasBoards && (
-                            <h2 className="mb-6 text-center text-base font-semibold text-mountain-mist-800 dark:text-shark-200">
-                                {t('firmwareLoaderProjectsHeading')}
-                            </h2>
-                        )}
-                        <div className={selectionGridClass}>
-                            {doc!.projects.map((project) => (
                                 <SelectionCard
-                                    key={project.id}
-                                    name={project.name}
-                                    description={project.description}
-                                    image={resolveFirmwareLoaderPublicPath(project.image)}
-                                    onClick={() => void handleProjectClick(project)}
-                                    disabled={!project.nextLevel || projectLoading}
+                                    key={board.id}
+                                    name={board.name}
+                                    description={board.description}
+                                    image={resolveFirmwareLoaderPublicPath(board.image)}
+                                    onClick={() => handleBoardClick(board)}
+                                    disabled={!board.nextLevel}
                                 />
                             ))}
-                        </div>
-                        {projectLoading && (
-                            <p className="mt-6 text-center text-sm text-mountain-mist-600 dark:text-shark-400">
-                                {t('firmwareLoaderLoading')}
-                            </p>
-                        )}
                     </div>
                 )}
 
-                {!installContext && !loading && !loadError && !unavailableProject && isEmptyLevel && (
-                    <div className="mx-auto max-w-xl text-center">
-                        <p className="text-mountain-mist-700 dark:text-shark-300">
-                            {t('firmwareLoaderNoOptions')}
-                        </p>
-                    </div>
-                )}
+                {!installContext &&
+                    !loading &&
+                    !loadError &&
+                    !unavailableProject &&
+                    hasProjects && (
+                        <div className={hasBoards ? 'mt-12' : ''}>
+                            {hasBoards && (
+                                <h2 className="mb-6 text-center text-base font-semibold text-mountain-mist-800 dark:text-shark-200">
+                                    {t('firmwareLoaderProjectsHeading')}
+                                </h2>
+                            )}
+                            <div className={selectionGridClass}>
+                                {doc!.projects.map((project) => (
+                                    <SelectionCard
+                                        key={project.id}
+                                        name={project.name}
+                                        description={project.description}
+                                        image={resolveFirmwareLoaderPublicPath(project.image)}
+                                        onClick={() => void handleProjectClick(project)}
+                                        disabled={!project.nextLevel || projectLoading}
+                                    />
+                                ))}
+                            </div>
+                            {projectLoading && (
+                                <p className="mt-6 text-center text-sm text-mountain-mist-600 dark:text-shark-400">
+                                    {t('firmwareLoaderLoading')}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                {!installContext &&
+                    !loading &&
+                    !loadError &&
+                    !unavailableProject &&
+                    isEmptyLevel && (
+                        <div className="mx-auto max-w-xl text-center">
+                            <p className="text-mountain-mist-700 dark:text-shark-300">
+                                {t('firmwareLoaderNoOptions')}
+                            </p>
+                        </div>
+                    )}
 
                 {!installContext && unavailableProject && (
                     <div className="mx-auto max-w-xl text-center">
@@ -410,7 +441,7 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
                         <button
                             type="button"
                             onClick={handleBack}
-                            className="rounded-lg border border-mountain-mist-300 bg-white px-5 py-2 text-sm font-medium text-mountain-mist-800 hover:bg-mountain-mist-50 dark:border-shark-600 dark:bg-shark-900 dark:text-shark-200 dark:hover:bg-shark-800"
+                            className="bg-white rounded-lg border border-mountain-mist-300 px-5 py-2 text-sm font-medium text-mountain-mist-800 hover:bg-mountain-mist-50 dark:border-shark-600 dark:bg-shark-900 dark:text-shark-200 dark:hover:bg-shark-800"
                         >
                             {t('firmwareLoaderBack')}
                         </button>
