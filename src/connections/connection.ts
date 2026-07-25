@@ -505,7 +505,7 @@ abstract class Connection {
             this.startReaduntil(customWaitForStr);
             await this.writeToDevice(this.CTRL_CMD_SOFTRESET);
             if (customWaitForStr == '>') await this.waitUntilOK();
-            return await this.haltUntilRead(omitAmount, 300); //added timeout since micropython 1.19 sometimes will not get the soft reset and hang
+            return await this.haltUntilRead(omitAmount, 30); //added timeout since micropython 1.19 sometimes will not get the soft reset and hang
         } else {
             await this.writeToDevice(this.CTRL_CMD_SOFTRESET);
         }
