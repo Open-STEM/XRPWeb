@@ -198,9 +198,10 @@ export class CommandToXRPMgr {
                 } else if (hiddenLines[1].includes('RP2040')) {
                     this.PROCESSOR = 2040;
                     this.is_NanoXRP = hiddenLines[1].includes('NanoXRP');
-                    // Sticky flag: once we've ever connected to a NanoXRP, the
-                    // firmware loader shows the NanoXRP card from then on.
-                    if (this.is_NanoXRP) localStorage.setItem('xrpNanoSeen', 'true');
+                    // Session-scoped flag: once we've connected to a NanoXRP in
+                    // this session, the firmware loader shows the NanoXRP card
+                    // for the rest of the session. Cleared on a fresh page load.
+                    if (this.is_NanoXRP) sessionStorage.setItem('xrpNanoSeen', 'true');
                     this.connection?.setNanoXRP(this.is_NanoXRP);
                 }
                 if(hiddenLines[1].includes('XRP')){ //is this an XRP version of microPython?
