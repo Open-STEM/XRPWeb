@@ -160,6 +160,7 @@ export class USBConnection extends Connection {
             return false;
         }
 
+        this.connectionStates = ConnectionState.Busy;
         const rawPorts = await navigator.serial.getPorts();
         const portList: SerialPort[] = Array.isArray(rawPorts)
             ? rawPorts
@@ -172,6 +173,7 @@ export class USBConnection extends Connection {
             this.connLogger.debug(
                 `tryAutoConnect: ${matching.length} matching XRP port(s) — deferring to manual selection`,
             );
+            this.connectionStates = ConnectionState.Disconnected;
             return false;
         }
 
@@ -185,6 +187,7 @@ export class USBConnection extends Connection {
         }
 
         this.connLogger.debug('tryAutoConnect: openPort failed on sole matching port');
+        this.connectionStates = ConnectionState.Disconnected;
         return false;
     }
 
