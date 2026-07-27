@@ -7,6 +7,7 @@ import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
 import { USBConnection } from '@/connections/usbconnection';
 import { ConnectionCMD } from '@/utils/types';
 import ProgressBar from 'react-customizable-progressbar';
+import Button from '@/widgets/button';
 
 export type OsFamily = 'win' | 'mac' | 'linux';
 
@@ -69,10 +70,7 @@ function pickImage(map: Record<string, string>, key: string, fallback: string): 
  *    getToNormal, …) in the background, and uploadFile is a silent no-op
  *    while BUSY, so we must let that settle before copying project files.
  */
-async function waitForUsbReady(
-    timeoutMs: number,
-    bootDelayMs: number = 6000,
-): Promise<boolean> {
+async function waitForUsbReady(timeoutMs: number, bootDelayMs: number = 6000): Promise<boolean> {
     const app = AppMgr.getInstance();
     const cmd = CommandToXRPMgr.getInstance();
     const start = Date.now();
@@ -166,7 +164,10 @@ export default function FirmwareInstallWizard({
     const cmd = CommandToXRPMgr.getInstance();
 
     useEffect(() => {
-        cmd.setProcessorTypeForFirmwareLoader(boardIdToProcessor(boardId), boardIdIsNanoXRP(boardId));
+        cmd.setProcessorTypeForFirmwareLoader(
+            boardIdToProcessor(boardId),
+            boardIdIsNanoXRP(boardId),
+        );
     }, [boardId, cmd]);
 
     const [phase, setPhase] = useState<WizardUiPhase>({ kind: 'instruction', step: 1 });
@@ -247,7 +248,10 @@ export default function FirmwareInstallWizard({
         setError(null);
         setPhase({ kind: 'uf2' });
         setUf2Pct(0);
-        cmd.setProcessorTypeForFirmwareLoader(boardIdToProcessor(boardId), boardIdIsNanoXRP(boardId));
+        cmd.setProcessorTypeForFirmwareLoader(
+            boardIdToProcessor(boardId),
+            boardIdIsNanoXRP(boardId),
+        );
 
         try {
             if (!dirHandle) {
@@ -402,9 +406,7 @@ export default function FirmwareInstallWizard({
             const wrongDrive = otherBoardDriveName(boardId);
             if (h.name === wrongDrive) {
                 const expected = expectedDriveForBoard(boardId);
-                throw new Error(
-                    t('firmwareWizardWrongDrive', { picked: h.name, expected }),
-                );
+                throw new Error(t('firmwareWizardWrongDrive', { picked: h.name, expected }));
             }
             setDirHandle(h);
         } catch (e) {
@@ -427,20 +429,16 @@ export default function FirmwareInstallWizard({
     return (
         <div className="flex min-h-0 flex-1 flex-col">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm text-mountain-mist-600 dark:text-shark-400">{headerSubtitle}</p>
-                <button
-                    type="button"
-                    onClick={onCancel}
-                    className="rounded-lg border border-mountain-mist-300 px-3 py-1.5 text-sm dark:border-shark-600"
-                >
-                    {t('firmwareWizardExitWizard')}
-                </button>
+                <p className="text-sm text-mountain-mist-600 dark:text-shark-400">
+                    {headerSubtitle}
+                </p>
+                <Button onClicked={onCancel}>{t('firmwareWizardExitWizard')}</Button>
             </div>
 
             {error && (
                 <div
                     role="alert"
-                    className="mb-4 flex items-start gap-3 rounded-lg border-l-8 border-red-700 bg-red-600 p-4 text-base font-semibold text-white shadow-lg dark:border-red-400 dark:bg-red-700"
+                    className="text-white mb-4 flex items-start gap-3 rounded-lg border-l-8 border-red-700 bg-red-600 p-4 text-base font-semibold shadow-lg dark:border-red-400 dark:bg-red-700"
                 >
                     <IoWarning size={28} className="mt-0.5 shrink-0" aria-hidden="true" />
                     <span className="break-words">{error}</span>
@@ -451,8 +449,14 @@ export default function FirmwareInstallWizard({
                 <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-6">
                     {phase.step === 1 && (
                         <>
-                            <h2 className="text-center text-lg font-semibold">{t('firmwareWizardStep1Title', boardCtx)}</h2>
-                            <img src={imgPowerOff} alt="" className="max-h-72 w-full rounded-lg object-contain" />
+                            <h2 className="text-center text-lg font-semibold">
+                                {t('firmwareWizardStep1Title', boardCtx)}
+                            </h2>
+                            <img
+                                src={imgPowerOff}
+                                alt=""
+                                className="max-h-72 w-full rounded-lg object-contain"
+                            />
                             <p className="text-center text-sm text-mountain-mist-700 dark:text-shark-300">
                                 {t('firmwareWizardStep1Body', boardCtx)}
                             </p>
@@ -460,8 +464,14 @@ export default function FirmwareInstallWizard({
                     )}
                     {phase.step === 2 && (
                         <>
-                            <h2 className="text-center text-lg font-semibold">{t('firmwareWizardStep2Title', boardCtx)}</h2>
-                            <img src={imgBootSel} alt="" className="max-h-72 w-full rounded-lg object-contain" />
+                            <h2 className="text-center text-lg font-semibold">
+                                {t('firmwareWizardStep2Title', boardCtx)}
+                            </h2>
+                            <img
+                                src={imgBootSel}
+                                alt=""
+                                className="max-h-72 w-full rounded-lg object-contain"
+                            />
                             <p className="text-center text-sm text-mountain-mist-700 dark:text-shark-300">
                                 {t('firmwareWizardStep2Body', boardCtx)}
                             </p>
@@ -469,18 +479,23 @@ export default function FirmwareInstallWizard({
                     )}
                     {phase.step === 3 && (
                         <>
-                            <h2 className="text-center text-lg font-semibold">{t('firmwareWizardStep3Title', boardCtx)}</h2>
-                            <img src={imgSelectDir} alt="" className="max-h-72 w-full rounded-lg object-contain" />
+                            <h2 className="text-center text-lg font-semibold">
+                                {t('firmwareWizardStep3Title', boardCtx)}
+                            </h2>
+                            <img
+                                src={imgSelectDir}
+                                alt=""
+                                className="max-h-72 w-full rounded-lg object-contain"
+                            />
                             <p className="mb-2 text-center text-sm text-mountain-mist-700 dark:text-shark-300">
-                                {t('firmwareWizardStep3Body', { drive: cmd.getXRPDrive(), ...boardCtx })}
+                                {t('firmwareWizardStep3Body', {
+                                    drive: cmd.getXRPDrive(),
+                                    ...boardCtx,
+                                })}
                             </p>
-                            <button
-                                type="button"
-                                onClick={() => void pickFolder()}
-                                className="rounded-lg bg-curious-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-curious-blue-700"
-                            >
+                            <Button onClicked={() => void pickFolder()}>
                                 {t('firmwareWizardChooseFolder')}
-                            </button>
+                            </Button>
                             {dirHandle && (
                                 <p className="text-sm font-medium text-green-700 dark:text-green-400">
                                     {t('firmwareWizardFolderReady')}
@@ -490,22 +505,11 @@ export default function FirmwareInstallWizard({
                     )}
                     <div className="flex w-full justify-end gap-3">
                         {phase.step === 3 ? (
-                            <button
-                                type="button"
-                                disabled={!dirHandle}
-                                onClick={onInstructionNext}
-                                className="rounded-lg bg-curious-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-curious-blue-700 disabled:opacity-50"
-                            >
+                            <Button onClicked={onInstructionNext}>
                                 {t('firmwareWizardStartFlash')}
-                            </button>
+                            </Button>
                         ) : (
-                            <button
-                                type="button"
-                                onClick={onInstructionNext}
-                                className="rounded-lg bg-curious-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-curious-blue-700"
-                            >
-                                {t('firmwareWizardNext')}
-                            </button>
+                            <Button onClicked={onInstructionNext}>{t('firmwareWizardNext')}</Button>
                         )}
                     </div>
                 </div>
@@ -513,7 +517,9 @@ export default function FirmwareInstallWizard({
 
             {phase.kind === 'uf2' && (
                 <div className="relative mx-auto flex w-full max-w-md flex-col items-center gap-6 py-8">
-                    <h2 className="whitespace-pre-line text-center text-lg font-semibold">{t('firmwareWizardUf2Title')}</h2>
+                    <h2 className="whitespace-pre-line text-center text-lg font-semibold">
+                        {t('firmwareWizardUf2Title')}
+                    </h2>
                     <ProgressBar
                         radius={100}
                         progress={uf2Pct}
@@ -522,7 +528,9 @@ export default function FirmwareInstallWizard({
                         trackStrokeWidth={18}
                     >
                         <div className="absolute flex h-full w-full items-center justify-center">
-                            <span className="text-2xl text-mountain-mist-700 dark:text-shark-200">{uf2Pct}%</span>
+                            <span className="text-2xl text-mountain-mist-700 dark:text-shark-200">
+                                {uf2Pct}%
+                            </span>
                         </div>
                     </ProgressBar>
                     <p className="text-center text-sm text-mountain-mist-600 dark:text-shark-400">
@@ -533,7 +541,9 @@ export default function FirmwareInstallWizard({
 
             {phase.kind === 'libs' && (
                 <div className="relative mx-auto flex w-full max-w-md flex-col items-center gap-6 py-8">
-                    <h2 className="whitespace-pre-line text-center text-lg font-semibold">{t('firmwareWizardLibsTitle')}</h2>
+                    <h2 className="whitespace-pre-line text-center text-lg font-semibold">
+                        {t('firmwareWizardLibsTitle')}
+                    </h2>
                     {phase.waitingUsb ? (
                         <>
                             <p className="text-center text-sm text-mountain-mist-700 dark:text-shark-300">
@@ -542,13 +552,9 @@ export default function FirmwareInstallWizard({
                                     : t('firmwareWizardConnectBody')}
                             </p>
                             {phase.needsManualConnect && (
-                                <button
-                                    type="button"
-                                    onClick={onConnectToXrpClicked}
-                                    className="rounded-lg bg-curious-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-curious-blue-700"
-                                >
+                                <Button onClicked={onConnectToXrpClicked}>
                                     {t('firmwareWizardConnectToXrp')}
-                                </button>
+                                </Button>
                             )}
                         </>
                     ) : (
@@ -569,20 +575,16 @@ export default function FirmwareInstallWizard({
                         </div>
                     )}
                     {error && !phase.waitingUsb && (
-                        <button
-                            type="button"
-                            onClick={() => void runLibraryPhaseOnly()}
-                            className="rounded-lg border border-mountain-mist-300 px-4 py-2 text-sm dark:border-shark-600"
-                        >
+                        <Button onClicked={() => void runLibraryPhaseOnly()}>
                             {t('firmwareWizardRetryLibrary')}
-                        </button>
+                        </Button>
                     )}
                 </div>
             )}
 
             {phase.kind === 'success' && (
-                <div className="fixed inset-0 z-[1002] flex items-center justify-center bg-black/40 px-4">
-                    <div className="w-full max-w-md rounded-lg border border-mountain-mist-200 bg-white p-8 shadow-xl dark:border-shark-600 dark:bg-shark-900">
+                <div className="bg-black/40 fixed inset-0 z-[1002] flex items-center justify-center px-4">
+                    <div className="bg-white w-full max-w-md rounded-lg border border-mountain-mist-200 p-8 shadow-xl dark:border-shark-600 dark:bg-shark-900">
                         <h2 className="mb-4 text-center text-lg font-bold text-mountain-mist-900 dark:text-shark-100">
                             {t('firmwareWizardSuccessTitle')}
                         </h2>
@@ -590,13 +592,7 @@ export default function FirmwareInstallWizard({
                             {t('firmwareWizardSuccessBody')}
                         </p>
                         <div className="flex justify-center">
-                            <button
-                                type="button"
-                                onClick={() => void handleComplete()}
-                                className="rounded-lg bg-curious-blue-600 px-8 py-2.5 text-sm font-medium text-white hover:bg-curious-blue-700"
-                            >
-                                {t('okButton')}
-                            </button>
+                            <Button onClicked={() => void handleComplete()}>{t('okButton')}</Button>
                         </div>
                     </div>
                 </div>
