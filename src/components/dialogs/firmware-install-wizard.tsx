@@ -558,7 +558,7 @@ export default function FirmwareInstallWizard({
                             )}
                         </>
                     ) : (
-                        <div className="relative w-full">
+                        <div className="relative flex w-full items-center justify-center">
                             <ProgressBar
                                 radius={100}
                                 progress={libPct}
