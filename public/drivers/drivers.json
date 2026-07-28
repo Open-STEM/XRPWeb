@@ -383,6 +383,14 @@
             "version": "2.0.0",
             "docUrl": "https://tinyurl.com/rf7vaw24",
             "url": "drivers/qwiic_as7343/package.json"
-        }
+        },
+        {
+            "friendlyName": "Digital Push Button V3",
+            "name": "digital_push_button_v3.py",
+            "manufacturer": "DFRobot / XRP custom integration",
+            "version": "1.1.0",
+            "docUrl": "https://wiki.dfrobot.com/dfr0029-r/",
+            "url": "drivers/digital_push_button_v3/package.json"
+          }
     ]
 }
