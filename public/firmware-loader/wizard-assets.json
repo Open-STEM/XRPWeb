@@ -1,7 +1,8 @@
 {
     "powerOff": {
         "xrp-beta": "images/board-xrp-beta_poweroff.jpg",
-        "xrp-2350": "images/board-xrp-2350_poweroff.jpg"
+        "xrp-2350": "images/board-xrp-2350_poweroff.jpg",
+        "xrp-nano": "images/board-xrp-nano_poweroff.jpg"
     },
     "bootSel": {
         "xrp-beta": "images/board-xrp-beta_bootsel.jpg",

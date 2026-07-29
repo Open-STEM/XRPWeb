@@ -493,9 +493,14 @@ export default function FirmwareInstallWizard({
                                     ...boardCtx,
                                 })}
                             </p>
-                            <Button onClicked={() => void pickFolder()}>
-                                {t('firmwareWizardChooseFolder')}
-                            </Button>
+                            <div className="flex flex-wrap items-center justify-center gap-3">
+                                <Button onClicked={() => void pickFolder()}>
+                                    {t('firmwareWizardChooseFolder')}
+                                </Button>
+                                <Button disabled={!dirHandle} onClicked={onInstructionNext}>
+                                    {t('firmwareWizardStartFlash')}
+                                </Button>
+                            </div>
                             {dirHandle && (
                                 <p className="text-sm font-medium text-green-700 dark:text-green-400">
                                     {t('firmwareWizardFolderReady')}
@@ -503,15 +508,11 @@ export default function FirmwareInstallWizard({
                             )}
                         </>
                     )}
-                    <div className="flex w-full justify-end gap-3">
-                        {phase.step === 3 ? (
-                            <Button onClicked={onInstructionNext}>
-                                {t('firmwareWizardStartFlash')}
-                            </Button>
-                        ) : (
+                    {phase.step !== 3 && (
+                        <div className="flex w-full justify-end gap-3">
                             <Button onClicked={onInstructionNext}>{t('firmwareWizardNext')}</Button>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             )}
 
