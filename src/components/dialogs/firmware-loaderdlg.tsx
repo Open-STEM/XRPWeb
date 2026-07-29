@@ -14,6 +14,7 @@ import {
     type ResolvedInstall,
 } from '@/utils/firmware-loader';
 import logo from '@assets/images/xrpstickerbot.png';
+import Button from '@/widgets/button';
 
 const ROOT_MANIFEST = 'index.json';
 
@@ -321,13 +322,9 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
                 {installContext && wizardAssets === null && (
                     <div className="dark:bg-red-950/40 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:text-red-200">
                         <p className="font-medium">{t('firmwareWizardAssetsError')}</p>
-                        <button
-                            type="button"
-                            onClick={() => setInstallContext(null)}
-                            className="mt-3 rounded-lg border border-red-300 px-3 py-1.5 text-sm dark:border-red-800"
-                        >
+                        <Button onClicked={() => setInstallContext(null)}>
                             {t('firmwareLoaderBack')}
-                        </button>
+                        </Button>
                     </div>
                 )}
                 {installContext && wizardAssets && (
@@ -438,13 +435,7 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
 
                 {!installContext && (pathStack.length > 1 || unavailableProject) && (
                     <div className="mt-10 flex justify-center">
-                        <button
-                            type="button"
-                            onClick={handleBack}
-                            className="bg-white rounded-lg border border-mountain-mist-300 px-5 py-2 text-sm font-medium text-mountain-mist-800 hover:bg-mountain-mist-50 dark:border-shark-600 dark:bg-shark-900 dark:text-shark-200 dark:hover:bg-shark-800"
-                        >
-                            {t('firmwareLoaderBack')}
-                        </button>
+                        <Button onClicked={handleBack}>{t('firmwareLoaderBack')}</Button>
                     </div>
                 )}
             </main>

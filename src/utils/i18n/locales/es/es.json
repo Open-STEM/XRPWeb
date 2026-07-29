@@ -89,10 +89,10 @@
     "firmwareWizardPhaseUf2": "Escribiendo firmware…",
     "firmwareWizardPhaseWaitUsb": "Esperando USB…",
     "firmwareWizardPhaseLibs": "Copiando archivos del proyecto…",
-    "firmwareWizardUf2Title": "Copiando firmware",
+    "firmwareWizardUf2Title": "Copiando firmware\n tenga paciencia, puede tardar unos minutos",
     "firmwareWizardUf2Wait": "Espere hasta que termine la copia; la placa se reiniciará al finalizar.",
-    "firmwareWizardLibsTitle": "Actualizando archivos en el robot",
-    "firmwareWizardConnectBody": "Conecte el USB y espere a que el robot vuelva a conectarse. Si no conecta en dos minutos, desenchufe y pruebe de nuevo; luego use Reintentar abajo.",
+    "firmwareWizardLibsTitle": "Actualizando archivos en el robot\n tenga paciencia, puede tardar unos minutos",
+    "firmwareWizardConnectBody": "Espere, por favor. Si aparece el botón 'Conectar al XRP' abajo, púlselo para conectarse al XRP.",
     "firmwareWizardManualConnectBody": "El robot no se reconectó automáticamente. Esto es normal la primera vez que conecta este XRP a este navegador. Pulse abajo y elija su XRP de la lista.",
     "firmwareWizardConnectToXrp": "Conectar al XRP",
     "firmwareWizardConnectTimeout": "Tiempo de espera agotado para USB. Revise el cable y la conexión e inténtelo de nuevo.",
@@ -247,14 +247,14 @@
         "description": "Respalda o restaura tus archivos XRP. Haz clic en el botón de abajo para comenzar. Tenga en cuenta que su XRP debe estar conectado y su cuenta de Google Drive debe estar iniciada sesión antes de realizar un respaldo o restauración.",
         "backup": "Respaldo",
         "restore": "Restauración",
-        "close": "Cerrar"
+        "close": "Cerrar",
+        "bluetooth-warning": "Las operaciones de respaldo y restauración a través de Bluetooth serán lentas. Se recomienda que conecte el XRP a su computadora mediante un cable USB para realizar estas operaciones."
     },
     "backup": {
         "title": "Respaldo",
         "description": "Respalda tus archivos XRP desde Google Drive a tu XRP Robot.",
         "processing": "Procesando...",
-        "begin": "Comenzar Respaldo",
-        "bluetooth-warning": "Las operaciones de respaldo a través de Bluetooth serán lentas. Se recomienda que se conecte a través de USB para realizar estas operaciones."
+        "begin": "Comenzar Respaldo"
     },
     "restore": {
         "title": "Restauración",
