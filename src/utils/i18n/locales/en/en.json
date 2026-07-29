@@ -92,7 +92,7 @@
     "firmwareWizardUf2Title": "Copying firmware\n please be patient it may take a few minutes",
     "firmwareWizardUf2Wait": "Wait until the copy finishes; the board will restart when done.",
     "firmwareWizardLibsTitle": "Updating files on the robot\n please be patient it may take a few minutes",
-    "firmwareWizardConnectBody": "Plug in USB and wait for the robot to reconnect. If it does not connect within two minutes, unplug and try again, then use Retry below.",
+    "firmwareWizardConnectBody": "Please wait. If 'Connect to XRP' button appears below, click it to connect to the XRP",
     "firmwareWizardManualConnectBody": "The robot did not reconnect automatically. This is normal the first time you connect this XRP to this browser. Click below and pick your XRP from the list.",
     "firmwareWizardConnectToXrp": "Connect to XRP",
     "firmwareWizardConnectTimeout": "Timed out waiting for USB. Check the cable and connection, then retry.",
