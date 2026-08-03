@@ -423,24 +423,34 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
             });
 
             EditorMgr.getInstance().setSubscription(tabId);
+        }
 
-        } else {
-            const editorSession = EditorMgr.getInstance().getEditorSession(tabId);
-            if (editorSession && editorSession.content) {
-                // There appears to be some timing issues in loading the content into the workspace
-                // Set 100 ms delay to accommendate the timing issue
-                const loadEditor = (name: string, content: string) => {
-                    const lines: string[] | undefined = content.split('##XRPBLOCKS ');
-                    const blockContent = lines.length > 1 ? lines[1] : lines[0];
-                    const loadContent = { name: name, path: editorSession.path, content: blockContent };
-                    AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));                    
-                };
-                setTimeout(loadEditor, 100, nameRef.current, editorSession.content);
-            }
+        // Kick off the initial block load for this tab. This must run on the
+        // first mount (not only on a second, already-subscribed mount) so it
+        // works in production too — previously it only fired via React
+        // StrictMode's double effect invocation in dev, leaving the canvas
+        // blank in preview/production. The 100ms delay is important: it lets
+        // react-blockly finish importing its (empty) initialJson first —
+        // otherwise that import would clear the blocks we load here.
+        let loadTimer: ReturnType<typeof setTimeout> | undefined;
+        const editorSession = EditorMgr.getInstance().getEditorSession(tabId);
+        if (editorSession && editorSession.content && !editorSession.hasBeenLoaded) {
+            const loadEditor = (name: string, content: string) => {
+                const lines: string[] | undefined = content.split('##XRPBLOCKS ');
+                const blockContent = lines.length > 1 ? lines[1] : lines[0];
+                const loadContent = { name: name, path: editorSession.path, content: blockContent };
+                AppMgr.getInstance().emit(EventType.EVENT_EDITOR_LOAD, JSON.stringify(loadContent));
+            };
+            loadTimer = setTimeout(loadEditor, 100, nameRef.current, editorSession.content);
         }
 
         applyBlocklyLocale(i18n.language);
 
+        return () => {
+            if (loadTimer) {
+                clearTimeout(loadTimer);
+            }
+        };
     }, [saveEditor, tabId, restoreViewportForTab, persistViewport, evaluateEditBlocked]);
 
     useEffect(() => {
