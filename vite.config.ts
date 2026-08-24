@@ -9,6 +9,7 @@ import { extname, join, normalize, resolve } from 'path';
 
 const MIME_BY_EXT: Record<string, string> = {
     '.json': 'application/json',
+    '.js': 'text/javascript',
     '.jpg': 'image/jpeg',
     '.jpeg': 'image/jpeg',
     '.png': 'image/png',
