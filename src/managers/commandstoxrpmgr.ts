@@ -9,6 +9,7 @@
 import Connection from '@/connections/connection';
 import { FolderItem, Versions } from '@/utils/types';
 import AppMgr, { EventType } from '@/managers/appmgr';
+import { ConnectionType } from '@/utils/types';
 import logger from '@/utils/logger';
 import { firmwareLoaderUrl } from '@/utils/firmware-loader';
 
@@ -963,7 +964,14 @@ export class CommandToXRPMgr {
         }
         this.BUSY = true;
 
+        let delayTime = 0;
+        //if the connection is of type bluetooth and the processor is 2040, we need to add a delay to the read operation to not overload the CPU and buffers.
+        if (this.PROCESSOR === 2040 && AppMgr.getInstance().getConnectionType() === ConnectionType.BLUETOOTH) {
+            delayTime = 0.1;
+        }
+
         const cmd = "import sys\n" +
+            "import time\n" +
             "chunk_size = 200\n" +
             "onboard_file = open('" + filePath + "', 'rb')\n" +
             "while True:\n" +
@@ -971,6 +979,7 @@ export class CommandToXRPMgr {
             "    if not data:\n" +
             "        break\n" +
             "    sys.stdout.buffer.write(data)\n" +
+            "    time.sleep(" + delayTime + ")\n" +
             //"    sys.stdout.write('read more')\n" +
             "onboard_file.close()\n" +
             "sys.stdout.write('###DONE READING FILE###')\n";
