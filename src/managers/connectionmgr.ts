@@ -87,6 +87,15 @@ export default class ConnectionMgr {
             );
             // notify the folder tree to clear its data
             this.appMgr.emit(EventType.EVENT_FILESYS, '{}');
+            // Reconnect timeout / failed first connect: drop the spinner.
+            // An expected reboot (##XRPSTOP##) goes through disconnect() without
+            // this callback, so the spinner stays up until reconnect finishes.
+            if (connType === ConnectionType.BLUETOOTH) {
+                AppMgr.getInstance().emit(
+                    EventType.EVENT_HIDE_BLUETOOTH_CONNECTING,
+                    'hide-bluetooth-connecting',
+                );
+            }
         }
     }
 

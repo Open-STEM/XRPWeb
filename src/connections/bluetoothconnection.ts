@@ -62,6 +62,9 @@ export class BluetoothConnection extends Connection {
                 reject(new Error('Connection timed out'));
             }, timeoutMs);
 
+            if(device.gatt?.connected){
+                device.gatt!.disconnect();
+            }
             device
                 .gatt!.connect()
                 .then((server) => {
@@ -258,7 +261,7 @@ export class BluetoothConnection extends Connection {
         //this.MANNUALLY_CONNECTING = true;
 
         this.bleDevice = undefined; //just in case we were connected before.
-
+/*
         const elapseTime = (Date.now() - (this.bleDisconnectTime)) / 1000;
         if (elapseTime > 60) {
             this.connLogger.debug(elapseTime);
@@ -266,6 +269,7 @@ export class BluetoothConnection extends Connection {
             //TODO: Warn of need to refresh
             return;
         }
+*/
 
         // Function to connect to the device
         await navigator.bluetooth
@@ -344,6 +348,10 @@ export class BluetoothConnection extends Connection {
                     }
                     else {this.onDisconnected();}
                 } else {
+                    AppMgr.getInstance().emit(
+                        EventType.EVENT_HIDE_BLUETOOTH_CONNECTING,
+                        'hide-bluetooth-connecting',
+                    );
                     throw new Error('BLE connection failed' + error.message);
                 }
             });
@@ -483,9 +491,11 @@ export class BluetoothConnection extends Connection {
             //this.connLogger.info("BLE getToREPL: leaving nothing done");
             return false;
         }
-        // Need to send BLE_STOP_MSG, this causes the XRP to reboot so we need to wait for reconnect to complete
+        // Need to send BLE_STOP_MSG, this causes the XRP to reboot so we need to wait for reconnect to complete.
+        // Return false so the caller does not treat the connection as finished (and dismiss the
+        // connecting spinner) until onConnected runs again after reconnect.
         this.reconnectSuccess = false;
         await this.writeToDevice(this.BLE_STOP_MSG);
-        return true;
+        return false;
     }
 }
