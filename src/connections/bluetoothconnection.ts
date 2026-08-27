@@ -25,7 +25,7 @@ export class BluetoothConnection extends Connection {
     private readonly DATA_TX_CHARACTERISTIC_UUID: string = '92ae6088-f24d-4360-b1b1-a432a8ed36ff';
     private readonly DATA_RX_CHARACTERISTIC_UUID: string = '92ae6088-f24d-4360-b1b1-a432a8ed36fe';
 
-    private bleDisconnectTime: number = 0;
+    //private bleDisconnectTime: number = 0;
 
     // bluetooth data
     private bleData: Uint8Array | null = null;
@@ -255,7 +255,7 @@ export class BluetoothConnection extends Connection {
      */
     public async connect(): Promise<void> {
         this.connLogger.debug('Conneting BLE device');
-        this.bleDisconnectTime = Date.now();
+        //this.bleDisconnectTime = Date.now();
 
         this.connectionStates = ConnectionState.Busy;
         //this.MANNUALLY_CONNECTING = true;
@@ -363,7 +363,7 @@ export class BluetoothConnection extends Connection {
 
     public async disconnect(): Promise<void> {
         this.connLogger.info('Entering BLE disconnect');
-        this.bleDisconnectTime = Date.now();
+        //this.bleDisconnectTime = Date.now();
         this.bleWriter = undefined;
         this.bleReader = undefined;
         this.connectionStates = ConnectionState.Disconnected; // Will stop certain events and break any EOT waiting functions
