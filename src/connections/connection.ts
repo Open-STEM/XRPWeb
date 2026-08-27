@@ -373,6 +373,7 @@ abstract class Connection {
     async haltUntilRead(omitOffset: number = 0, waitTime: number = -1): Promise<string[]> {
         let waitOmitOffset = 0;
         let numTimes = waitTime;
+        let lastCollectedLength = this.collectedData.length;
 
         // Re-evaluate collected data for readUntil line every 85ms
         while (this.connectionStates === ConnectionState.Connected && numTimes != 0) {
@@ -413,8 +414,15 @@ abstract class Connection {
                 return tempLines;
             }
 
-            if (waitTime != -1 && waitTime != -2 ) {
-                numTimes--;
+            // Only count idle ticks toward the timeout. If the XRP is still
+            // sending data, keep waiting (BLE filesystem dumps can take longer
+            // than the original wall-clock timeout).
+            if (waitTime != -1 && waitTime != -2) {
+                const collectedLength = this.collectedData.length;
+                if (collectedLength === lastCollectedLength) {
+                    numTimes--;
+                }
+                lastCollectedLength = collectedLength;
             }
         }
         return [];
@@ -505,7 +513,7 @@ abstract class Connection {
             this.startReaduntil(customWaitForStr);
             await this.writeToDevice(this.CTRL_CMD_SOFTRESET);
             if (customWaitForStr == '>') await this.waitUntilOK();
-            return await this.haltUntilRead(omitAmount, 30); //added timeout since micropython 1.19 sometimes will not get the soft reset and hang
+            return await this.haltUntilRead(omitAmount, 80); //added timeout since micropython 1.19 sometimes will not get the soft reset and hang
         } else {
             await this.writeToDevice(this.CTRL_CMD_SOFTRESET);
         }

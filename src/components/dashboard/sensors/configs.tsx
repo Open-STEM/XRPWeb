@@ -103,8 +103,8 @@ export const reflectanceConfig: SensorConfig<ReflectanceData, ReflectanceHistory
   titleKey: 'reflectance',
   icon: <FaEye size={12} />,
   channels: [
-    { key: 'reflectanceL', label: 'Left', color: '#8b5cf6', decimals: 0 },
-    { key: 'reflectanceR', label: 'Right', color: '#06b6d4', decimals: 0 },
+    { key: 'reflectanceL', label: 'Left', color: '#8b5cf6', decimals: 4 },
+    { key: 'reflectanceR', label: 'Right', color: '#06b6d4', decimals: 4 },
   ],
   toHistoryEntry: (data, timestamp) => ({
     reflectanceL: data.reflectanceL, reflectanceR: data.reflectanceR, timestamp,
