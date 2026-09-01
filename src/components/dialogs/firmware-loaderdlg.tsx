@@ -47,6 +47,12 @@ export type FirmwareLevelDocument = {
 
 type FirmwareLoaderDlgProps = {
     toggleDialog: () => void;
+    /** Skip board/project picking and install this board's canonical MicroPython project. */
+    autoInstallBoardId?: string;
+    /** Start the wizard at this instruction step (ignored when skipUf2). */
+    initialWizardStep?: 1 | 2 | 3;
+    /** Skip the UF2 flash; copy library/project files only. */
+    skipUf2?: boolean;
 };
 
 function parseLevelDocument(raw: unknown): FirmwareLevelDocument {
@@ -151,7 +157,12 @@ function SelectionCard({ name, description, image, onClick, disabled }: Selectio
 /**
  * Full-screen firmware loader: data-driven from JSON under /public/firmware-loader/.
  */
-function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
+function FirmwareLoaderDlg({
+    toggleDialog,
+    autoInstallBoardId,
+    initialWizardStep,
+    skipUf2 = false,
+}: FirmwareLoaderDlgProps) {
     const { t } = useTranslation();
     const [pathStack, setPathStack] = useState<string[]>([ROOT_MANIFEST]);
     const [doc, setDoc] = useState<FirmwareLevelDocument | null>(null);
@@ -187,8 +198,53 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
     }, []);
 
     useEffect(() => {
+        if (autoInstallBoardId) {
+            return;
+        }
         loadManifest(currentPath);
-    }, [currentPath, loadManifest]);
+    }, [autoInstallBoardId, currentPath, loadManifest]);
+
+    useEffect(() => {
+        if (!autoInstallBoardId) {
+            return;
+        }
+        let cancelled = false;
+        const startAutoInstall = async () => {
+            setLoading(true);
+            setLoadError(null);
+            try {
+                const next = `boards/${autoInstallBoardId}/micropython/project.json`;
+                const response = await fetch(firmwareLoaderUrl(next));
+                if (!response.ok) {
+                    throw new Error(`${response.status} ${response.statusText}`);
+                }
+                const projectDoc = parseProjectDoc(await response.json());
+                if (!isInstallable(projectDoc) && !skipUf2) {
+                    throw new Error(`No installable firmware for ${autoInstallBoardId}`);
+                }
+                const baseDir = projectBaseDirFromPath(next);
+                if (!baseDir) {
+                    throw new Error(`Could not resolve install context from ${next}`);
+                }
+                const resolved = await resolveInstall(autoInstallBoardId, baseDir, projectDoc);
+                if (!cancelled) {
+                    setInstallContext(resolved);
+                }
+            } catch (e) {
+                if (!cancelled) {
+                    setLoadError(e instanceof Error ? e.message : String(e));
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        };
+        void startAutoInstall();
+        return () => {
+            cancelled = true;
+        };
+    }, [autoInstallBoardId, skipUf2]);
 
     useEffect(() => {
         let cancelled = false;
@@ -334,7 +390,16 @@ function FirmwareLoaderDlg({ toggleDialog }: FirmwareLoaderDlgProps) {
                         libraryEntries={installContext.libraryEntries}
                         xrplibVersion={installContext.xrplibVersion}
                         assets={wizardAssets}
-                        onCancel={() => setInstallContext(null)}
+                        initialStep={initialWizardStep}
+                        skipUf2={skipUf2}
+                        enterBootselOnStart={Boolean(autoInstallBoardId) && !skipUf2}
+                        onCancel={() => {
+                            if (autoInstallBoardId) {
+                                toggleDialog();
+                            } else {
+                                setInstallContext(null);
+                            }
+                        }}
                         onComplete={() => {
                             setInstallContext(null);
                             toggleDialog();

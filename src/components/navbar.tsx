@@ -61,7 +61,6 @@ import EditorMgr, { EditorSession, EdSearchParams } from '@/managers/editormgr';
 import { useLocalStorage } from 'usehooks-ts';
 import { StorageKeys } from '@/utils/localstorage';
 import { isAiBuddyMenuEnabled } from '@/utils/aiBuddyAccess';
-import { firmwareLoaderUrl } from '@/utils/firmware-loader';
 import FileSaver from 'file-saver';
 import PowerSwitchAlert from '@/components/dialogs/power-switchdlg';
 import ViewPythonDlg from '@/components/dialogs/view-pythondlg';
@@ -267,6 +266,14 @@ function NavBar({ layoutref }: NavBarProps) {
 
             AppMgr.getInstance().on(EventType.EVENT_MUST_UPDATE_MICROPYTHON, () => {
                 setAvailableUpdate((prev) => prev ?? { kind: 'must-mp' });
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_MICROPYTHON_UPDATE_DONE, () => {
+                setAvailableUpdate(null);
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_XRPLIB_UPDATE_DONE, () => {
+                setAvailableUpdate(null);
             });
 
             AppMgr.getInstance().on(EventType.EVENT_SHOWCHANGELOG, (changelog) => {
@@ -1115,6 +1122,24 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
+     * Open the firmware loader already targeting this connected board's
+     * MicroPython project. Used by the "Update available" shortcut.
+     */
+    function openConnectedUpdateLoader() {
+        const skipUf2 = availableUpdate?.kind === 'lib';
+        toggleDialog();
+        setDialogContent(
+            <FirmwareLoaderDlg
+                toggleDialog={toggleDialog}
+                autoInstallBoardId={CommandToXRPMgr.getInstance().getBoardId()}
+                skipUf2={skipUf2}
+                initialWizardStep={skipUf2 ? undefined : 3}
+            />,
+        );
+        toggleDialog();
+    }
+
+    /**
      * openBackupDialog - swap the firmware-loader warning prompt out for the
      * Backup/Restore entry screen. This is the start of the backup flow: it
      * verifies an XRP is connected and Google Drive is logged in (disabling the
@@ -1190,15 +1215,31 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
-     * onUpdateAvailableClicked - show the firmware/library release notes for the
-     * available update. Uses the board-specific MicroPython changelog rather than
-     * the application-wide changelog.
+     * onUpdateAvailableClicked - start the firmware or library update for the
+     * connected board. Requires USB. Offers a backup first, then either flashes
+     * MicroPython (boot-drive picker) or copies the library if MicroPython is
+     * already current.
      */
     function onUpdateAvailableClicked() {
+        if (
+            !isConnected ||
+            AppMgr.getInstance().getConnectionType() !== ConnectionType.USB
+        ) {
+            setDialogContent(
+                <AlertDialog
+                    alertMessage={t('updateAvailableNeedUsb')}
+                    toggleDialog={toggleDialog}
+                />,
+            );
+            toggleDialog();
+            return;
+        }
+
         setDialogContent(
-            <ChangeLogDlg
-                closeDialog={toggleDialog}
-                changelogUrl={firmwareLoaderUrl('boards/xrp-2350/micropython/CHANGELOG.txt')}
+            <FirmwareBackupPromptDlg
+                onBackupNow={openBackupDialog}
+                onContinue={openConnectedUpdateLoader}
+                onCancel={toggleDialog}
             />,
         );
         toggleDialog();
