@@ -16,4 +16,19 @@ describe('Dialog Component', () => {
 
         expect(screen.getByText('This is a test dialog')).toBeInTheDocument();
     });
+
+    it('should not close when clicked (modal behavior)', () => {
+        const cancelDialog = vi.fn();
+        const { container } = render(
+            <Dialog
+                toggleDialog={cancelDialog}
+                children={<div>Dialog Body</div>}
+                isOpen={true}
+            />,
+        );
+
+        const dialogElement = container.querySelector('dialog');
+        dialogElement?.click();
+        expect(cancelDialog).not.toHaveBeenCalled();
+    });
 });

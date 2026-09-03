@@ -3,7 +3,7 @@ import React, { forwardRef } from 'react';
 type DialogProps = {
     children: React.ReactNode;
     isOpen: boolean;
-    toggleDialog: () => void;
+    toggleDialog?: () => void;
 };
 
 const Dialog = forwardRef<HTMLDialogElement, DialogProps>((dlgProps, ref) => {
@@ -13,11 +13,6 @@ const Dialog = forwardRef<HTMLDialogElement, DialogProps>((dlgProps, ref) => {
             open={dlgProps.isOpen}
             className="rounded-md shadow-md border-shark-400 backdrop:bg-mountain-mist-500 backdrop:opacity-40 dark:border dark:border-shark-600 dark:bg-shark-950 transition-all overflow-hidden"
             ref={ref}
-            onClick={(e) => {
-                if (e.currentTarget === e.target) {
-                    dlgProps.toggleDialog();
-                }
-            }}
         >
             {dlgProps.children}
         </dialog>
