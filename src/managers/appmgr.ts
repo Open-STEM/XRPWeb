@@ -58,6 +58,7 @@ export enum EventType {
     EVENT_PROGRAM_EXECUTED = 'runstop-complete', // Run/Stop command complete
     EVENT_SHOWBLUETOOTH_CONNECTING = 'show-bluetooth-connecting', // Show Bluetooth connecting dialog
     EVENT_HIDE_BLUETOOTH_CONNECTING = 'hide-bluetooth-connecting', // Hide Bluetooth connecting dialog
+    EVENT_BLE_RECONNECT_FAILED = 'ble-reconnect-failed', // Known-robot Bluetooth connect failed
     EVENT_EDITOR_NAME_CHANGED = 'editor-name-changed', // Editor name changed
     EVENT_EDITOR_TAB_SELECTED = 'editor-tab-selected', // Editor tab id selected in layout
 }
@@ -96,6 +97,7 @@ type Events = {
     [EventType.EVENT_PROGRAM_EXECUTED]: string;
     [EventType.EVENT_SHOWBLUETOOTH_CONNECTING]: string;
     [EventType.EVENT_HIDE_BLUETOOTH_CONNECTING]: string;
+    [EventType.EVENT_BLE_RECONNECT_FAILED]: string;
     [EventType.EVENT_EDITOR_NAME_CHANGED]: string;
     [EventType.EVENT_EDITOR_TAB_SELECTED]: string;
 };
@@ -257,6 +259,14 @@ export default class AppMgr {
      */
     public async republishConnectionId(): Promise<void> {
         await this._connectionMgr?.publishConnectionInfo();
+    }
+
+    /**
+     * hasPermittedBleDevice - true when Bluetooth can reach this robot without
+     * the browser's device chooser.
+     */
+    public hasPermittedBleDevice(xrpId: string): boolean {
+        return this._connectionMgr?.hasPermittedBleDevice(xrpId) ?? false;
     }
 
     /**

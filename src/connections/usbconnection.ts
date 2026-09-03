@@ -160,6 +160,16 @@ export class USBConnection extends Connection {
             return false;
         }
 
+        // The port is already open and we hold its writer. Re-running
+        // onConnected() would ask the same WritableStream for a second writer,
+        // which throws, so republish the existing connection instead.
+        if (this.port !== undefined && this.writer !== undefined) {
+            this.connLogger.debug('tryAutoConnect: port already open, reusing it');
+            this.connectionStates = ConnectionState.Connected;
+            this.connMgr?.connectCallback(this.connectionStates, ConnectionType.USB);
+            return true;
+        }
+
         this.connectionStates = ConnectionState.Busy;
         const rawPorts = await navigator.serial.getPorts();
         const portList: SerialPort[] = Array.isArray(rawPorts)
@@ -201,6 +211,30 @@ export class USBConnection extends Connection {
         return await this.tryAutoConnect();
     }
 
+    /**
+     * hasAuthorizedXrpPort - is an XRP currently plugged in on a port this
+     * browser already has permission for? Used to prefer the cable over
+     * Bluetooth without prompting. getPorts() only lists granted ports, so a
+     * match means the cable is in and we can open it silently.
+     */
+    public async hasAuthorizedXrpPort(): Promise<boolean> {
+        if (!('serial' in navigator)) {
+            return false;
+        }
+        try {
+            const rawPorts = await navigator.serial.getPorts();
+            const portList: SerialPort[] = Array.isArray(rawPorts)
+                ? rawPorts
+                : rawPorts
+                  ? [rawPorts as SerialPort]
+                  : [];
+            return portList.some((port) => this.checkPortMatching(port));
+        } catch (error) {
+            this.connLogger.debug(error);
+            return false;
+        }
+    }
+
     private async openPort(): Promise<boolean> {
         if (this.port != undefined) {
             this.connectionStates = ConnectionState.Disconnected;
@@ -234,7 +268,15 @@ export class USBConnection extends Connection {
      */
     private async onConnected() {
         this.connectionStates = ConnectionState.Connected;
-        if (this.port) this.writer = this.port.writable?.getWriter();
+        if (this.port && this.writer === undefined) {
+            try {
+                this.writer = this.port.writable?.getWriter();
+            } catch (error) {
+                // Someone else holds the writer; keep the existing one rather
+                // than failing the whole connect.
+                this.connLogger.debug(error);
+            }
+        }
         if (this.connMgr) {
             this.connMgr.connectCallback(this.connectionStates, ConnectionType.USB);
         }
@@ -329,7 +371,12 @@ export class USBConnection extends Connection {
                     //TODO: Report error
                 });
             this.isManualConnection = false;
-            this.connectionStates = ConnectionState.Connected;
+            if (this.writer === undefined) {
+                // Picker dismissed or the port would not open: onConnected()
+                // never ran, so this is not a connection.
+                this.port = undefined;
+                this.connectionStates = ConnectionState.Disconnected;
+            }
         }
 
         this.connLogger.debug('Existing connect');
@@ -337,14 +384,63 @@ export class USBConnection extends Connection {
 
 
     /**
-     * disconnection - disconnect the USB connection
+     * disconnection - disconnect the USB session without hanging the UI.
+     * Closing a Web Serial port can block indefinitely (reader still in read(),
+     * or the Pico resetting on DTR). Always finish within a short timeout.
      */
     public async disconnect(): Promise<void> {
-        if (this.port) {
-            await this.port.close();
-            this.port = undefined;
+        if (this.connectionStates === ConnectionState.Disconnected && this.port === undefined) {
+            return;
+        }
+        // Stop readWorker before cancelling so it does not immediately re-lock the reader.
+        this.connectionStates = ConnectionState.Disconnected;
+
+        const reader = this.reader;
+        this.reader = undefined;
+        if (reader !== undefined) {
+            try {
+                await this.withTimeout(reader.cancel(), 500);
+            } catch (error) {
+                this.connLogger.debug(error);
+            }
+            try {
+                reader.releaseLock();
+            } catch (error) {
+                this.connLogger.debug(error);
+            }
+        }
+        const writer = this.writer;
+        this.writer = undefined;
+        if (writer !== undefined) {
+            try {
+                writer.releaseLock();
+            } catch (error) {
+                this.connLogger.debug(error);
+            }
+        }
+        const port = this.port;
+        this.port = undefined;
+        if (port) {
+            try {
+                await this.withTimeout(port.close(), 1000);
+            } catch (error) {
+                this.connLogger.debug(error);
+            }
             this.connLogger.debug('USB connection closed.');
         }
+        this.connMgr?.connectCallback(this.connectionStates, ConnectionType.USB);
+    }
+
+    private withTimeout(promise: Promise<unknown>, ms: number): Promise<void> {
+        return new Promise((resolve) => {
+            const timer = window.setTimeout(resolve, ms);
+            promise
+                .catch((error) => this.connLogger.debug(error))
+                .finally(() => {
+                    window.clearTimeout(timer);
+                    resolve();
+                });
+        });
     }
 
     /**

@@ -32,6 +32,7 @@ import { IoPlaySharp } from 'react-icons/io5';
 import { MdMoreVert } from 'react-icons/md';
 import { IoStop } from 'react-icons/io5';
 import { IoArrowUpCircle } from 'react-icons/io5';
+import { IoBluetooth, IoChevronDown } from 'react-icons/io5';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Dialog from '@components/dialogs/dialog';
@@ -40,6 +41,8 @@ import FileSaveAsDialg from '@/components/dialogs/filesaveasdlg';
 import {
     ConnectionType,
     ConnectionCMD,
+    BleConnectFailure,
+    BleConnectFailureInfo,
     NewFileData,
     FileType,
     FileData,
@@ -60,11 +63,19 @@ import UploadFileDlg from '@/components/dialogs/uploadfiledlg';
 import EditorMgr, { EditorSession, EdSearchParams } from '@/managers/editormgr';
 import { useLocalStorage } from 'usehooks-ts';
 import { StorageKeys } from '@/utils/localstorage';
+import {
+    clearRememberedXrp,
+    getRememberedXrp,
+    RememberedXrp,
+    saveRememberedXrp,
+} from '@/utils/rememberedxrp';
 import { isAiBuddyMenuEnabled } from '@/utils/aiBuddyAccess';
 import FileSaver from 'file-saver';
 import PowerSwitchAlert from '@/components/dialogs/power-switchdlg';
+import SwitchToBluetoothDlg from '@/components/dialogs/switch-to-bluetoothdlg';
 import ViewPythonDlg from '@/components/dialogs/view-pythondlg';
 import AlertDialog from '@/components/dialogs/alertdlg';
+import BleReconnectFailedDlg from '@/components/dialogs/ble-reconnect-faileddlg';
 import BatteryBadDlg from '@/components/dialogs/battery-baddlg';
 import ProgressDlg from '@/components/dialogs/progressdlg';
 import ConfirmationDlg from '@components/dialogs/confirmdlg';
@@ -92,6 +103,31 @@ type NavBarProps = {
 };
 
 let hasSubscribed = false;
+
+/**
+ * parseBleFailure - decode the payload of EVENT_BLE_RECONNECT_FAILED, tolerating
+ * a bare XRP id from older emitters.
+ */
+function parseBleFailure(payload: string): BleConnectFailureInfo {
+    const known = [
+        BleConnectFailure.CANCELLED,
+        BleConnectFailure.USB_STILL_CONNECTED,
+        BleConnectFailure.WRONG_USB_XRP,
+    ];
+    try {
+        const parsed = JSON.parse(payload) as Partial<BleConnectFailureInfo>;
+        if (typeof parsed.xrpId === 'string') {
+            return {
+                xrpId: parsed.xrpId,
+                reason: known.find((reason) => reason === parsed.reason) ?? BleConnectFailure.NOT_FOUND,
+                otherXrpId: parsed.otherXrpId,
+            };
+        }
+    } catch {
+        // fall through to the legacy bare-id form
+    }
+    return { xrpId: payload, reason: BleConnectFailure.NOT_FOUND };
+}
 
 /**
  * NavBar component - create the navigation bar
@@ -128,6 +164,8 @@ function NavBar({ layoutref }: NavBarProps) {
         },
     });
     const [xprID, setXrpId] = useState<{ platform?: string; XRPID?: string } | null>(null);
+    const [rememberedXrp, setRememberedXrp] = useState<RememberedXrp | null>(() => getRememberedXrp());
+    const [connectionType, setConnectionType] = useState<ConnectionType | null>(null);
     const [availableUpdate, setAvailableUpdate] = useState<
         | { kind: 'mp'; versions: Versions }
         | { kind: 'lib'; versions: Versions }
@@ -172,15 +210,20 @@ function NavBar({ layoutref }: NavBarProps) {
                     EditorMgr.getInstance().clearLastFileSaveTime();
                     setConnected(true);
                     setRunning(false);
+                    setConnectionType(AppMgr.getInstance().getConnectionType());
+                    setRememberedXrp(getRememberedXrp());
                 } else if (state === ConnectionState.Disconnected.toString()) {
                     setConnected(false);
                     setXrpId(null);
                     setAvailableUpdate(null);
+                    setConnectionType(null);
+                    setRememberedXrp(getRememberedXrp());
                 }
             });
 
             AppMgr.getInstance().on(EventType.EVENT_ID, (id: string) => {
                 setXrpId(JSON.parse(id));
+                setRememberedXrp(getRememberedXrp());
             });
 
             AppMgr.getInstance().on(EventType.EVENT_EDITOR, (type: EditorType) => {
@@ -328,6 +371,46 @@ function NavBar({ layoutref }: NavBarProps) {
                     setIsStopping(false);
                     setRunning(false);
                     broadcastRunningState(false);
+                }
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_BLE_RECONNECT_FAILED, (payload: string) => {
+                const { xrpId, reason, otherXrpId } = parseBleFailure(payload);
+                setDialogContent(
+                    <BleReconnectFailedDlg
+                        xrpId={xrpId}
+                        reason={reason}
+                        otherXrpId={otherXrpId}
+                        onRetry={() => {
+                            toggleDialog();
+                            if (isUsbConnected()) {
+                                onSwitchToBluetooth();
+                            } else {
+                                AppMgr.getInstance().emit(
+                                    EventType.EVENT_CONNECTION,
+                                    ConnectionCMD.CONNECT_BLUETOOTH_KNOWN,
+                                );
+                            }
+                        }}
+                        onSecondary={() => {
+                            if (reason === BleConnectFailure.NOT_FOUND) {
+                                setDialogContent(
+                                    <ConnectionDlg callback={onConnectionCommand} />,
+                                );
+                            } else if (reason === BleConnectFailure.USB_STILL_CONNECTED) {
+                                toggleDialog();
+                            } else {
+                                toggleDialog();
+                                AppMgr.getInstance().emit(
+                                    EventType.EVENT_CONNECTION,
+                                    ConnectionCMD.CONNECT_USB,
+                                );
+                            }
+                        }}
+                    />,
+                );
+                if (!dialogRef.current?.open) {
+                    toggleDialog();
                 }
             });
 
@@ -908,26 +991,92 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
-     * onConnectionSelected - process seected connection
-     * @param connType
+     * onConnectionCommand - process a connection dialog choice
      */
-    function onConnectionSelected(connType: ConnectionType) {
-        const appMgr: AppMgr = AppMgr.getInstance();
-        if (connType === ConnectionType.USB) {
-            appMgr.emit(EventType.EVENT_CONNECTION, ConnectionCMD.CONNECT_USB);
+    function onConnectionCommand(cmd: ConnectionCMD) {
+        if (cmd === ConnectionCMD.CLEAR_DEFAULT_XRP) {
+            clearRememberedXrp();
+            setRememberedXrp(null);
             toggleDialog();
-        } else if (connType === ConnectionType.BLUETOOTH) {
-            appMgr.emit(EventType.EVENT_CONNECTION, ConnectionCMD.CONNECT_BLUETOOTH);
-            toggleDialog();
+            return;
         }
+        AppMgr.getInstance().emit(EventType.EVENT_CONNECTION, cmd);
+        toggleDialog();
     }
 
     /**
-     * onConnectClicked
+     * onConnectBtnClicked - one-click connect to the default robot: USB if it is
+     * plugged in, Bluetooth otherwise. With no default, open the chooser.
      */
     function onConnectBtnClicked() {
-        console.log('onConnectBtnClicked');
-        setDialogContent(<ConnectionDlg callback={onConnectionSelected} />);
+        const remembered = getRememberedXrp();
+        if (remembered?.xrpId) {
+            AppMgr.getInstance().emit(
+                EventType.EVENT_CONNECTION,
+                ConnectionCMD.CONNECT_KNOWN_XRP,
+            );
+            return;
+        }
+        setDialogContent(<ConnectionDlg callback={onConnectionCommand} />);
+        toggleDialog();
+    }
+
+    /**
+     * onChooseDifferentXrp - the caret menu: clear the default, or fall back to
+     * the standard Bluetooth / USB connections.
+     */
+    function onChooseDifferentXrp() {
+        setDialogContent(<ConnectionDlg callback={onConnectionCommand} />);
+        toggleDialog();
+    }
+
+    /**
+     * isUsbConnected - is the cable currently owning the REPL?
+     */
+    function isUsbConnected(): boolean {
+        return (
+            (AppMgr.getInstance().getConnection()?.isConnected() ?? false) &&
+            AppMgr.getInstance().getConnectionType() === ConnectionType.USB
+        );
+    }
+
+    /**
+     * onSwitchToBluetooth - USB session handoff to the known robot over BLE.
+     * The robot only advertises on battery power, so confirm the power switch
+     * is on and the cable is out before connecting.
+     */
+    function onSwitchToBluetooth() {
+        // The robot on the cable, which is not necessarily today's default.
+        const xrpId = xprID?.XRPID ?? getRememberedXrp()?.xrpId;
+        if (!xrpId) {
+            return;
+        }
+        // This is the only place the default XRP is set, and it also has to
+        // survive the USB session ending when the cable comes out.
+        saveRememberedXrp({ xrpId, lastConnectionType: ConnectionType.BLUETOOTH });
+        setRememberedXrp(getRememberedXrp());
+        const powerswitchImage =
+            CommandToXRPMgr.getInstance().isNanoXRP()
+                ? undefined
+                : CommandToXRPMgr.getInstance().getXRPDrive() === Constants.XRP_PROCESSOR_BETA
+                  ? powerswitch_beta
+                  : powerswitch_standard;
+        setDialogContent(
+            <SwitchToBluetoothDlg
+                xrpId={xrpId}
+                powerswitchImage={powerswitchImage}
+                needsPicker={!AppMgr.getInstance().hasPermittedBleDevice(xrpId)}
+                isUsbConnected={isUsbConnected}
+                cancelCallback={toggleDialog}
+                okayCallback={() => {
+                    toggleDialog();
+                    AppMgr.getInstance().emit(
+                        EventType.EVENT_CONNECTION,
+                        ConnectionCMD.SWITCH_TO_BLUETOOTH,
+                    );
+                }}
+            />,
+        );
         toggleDialog();
     }
 
@@ -1526,8 +1675,21 @@ function NavBar({ layoutref }: NavBarProps) {
             </div>
             {/** platform infor and connect button*/}
             <div className="flex flex-row items-center gap-4">
-                <div className="flex flex-col items-center text-sm text-shark-300">
+                <div className="flex flex-row items-center gap-2 text-sm text-shark-300">
                     {xprID && <span>{`XRP-${xprID['XRPID']}`}</span>}
+                    {isConnected && connectionType === ConnectionType.USB && xprID?.XRPID && (
+                        <button
+                            type="button"
+                            id="switchToBluetoothBtn"
+                            onClick={onSwitchToBluetooth}
+                            className="flex items-center gap-1 rounded-full bg-shark-200 px-2.5 py-1 text-xs font-medium text-matisse-900 hover:bg-curious-blue-300 dark:bg-shark-600 dark:text-shark-100 dark:hover:bg-shark-500"
+                            title={t('switchToBluetooth')}
+                            aria-label={t('switchToBluetooth')}
+                        >
+                            <IoBluetooth size={14} />
+                            <span>{t('switchToBluetooth')}</span>
+                        </button>
+                    )}
                 </div>
                 {availableUpdate && (
                     <button
@@ -1554,19 +1716,37 @@ function NavBar({ layoutref }: NavBarProps) {
                         <span>{t('updateAvailable')}</span>
                     </button>
                 )}
-                <button
-                    id="connectBtn"
-                    className={`text-neutral-900 flex h-full w-[200] items-center justify-center gap-2 rounded-3xl bg-shark-200 px-4 py-2 text-matisse-900 hover:bg-curious-blue-300 dark:bg-shark-600 dark:text-shark-100 dark:hover:bg-shark-500 ${isConnected ? 'hidden' : ''}`}
-                    onClick={onConnectBtnClicked}
+                <div
+                    className={`flex h-full items-stretch ${isConnected ? 'hidden' : ''}`}
                 >
-                    <svg width="20" height="20" viewBox="0 0 20 20">
-                        <polygon points="11 4 12 4 12 8 16 8 16 9 11 9"></polygon>
-                        <polygon points="4 11 9 11 9 16 8 16 8 12 4 12"></polygon>
-                        <path fill="none" stroke="#000" strokeWidth="1.1" d="M12,8 L18,2"></path>
-                        <path fill="none" stroke="#000" strokeWidth="1.1" d="M2,18 L8,12"></path>
-                    </svg>
-                    <span>{t('connectXRP')}</span>
-                </button>
+                    <button
+                        id="connectBtn"
+                        className="text-neutral-900 flex h-full min-w-[200px] items-center justify-center gap-2 rounded-l-3xl bg-shark-200 px-4 py-2 text-matisse-900 hover:bg-curious-blue-300 dark:bg-shark-600 dark:text-shark-100 dark:hover:bg-shark-500"
+                        onClick={onConnectBtnClicked}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 20 20">
+                            <polygon points="11 4 12 4 12 8 16 8 16 9 11 9"></polygon>
+                            <polygon points="4 11 9 11 9 16 8 16 8 12 4 12"></polygon>
+                            <path fill="none" stroke="#000" strokeWidth="1.1" d="M12,8 L18,2"></path>
+                            <path fill="none" stroke="#000" strokeWidth="1.1" d="M2,18 L8,12"></path>
+                        </svg>
+                        <span>
+                            {rememberedXrp?.xrpId
+                                ? t('connectXRPNamed', { id: rememberedXrp.xrpId })
+                                : t('connectXRP')}
+                        </span>
+                    </button>
+                    <button
+                        id="chooseDifferentXrpBtn"
+                        type="button"
+                        className="flex items-center rounded-r-3xl border-l border-shark-300 bg-shark-200 px-2 text-matisse-900 hover:bg-curious-blue-300 dark:border-shark-500 dark:bg-shark-600 dark:text-shark-100 dark:hover:bg-shark-500"
+                        onClick={onChooseDifferentXrp}
+                        title={t('chooseDifferentXRP')}
+                        aria-label={t('chooseDifferentXRP')}
+                    >
+                        <IoChevronDown size={16} />
+                    </button>
+                </div>
                 <button
                     id="runBtn"
                     className={`text-white h-full w-[120] items-center justify-center rounded-3xl px-4 py-2 ${isRunning ? 'bg-cinnabar-600' : 'bg-chateau-green-500'} ${isConnected ? 'flex' : 'hidden'}`}
