@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { resolveFirmwareLoaderPublicPath } from '@/utils/firmware-loader';
 import { useTranslation } from 'react-i18next';
 import { IoWarning } from 'react-icons/io5';
@@ -135,6 +135,12 @@ type FirmwareInstallWizardProps = {
     assets: WizardAssets;
     onCancel: () => void;
     onComplete: () => void;
+    /** Instruction step to open on (default 1). Use 3 to skip power-off / BOOTSEL hold. */
+    initialStep?: 1 | 2 | 3;
+    /** Skip the UF2 flash and copy library/project files only (MicroPython already current). */
+    skipUf2?: boolean;
+    /** Call machine.bootloader() when showing step 3 so the boot drive appears. */
+    enterBootselOnStart?: boolean;
 };
 
 type WizardUiPhase =
@@ -155,6 +161,9 @@ export default function FirmwareInstallWizard({
     assets,
     onCancel,
     onComplete,
+    initialStep = 1,
+    skipUf2 = false,
+    enterBootselOnStart = false,
 }: FirmwareInstallWizardProps) {
     const { t } = useTranslation();
     const os = useMemo(() => detectOsFamily(), []);
@@ -170,7 +179,11 @@ export default function FirmwareInstallWizard({
         );
     }, [boardId, cmd]);
 
-    const [phase, setPhase] = useState<WizardUiPhase>({ kind: 'instruction', step: 1 });
+    const [phase, setPhase] = useState<WizardUiPhase>(() =>
+        skipUf2
+            ? { kind: 'libs', waitingUsb: true, needsManualConnect: false }
+            : { kind: 'instruction', step: initialStep },
+    );
     const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null);
     const [uf2Pct, setUf2Pct] = useState(0);
     const [libPct, setLibPct] = useState(0);
@@ -346,6 +359,32 @@ export default function FirmwareInstallWizard({
         await runLibraryCopy({ autoFirst: true });
     }, [runLibraryCopy]);
 
+    const bootselStarted = useRef(false);
+    useEffect(() => {
+        if (skipUf2 || !enterBootselOnStart) {
+            return;
+        }
+        if (phase.kind !== 'instruction' || phase.step !== 3) {
+            return;
+        }
+        if (bootselStarted.current) {
+            return;
+        }
+        bootselStarted.current = true;
+        void cmd.enterBootSelect().catch((e) => {
+            console.log('enterBootSelect:', e);
+        });
+    }, [phase, skipUf2, enterBootselOnStart, cmd]);
+
+    const libCopyStarted = useRef(false);
+    useEffect(() => {
+        if (!skipUf2 || libCopyStarted.current) {
+            return;
+        }
+        libCopyStarted.current = true;
+        void runLibraryCopy({ autoFirst: true });
+    }, [skipUf2, runLibraryCopy]);
+
     /**
      * Handler for the "Connect to XRP" button shown when silent auto-
      * reconnect doesn't land. This runs inside a fresh click handler so the
@@ -363,10 +402,14 @@ export default function FirmwareInstallWizard({
      * RUN button — re-publish it now so the IDE reflects the live connection.
      */
     const handleComplete = async () => {
+        AppMgr.getInstance().emit(EventType.EVENT_MICROPYTHON_UPDATE_DONE, '');
+        AppMgr.getInstance().emit(EventType.EVENT_XRPLIB_UPDATE_DONE, '');
         try {
             await AppMgr.getInstance().republishConnectionId();
+            // Re-read on-device versions so the badge returns if something is still stale.
+            await CommandToXRPMgr.getInstance().checkIfNeedUpdate();
         } catch (e) {
-            console.log('republishConnectionId failed:', e);
+            console.log('post-update version refresh failed:', e);
         }
         onComplete();
     };

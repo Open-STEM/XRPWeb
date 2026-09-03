@@ -65,7 +65,7 @@ abstract class Connection {
     }
 
     // abstract methods - implement by derived classes
-    abstract connect(): Promise<void>;
+    abstract connect(): Promise<void | boolean>;
     abstract disconnect(): Promise<void>;
     abstract isConnected(): boolean;
 

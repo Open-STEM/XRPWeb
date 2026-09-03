@@ -1,10 +1,16 @@
 import AppMgr, { EventType } from '@/managers/appmgr';
-import { ConnectionCMD, ConnectionType } from '@/utils/types';
+import {
+    BleConnectFailure,
+    BleConnectFailureInfo,
+    ConnectionCMD,
+    ConnectionType,
+} from '@/utils/types';
 import Connection, { ConnectionState } from '@/connections/connection';
 import { USBConnection } from '@/connections/usbconnection';
 import { BluetoothConnection } from '@/connections/bluetoothconnection';
 import { CommandToXRPMgr } from './commandstoxrpmgr';
 import PluginMgr from './pluginmgr';
+import { getRememberedXrp, saveRememberedXrp } from '@/utils/rememberedxrp';
 
 /**
  * ConnectionMgr - manages USB and Bluetooth connection to the XRP Robot
@@ -17,6 +23,10 @@ export default class ConnectionMgr {
     private activeConnection: Connection | null = null;
 
     private xrpID: string | undefined = undefined;
+
+    // Set when the connect button targets one specific robot, so a USB port
+    // that turns out to hold a different XRP can be turned away.
+    private requiredXrpId: string | undefined = undefined;
 
     constructor(appMgr: AppMgr) {
         this.appMgr = appMgr;
@@ -36,19 +46,147 @@ export default class ConnectionMgr {
             console.log('Connection manager event, sub type: ' + subType);
             switch (subType) {
                 case ConnectionCMD.CONNECT_USB:
-                    if (this.connections[ConnectionType.USB]) {
-                        this.connections[ConnectionType.USB].connect();
-                        this.cmdToXRPMgr.setConnection(this.connections[ConnectionType.USB]);
-                    }
+                    this.connectUsb();
                     break;
                 case ConnectionCMD.CONNECT_BLUETOOTH:
-                    if (this.connections[ConnectionType.BLUETOOTH]) {
-                        this.connections[ConnectionType.BLUETOOTH].connect();
-                        this.cmdToXRPMgr.setConnection(this.connections[ConnectionType.BLUETOOTH]);
-                    }
+                    this.connectBluetooth({ xrpId: getRememberedXrp()?.xrpId });
+                    break;
+                case ConnectionCMD.CONNECT_BLUETOOTH_ALL:
+                    this.connectBluetooth({ showAll: true });
+                    break;
+                case ConnectionCMD.CONNECT_BLUETOOTH_KNOWN:
+                    this.connectBluetoothKnown();
+                    break;
+                case ConnectionCMD.CONNECT_KNOWN_XRP:
+                    this.connectKnownXrp();
+                    break;
+                case ConnectionCMD.SWITCH_TO_BLUETOOTH:
+                    this.switchToBluetooth();
                     break;
             }
         });
+    }
+
+    private connectUsb(): void {
+        const usb = this.connections[ConnectionType.USB];
+        if (!usb) {
+            return;
+        }
+        usb.connect();
+        this.cmdToXRPMgr.setConnection(usb);
+    }
+
+    private async connectBluetooth(options?: { xrpId?: string; showAll?: boolean }): Promise<void> {
+        const ble = this.connections[ConnectionType.BLUETOOTH] as BluetoothConnection | undefined;
+        if (!ble) {
+            return;
+        }
+        this.cmdToXRPMgr.setConnection(ble);
+        const ok = await ble.connect(options);
+        if (!ok && options?.xrpId && !options.showAll) {
+            this.reportBleFailure(
+                options.xrpId,
+                ble.wasLastConnectCancelled()
+                    ? BleConnectFailure.CANCELLED
+                    : BleConnectFailure.NOT_FOUND,
+            );
+        }
+    }
+
+    private reportBleFailure(
+        xrpId: string,
+        reason: BleConnectFailure,
+        otherXrpId?: string,
+    ): void {
+        const info: BleConnectFailureInfo = { xrpId, reason, otherXrpId };
+        this.appMgr.emit(EventType.EVENT_BLE_RECONNECT_FAILED, JSON.stringify(info));
+    }
+
+    private async connectBluetoothKnown(): Promise<void> {
+        const remembered = getRememberedXrp();
+        if (!remembered?.xrpId) {
+            await this.connectBluetooth({ showAll: true });
+            return;
+        }
+        await this.connectBluetooth({ xrpId: remembered.xrpId });
+    }
+
+    /**
+     * connectKnownXrp - the default-XRP button. Prefer the cable, but only for
+     * that robot: Web Serial cannot tell which XRP is on a port until the board
+     * answers, so the port is opened and then vetted by rejectUnwantedUsbXrp.
+     * With no cable present, fall through to Bluetooth.
+     */
+    private async connectKnownXrp(): Promise<void> {
+        const remembered = getRememberedXrp();
+        const usb = this.connections[ConnectionType.USB] as USBConnection | undefined;
+        if (remembered?.xrpId && usb && (await usb.hasAuthorizedXrpPort())) {
+            this.requiredXrpId = remembered.xrpId;
+            this.cmdToXRPMgr.setConnection(usb);
+            if (await usb.tryAutoConnectIfSingle()) {
+                return;
+            }
+            this.requiredXrpId = undefined;
+        }
+        await this.connectBluetoothKnown();
+    }
+
+    /**
+     * rejectUnwantedUsbXrp - the connect button asked for one robot but the
+     * cable holds another. Drop that connection instead of driving the wrong
+     * XRP, and let the user retry over Bluetooth or claim the plugged-in one.
+     * Returns true when the connection was rejected.
+     */
+    private async rejectUnwantedUsbXrp(connType: ConnectionType): Promise<boolean> {
+        const wanted = this.requiredXrpId;
+        this.requiredXrpId = undefined;
+        if (!wanted || connType !== ConnectionType.USB || this.xrpID === undefined) {
+            return false;
+        }
+        const connectedId = this.xrpID.slice(-5);
+        if (connectedId === wanted) {
+            return false;
+        }
+        console.log(
+            `USB port holds XRP-${connectedId}, not the requested XRP-${wanted}; disconnecting`,
+        );
+        const usb = this.connections[ConnectionType.USB] as USBConnection | undefined;
+        await usb?.disconnect();
+        this.reportBleFailure(wanted, BleConnectFailure.WRONG_USB_XRP, connectedId);
+        return true;
+    }
+
+    /**
+     * hasPermittedBleDevice - true when Bluetooth can connect to this robot
+     * without showing the browser's device chooser.
+     */
+    public hasPermittedBleDevice(xrpId: string): boolean {
+        const ble = this.connections[ConnectionType.BLUETOOTH] as BluetoothConnection | undefined;
+        return ble?.hasPermittedDevice(xrpId) ?? false;
+    }
+
+    /**
+     * switchToBluetooth - move the known robot onto Bluetooth.
+     *
+     * The cable must already be out: the REPL cannot be owned by both
+     * transports, and the robot only advertises once it is running on battery.
+     */
+    private async switchToBluetooth(): Promise<void> {
+        const remembered = getRememberedXrp();
+        const xrpId = remembered?.xrpId ?? this.xrpID?.slice(-5);
+        const ble = this.connections[ConnectionType.BLUETOOTH] as BluetoothConnection | undefined;
+        const usb = this.connections[ConnectionType.USB] as USBConnection | undefined;
+        if (!ble || !xrpId) {
+            await this.connectBluetooth({ showAll: true });
+            return;
+        }
+
+        if (usb?.isConnected()) {
+            this.reportBleFailure(xrpId, BleConnectFailure.USB_STILL_CONNECTED);
+            return;
+        }
+
+        await this.connectBluetooth({ xrpId });
     }
 
     /**
@@ -70,6 +208,9 @@ export default class ConnectionMgr {
                 }
                 await this.cmdToXRPMgr.clearIsRunning();
                 this.xrpID = await this.cmdToXRPMgr.checkIfNeedUpdate();
+                if (await this.rejectUnwantedUsbXrp(connType)) {
+                    return;
+                }
                 this.IDSet(connType);
                 
                 // Check for plugins after connection is established
@@ -122,6 +263,18 @@ export default class ConnectionMgr {
                 });
             } catch (err) {
                 console.log(err);
+            }
+            if (isBLE) {
+                // A robot reached over Bluetooth becomes the saved XRP. USB does
+                // not: the cable is claimed only through Switch to Bluetooth.
+                const ble = this.connections[ConnectionType.BLUETOOTH] as
+                    | BluetoothConnection
+                    | undefined;
+                saveRememberedXrp({
+                    xrpId: data.XRPID,
+                    lastConnectionType: connType,
+                    bleDeviceId: ble?.getDeviceId(),
+                });
             }
             // notify to display to the UI
             this.appMgr.emit(EventType.EVENT_ID, JSON.stringify(data));

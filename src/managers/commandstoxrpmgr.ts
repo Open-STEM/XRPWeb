@@ -227,7 +227,7 @@ export class CommandToXRPMgr {
      * RP2040 boards are the "xrp-beta" (or "xrp-nano" for the NanoXRP variant);
      * everything else (RP2350) is "xrp-2350".
      */
-    private getBoardId(): string {
+    public getBoardId(): string {
         if (this.PROCESSOR !== 2040) {
             return 'xrp-2350';
         }
