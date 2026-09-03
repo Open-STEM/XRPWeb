@@ -6,14 +6,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 // See the GNU General Public License for more details
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ProgressBar from 'react-customizable-progressbar';
 import Button from '@/widgets/button';
 import { Constants } from '@/utils/constants';
 import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
 import { GoogleDriveFile } from '@/services/google-drive';
-import AppMgr, { EventType } from '@/managers/appmgr';
+import AppMgr from '@/managers/appmgr';
 
 type RestoreDlgProps = {
     toggleDialog: () => void;
