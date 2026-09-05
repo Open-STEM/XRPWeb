@@ -388,7 +388,13 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                 <img
                     src={FolderIcon}
                     alt="icon"
-                    style={{ width: '16px', height: '16px', marginRight: '16px' }}
+                    style={{
+                        width: '16px',
+                        height: '16px',
+                        marginRight: '16px',
+                        flexShrink: 0,
+                        minWidth: '16px',
+                    }}
                 />
             );
         } else if (node.getId() === Constants.SHELL_TAB_ID) {
@@ -396,7 +402,13 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
                 <img
                     src={ShellIcon}
                     alt="icon"
-                    style={{ width: '16px', height: '16px', marginRight: '0px' }}
+                    style={{
+                        width: '16px',
+                        height: '16px',
+                        marginRight: '0px',
+                        flexShrink: 0,
+                        minWidth: '16px',
+                    }}
                 />
             );
         } else if (EditorMgr.getInstance().getEditorSession(node.getId())?.gpath) {
@@ -404,7 +416,11 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
             // files and the Dashboard/AI Buddy tabs use an empty gpath, so a
             // truthy check keeps the Drive icon off of them.
             renderValues.leading = (
-                <img src={GoogleDriveLogo} alt="icon" style={{ width: '16px', height: '16px' }} />
+                <img
+                    src={GoogleDriveLogo}
+                    alt="icon"
+                    style={{ width: '16px', height: '16px', flexShrink: 0, minWidth: '16px' }}
+                />
             );
         }
         renderValues.content = t(node.getName());

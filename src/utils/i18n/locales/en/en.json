@@ -277,5 +277,15 @@
         "description": "Restore XRP Robot files from Google Drive.",
         "processing": "Processing {{ filename }}",
         "begin": "Begin Restore"
+    },
+    "copyfiles": {
+        "title": "Copy Files to Google Drive",
+        "description": "This will allow you to select files from the XRP Robot and copy them to Google Drive. Select files from left and destination on right and click the Copy button to begin the copy process.",
+        "close": "Close",
+        "copy": "Copy",
+        "menuTitle": "Copy Files",
+        "xrprobot": "XRP Robot Files",
+        "gdrive": "Google Drive Files",
+        "copyTooltip": "Copy selected files to Google Drive"
     }
 }

@@ -277,5 +277,15 @@
         "description": "Restaura tus archivos XRP desde tu XRP Robot a Google Drive.",
         "processing": "Procesando...",
         "begin": "Comenzar Restauración"
+    },
+    "copyfiles": {
+        "title": "Copiar archivos a Google Drive",
+        "description": "Esto le permitirá seleccionar archivos del XRP Robot y copiarlos a Google Drive. Seleccione uno o varios archivos de la lista de la izquierda y seleccione una carpeta de destino en la lista de la derecha. Luego haga clic en el botón Copiar archivos para comenzar. Un registro de copia aparecerá en la sección central, mostrando el progreso de la copia",
+        "close": "Cerrar",
+        "copy": "Copiar",
+        "menuTitle": "Copiar archivos",
+        "xrprobot": "Archivos del robot XRP",
+        "googledrive": "Archivos de Google Drive",
+        "copyTooltip": "Copiar archivos a Google Drive"
     }
 }

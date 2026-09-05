@@ -45,19 +45,13 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
                 AppMgr.getInstance().authService.userProfile.email,
             );
             if (username) {
-                return folderPath.replace(
-                    `${Constants.GUSERS_FOLDER}${username}/`,
-                    '/XRPCode/',
-                );
+                return folderPath.replace(`${Constants.GUSERS_FOLDER}${username}/`, '/XRPCode/');
             }
         }
         return folderPath;
     };
 
-    const findFolderByPath = (
-        items: FolderItem[],
-        targetPath: string,
-    ): FolderItem | null => {
+    const findFolderByPath = (items: FolderItem[], targetPath: string): FolderItem | null => {
         const normalizedTarget = targetPath.endsWith('/') ? targetPath : `${targetPath}/`;
         for (const item of items) {
             if (item.children === null) {
@@ -115,7 +109,7 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
             gparentId: gFolderId,
             parentId: '',
             filetype,
-        }
+        };
         fileSaveAsProps.saveCallback(fileData);
     };
 
@@ -123,16 +117,16 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
      * handleFolderSelection - callback function to handle the selected folder
      * @param selectedItem
      */
-    const handleFolderSelection = (selectedItem: FolderItem) => {
-        const path = selectedItem.path === '/' ? `` : selectedItem.path;
+    const handleFolderSelection = (selectedItem: FolderItem[]) => {
+        const path = selectedItem[0].path === '/' ? `` : selectedItem[0].path;
         setSelectedFolder(path);
-        setGFolderId(selectedItem.id);
+        setGFolderId(selectedItem[0].id);
         validateFilename(filename, path);
     };
 
     /**
      * handleFilenameInput
-     * @param e 
+     * @param e
      */
     const handleFilenameInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         const inputName = e.target.value;
@@ -148,14 +142,13 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
         const session = EditorMgr.getInstance().getEditorSession(tabId);
         if (session) {
             const parentEnd = session.path.lastIndexOf('/');
-            const parentFolder =
-                parentEnd > 0 ? session.path.substring(0, parentEnd + 1) : '/';
+            const parentFolder = parentEnd > 0 ? session.path.substring(0, parentEnd + 1) : '/';
             const treeFolderPath = toTreeFolderPath(parentFolder);
             const folderItem = findFolderByPath(folderList, treeFolderPath);
             const folderPath =
                 folderItem?.path === '/'
                     ? ''
-                    : folderItem?.path ?? (treeFolderPath === '/' ? '' : treeFolderPath);
+                    : (folderItem?.path ?? (treeFolderPath === '/' ? '' : treeFolderPath));
             setSelectedFolder(folderPath);
             setGFolderId(folderItem?.id ?? '');
             setFilename(session.name);
@@ -169,31 +162,38 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
      */
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
         const dotIndex = e.target.value.lastIndexOf('.');
-        const filenameWithoutExtension = dotIndex === -1 ? e.target.value : e.target.value.substring(0, dotIndex);
+        const filenameWithoutExtension =
+            dotIndex === -1 ? e.target.value : e.target.value.substring(0, dotIndex);
         e.target.setSelectionRange(0, filenameWithoutExtension.length);
-    };    
+    };
 
     return (
         <div className="flex h-auto w-96 flex-col gap-2 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
             <div className="flex flex-col items-center">
-                <h1 className="text-lg font-bold text-mountain-mist-700 dark:text-mountain-mist-300">{t('saveFileAs')}</h1>
-                <p className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('choose-dest-file')}</p>
+                <h1 className="text-lg font-bold text-mountain-mist-700 dark:text-mountain-mist-300">
+                    {t('saveFileAs')}
+                </h1>
+                <p className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">
+                    {t('choose-dest-file')}
+                </p>
             </div>
             <hr className="w-full border-mountain-mist-600 dark:border-mountain-mist-200" />
             <label className="text-mountain-mist-700 dark:text-mountain-mist-300">
                 {t('destFolder')}: {selectedFolder}
             </label>
-            <div className='h-48 w-full overflow-y-auto border border-shark-300 dark:border-shark-600'>
+            <div className="h-48 w-full overflow-y-auto border border-shark-300 dark:border-shark-600">
                 <FolderTree
                     treeData={JSON.stringify(folderList)}
                     theme=""
                     onSelected={handleFolderSelection}
                 />
             </div>
-            <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('filename')}</label>
+            <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">
+                {t('filename')}
+            </label>
             <div>
                 <input
-                    className={`w-full border p-2 rounded text-md text-mountain-mist-700 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-200 ${isFileExists ? 'border-cinnabar-800' : 'border-shark-300 dark:border-shark-600'}`}
+                    className={`text-md w-full rounded border p-2 text-mountain-mist-700 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-200 ${isFileExists ? 'border-cinnabar-800' : 'border-shark-300 dark:border-shark-600'}`}
                     id="filenameId"
                     type="text"
                     placeholder={t('enterFilename')}
@@ -204,12 +204,15 @@ function FileSaveAsDialg(fileSaveAsProps: FileSaveAsProps) {
                     minLength={2}
                 />
                 {isFileExists && (
-                    <span className="text-sm text-cinnabar-800 dark:text-cinnabar-400">{t('fileExists')}</span>
+                    <span className="text-sm text-cinnabar-800 dark:text-cinnabar-400">
+                        {t('fileExists')}
+                    </span>
                 )}
             </div>
             <label className="text-mountain-mist-700 dark:text-mountain-mist-300">
                 {t('final-path')}
-                {selectedFolder}{filename}
+                {selectedFolder}
+                {filename}
             </label>
             <hr className="w-full border-mountain-mist-600 dark:border-mountain-mist-200" />
             <DialogFooter
