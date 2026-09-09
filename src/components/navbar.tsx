@@ -28,6 +28,7 @@ import privacy from '@assets/images/privacy.svg';
 import settings from '@assets/images/settings.svg';
 import chatbot from '@assets/images/chatbot.svg';
 import gamepad from '@assets/images/gamepad.svg';
+import bugs from '@assets/images/bugs.svg';
 import { TiArrowSortedDown } from 'react-icons/ti';
 import { IoPlaySharp } from 'react-icons/io5';
 import { MdMoreVert } from 'react-icons/md';
@@ -1572,6 +1573,11 @@ function NavBar({ layoutref }: NavBarProps) {
                     label: t('userHelpForum'),
                     iconImage: forum,
                     link: 'https://xrp.discourse.group/',
+                },
+                {
+                    label: t('bugs-submission'),
+                    iconImage: bugs,
+                    link: 'https://xrp.discourse.group/c/support/9',
                 },
                 {
                     label: t('changeLog'),
