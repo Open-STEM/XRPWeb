@@ -15,7 +15,6 @@ const TERMINAL_ID = 'xrp-shell';
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function captureTerminalContent(instance: any): string {
-    
     try {
         if (!instance || !instance.buffer || !instance.buffer.active) {
             return '';
@@ -25,23 +24,23 @@ function captureTerminalContent(instance: any): string {
         const lines: string[] = [];
         const totalLines = buffer.length;
         const MAX_LINES = 100; // Hard limit to prevent flooding context window
-        
+
         // Start from the end and work backwards to find meaningful content
         let contentLines = 0;
         let foundContent = false;
-        
+
         // Look backwards from the current position to find the last meaningful output
         for (let i = totalLines - 1; i >= 0 && contentLines < MAX_LINES; i--) {
             const line = buffer.getLine(i);
             if (line) {
                 const lineText = line.translateToString(true);
-                
+
                 // Stop if we hit an obvious prompt pattern (common patterns)
                 // eslint-disable-next-line no-useless-escape
                 if (lineText.match(/^[\w\-\.~]*[$#>]\s*$/) && foundContent) {
                     break;
                 }
-                
+
                 // Skip empty lines at the end but include them once we find content
                 if (lineText.trim() || foundContent) {
                     lines.unshift(lineText);
@@ -50,13 +49,13 @@ function captureTerminalContent(instance: any): string {
                 }
             }
         }
-        
+
         // If we didn't find much content, fall back to a reasonable amount (but still respect MAX_LINES)
         if (lines.length < 5 && totalLines > 0) {
             lines.length = 0;
             const fallbackLines = Math.min(20, MAX_LINES);
             const startLine = Math.max(0, totalLines - fallbackLines);
-            
+
             for (let i = startLine; i < totalLines; i++) {
                 const line = buffer.getLine(i);
                 if (line) {
@@ -65,12 +64,12 @@ function captureTerminalContent(instance: any): string {
                 }
             }
         }
-        
+
         // Final safety check: truncate if somehow we exceeded MAX_LINES
         if (lines.length > MAX_LINES) {
             lines.splice(0, lines.length - MAX_LINES);
         }
-        
+
         return lines.join('\n').trim();
     } catch (error) {
         console.warn('Failed to capture terminal content:', error);
@@ -115,12 +114,16 @@ function XRPShell() {
                     if (activeConn != null) {
                         activeConn.onData = (data) => {
                             instance.write(data);
-                            
+
                             // Capture terminal content after data is written
                             setTimeout(() => {
                                 const content = captureTerminalContent(instance);
                                 const lineCount = instance.buffer?.active?.length || 0;
-                                TerminalMgr.updateLiveTerminalContent(TERMINAL_ID, content, lineCount);
+                                TerminalMgr.updateLiveTerminalContent(
+                                    TERMINAL_ID,
+                                    content,
+                                    lineCount,
+                                );
                             }, 10); // Small delay to ensure content is rendered
                         };
                     }
@@ -130,7 +133,7 @@ function XRPShell() {
                     instance?.writeln(t('disconnectXterm'));
                     listenerRef.current?.dispose();
                     listenerRef.current = null;
-                    
+
                     // Update terminal content after disconnect message
                     setTimeout(() => {
                         const content = captureTerminalContent(instance);
@@ -147,13 +150,13 @@ function XRPShell() {
                     activeConn.onData = (data) => {
                         instance.write(data);
 
-                            // Capture terminal content after data is written
-                            setTimeout(() => {
-                                const content = captureTerminalContent(instance);
-                                const lineCount = instance.buffer?.active?.length || 0;
-                                TerminalMgr.updateLiveTerminalContent(TERMINAL_ID, content, lineCount);
-                            }, 10); // Small delay to ensure content is rendered
-                    }
+                        // Capture terminal content after data is written
+                        setTimeout(() => {
+                            const content = captureTerminalContent(instance);
+                            const lineCount = instance.buffer?.active?.length || 0;
+                            TerminalMgr.updateLiveTerminalContent(TERMINAL_ID, content, lineCount);
+                        }, 10); // Small delay to ensure content is rendered
+                    };
                 }
                 // can only be subscribed to once
                 listenerRef.current = instance?.onData((data) => {
@@ -173,10 +176,26 @@ function XRPShell() {
 
         const handleResize = () => fitAddon.fit();
         window.addEventListener('resize', handleResize);
-        
+
+        const resizeObserver = new ResizeObserver(() => {
+            try {
+                fitAddon.fit();
+            } catch (e) {
+                console.warn(e);
+            }
+        });
+
+        if (ref.current) {
+            resizeObserver.observe(ref.current);
+        }
+
         // Cleanup function to remove terminal content when component unmounts
         return () => {
             window.removeEventListener('resize', handleResize);
+            if (ref.current) {
+                resizeObserver.unobserve(ref.current);
+            }
+            resizeObserver.disconnect();
             TerminalMgr.removeLiveTerminalContent(TERMINAL_ID);
         };
     }, [instance, isConnected, t]);
