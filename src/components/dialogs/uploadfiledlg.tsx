@@ -16,7 +16,7 @@ type UploadFileDlgProps = {
 function UploadFileDlg({ files, toggleDialog }: UploadFileDlgProps) {
     const { t } = useTranslation();
     const [folderItem, setFolderItem] = useState<FolderItem[] | null>(null);
-    const [fileList, setFileList] = useState<FileData[] | null >(null);
+    const [fileList, setFileList] = useState<FileData[] | null>(null);
     const [selectedFolder, setSelectedFolder] = useState<string>('');
     const [gFolderId, setGFolderId] = useState<string>('');
 
@@ -66,13 +66,13 @@ function UploadFileDlg({ files, toggleDialog }: UploadFileDlgProps) {
 
     /**
      * handleFolderSelection - callback function to handle the selected folder
-     * @param selectedItem 
+     * @param selectedItem
      */
-    const handleFolderSelection = (selectedItem: FolderItem) => {
-        const path = selectedItem.path === '/' ? `` : selectedItem.path;
+    const handleFolderSelection = (selectedItem: FolderItem[]) => {
+        const path = selectedItem[0].path === '/' ? `` : selectedItem[0].path;
         setSelectedFolder(path);
-        setGFolderId(selectedItem.id);
-    }
+        setGFolderId(selectedItem[0].id);
+    };
 
     useEffect(() => {
         setFileList(files);
@@ -80,27 +80,44 @@ function UploadFileDlg({ files, toggleDialog }: UploadFileDlgProps) {
     }, [files]);
 
     return (
-        <div className="border rounded-md border-mountain-mist-700 dark:border-shark-500 dark:bg-shark-950 flex h-auto w-96 flex-col gap-2 p-8 shadow-md transition-all">
-            <div className='flex flex-col items-center'>
-                <h1 className="text-lg font-bold text-mountain-mist-700 dark:text-mountain-mist-300">{t('uploadFiles')}</h1>
+        <div className="flex h-auto w-96 flex-col gap-2 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
+            <div className="flex flex-col items-center">
+                <h1 className="text-lg font-bold text-mountain-mist-700 dark:text-mountain-mist-300">
+                    {t('uploadFiles')}
+                </h1>
             </div>
             <hr className="w-full border-mountain-mist-600 dark:border-mountain-mist-200" />
-            <div className='h-48 w-full overflow-y-auto border border-shark-300 dark:border-shark-600'>
-                <FolderTree treeData={JSON.stringify(folderItem)} theme="" onSelected={handleFolderSelection} />
+            <div className="h-48 w-full overflow-y-auto border border-shark-300 dark:border-shark-600">
+                <FolderTree
+                    treeData={JSON.stringify(folderItem)}
+                    theme=""
+                    onSelected={handleFolderSelection}
+                />
             </div>
-            <label className="text-mountain-mist-700 dark:text-mountain-mist-300">{t('destFolder')}: {selectedFolder}</label>
-            <label className="text-mountain-mist-700 dark:text-mountain-mist-300">{t('filesToUpload')}: {fileList?.length}</label>
-            <ul className='flex flex-col gap-2'>
+            <label className="text-mountain-mist-700 dark:text-mountain-mist-300">
+                {t('destFolder')}: {selectedFolder}
+            </label>
+            <label className="text-mountain-mist-700 dark:text-mountain-mist-300">
+                {t('filesToUpload')}: {fileList?.length}
+            </label>
+            <ul className="flex flex-col gap-2">
                 {fileList?.map((file) => (
-                    <li key={file.name} className="text-mountain-mist-700 dark:text-mountain-mist-300 hover:text-neutral-100">
+                    <li
+                        key={file.name}
+                        className="hover:text-neutral-100 text-mountain-mist-700 dark:text-mountain-mist-300"
+                    >
                         <span>{file.name}</span>
                     </li>
                 ))}
             </ul>
             <hr className="w-full border-mountain-mist-600 dark:border-mountain-mist-200" />
-            <DialogFooter btnCancelCallback={toggleDialog} btnAcceptLabel={t('upload')} btnAcceptCallback={handleFileUpload}/>
-        </div>    
-    )
+            <DialogFooter
+                btnCancelCallback={toggleDialog}
+                btnAcceptLabel={t('upload')}
+                btnAcceptCallback={handleFileUpload}
+            />
+        </div>
+    );
 }
 
 export default UploadFileDlg;

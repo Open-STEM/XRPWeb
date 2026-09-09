@@ -10,7 +10,7 @@ import { TiArrowSortedDown } from 'react-icons/ti';
 import pythonicon from '@assets/images/python-svgrepo-com.svg';
 import blockIcon from '@assets/images/blockly.svg';
 import fileIcon from '@assets/images/file.svg';
-import { FiCheckSquare } from "react-icons/fi";
+import { FiCheckSquare } from 'react-icons/fi';
 
 type NewFileProps = {
     submitCallback: (formData: NewFileData) => void;
@@ -32,15 +32,15 @@ function NewFileDlg(newFileProps: NewFileProps) {
     const fileOptions: ListItem[] = [
         {
             label: t('blocklyfile'),
-            image: blockIcon
+            image: blockIcon,
         },
         {
             label: t('pythonfile'),
-            image: pythonicon
+            image: pythonicon,
         },
         {
             label: t('other'),
-            image: fileIcon
+            image: fileIcon,
         },
     ];
 
@@ -107,8 +107,8 @@ function NewFileDlg(newFileProps: NewFileProps) {
 
     /**
      * handleFilenameInput - handles the filename input from user
-     * @param e 
-     * @returns 
+     * @param e
+     * @returns
      */
     const handleFilenameInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFilename(e.target.value);
@@ -116,7 +116,7 @@ function NewFileDlg(newFileProps: NewFileProps) {
         const isValid = Constants.REGEX_FILENAME.test(filename);
         const parts = selectedFolder.split('/').filter((part) => part !== '');
         const foldername = parts.length > 0 ? parts[parts.length - 1] : selectedFolder;
-        if (!isValid || AppMgr.getInstance().IsFileExists(foldername,filename)) {
+        if (!isValid || AppMgr.getInstance().IsFileExists(foldername, filename)) {
             setIsFileExists(true);
             setIsOkayToSubmit(false);
             return;
@@ -128,8 +128,8 @@ function NewFileDlg(newFileProps: NewFileProps) {
 
     /**
      * findItemInFolderList - recursive function to find the folder item in the folder list
-     * @param folderList 
-     * @param folder 
+     * @param folderList
+     * @param folder
      * @returns folder item or null
      */
     const findItemInFolderList = (folderList: FolderItem[], folder: string): FolderItem | null => {
@@ -145,7 +145,7 @@ function NewFileDlg(newFileProps: NewFileProps) {
             }
         }
         return null;
-    }
+    };
     /**
      * handleSubmit handler. Gather all data from the form and send back to parent component
      */
@@ -173,8 +173,8 @@ function NewFileDlg(newFileProps: NewFileProps) {
      * handleFolderSelection - callback function to handle the selected folder
      * @param selectedItem
      */
-    const handleFolderSelection = (selectedItem: FolderItem) => {
-        setSelectedFolder(selectedItem.path);
+    const handleFolderSelection = (selectedItem: FolderItem[]) => {
+        setSelectedFolder(selectedItem[0].path);
     };
 
     /**
@@ -212,67 +212,92 @@ function NewFileDlg(newFileProps: NewFileProps) {
     };
 
     return (
-        <div className="flex flex-col items-center gap-4 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950 w-96 max-h-[90vh] overflow-y-auto">
+        <div className="flex max-h-[90vh] w-96 flex-col items-center gap-4 overflow-y-auto rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
             <div className="flex w-[90%] flex-col items-center">
-                <h1 className="text-lg font-bold text-mountain-mist-700 dark:text-mountain-mist-300">{t('newFile')}</h1>
-                <p className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('chooseNewFile')}</p>
+                <h1 className="text-lg font-bold text-mountain-mist-700 dark:text-mountain-mist-300">
+                    {t('newFile')}
+                </h1>
+                <p className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">
+                    {t('chooseNewFile')}
+                </p>
             </div>
             <hr className="w-full border-mountain-mist-600" />
-            <form id="fileOptionId" className="flex w-full flex-col gap-2" onSubmit={(e) => e.preventDefault()}>
-                <span className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('destFolder')}</span>
-                <div className='h-48 w-full overflow-y-auto border border-shark-300 dark:border-shark-600'>
+            <form
+                id="fileOptionId"
+                className="flex w-full flex-col gap-2"
+                onSubmit={(e) => e.preventDefault()}
+            >
+                <span className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">
+                    {t('destFolder')}
+                </span>
+                <div className="h-48 w-full overflow-y-auto border border-shark-300 dark:border-shark-600">
                     <FolderTree
                         treeData={JSON.stringify(folderList)}
                         theme=""
                         onSelected={handleFolderSelection}
                     />
                 </div>
-                <label className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300" htmlFor="filesId">
+                <label
+                    className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300"
+                    htmlFor="filesId"
+                >
                     {t('fileType')}
                 </label>
-                <div className='relative w-full' ref={popoverRef}>
-                    <button 
-                        type='button' 
-                        name='filetypeSelecion' 
+                <div className="relative w-full" ref={popoverRef}>
+                    <button
+                        type="button"
+                        name="filetypeSelecion"
                         onClick={togglePopover}
                         disabled={selectedFolder === ''}
-                        className={`relative h-10 w-full p-2 text-left border rounded-md shadow-md cursor-default focus:outline-none focus:ring-2 focus:ring-curious-blue-400 dark:border-shark-600 dark:bg-shark-500 ${
-                            selectedFolder === '' 
-                                ? 'border-shark-300 bg-shark-100 opacity-50 cursor-not-allowed' 
-                                : 'border-shark-300 dark:border-shark-600 bg-white dark:bg-shark-500'
+                        className={`relative h-10 w-full cursor-default rounded-md border p-2 text-left shadow-md focus:outline-none focus:ring-2 focus:ring-curious-blue-400 dark:border-shark-600 dark:bg-shark-500 ${
+                            selectedFolder === ''
+                                ? 'cursor-not-allowed border-shark-300 bg-shark-100 opacity-50'
+                                : 'bg-white border-shark-300 dark:border-shark-600 dark:bg-shark-500'
                         }`}
-                        aria-haspopup="listbox" 
-                        aria-expanded={isPopoverOpen} 
-                        aria-labelledby='listbox-label'
+                        aria-haspopup="listbox"
+                        aria-expanded={isPopoverOpen}
+                        aria-labelledby="listbox-label"
                     >
-                        <span className='flex items-center'>
+                        <span className="flex items-center">
                             {selectedOption ? (
-                                <span className='flex items-center gap-2'>
-                                    <img className='h-5 w-5' src={selectedOption.image} alt={selectedOption.label} />
-                                    <span className='text-sm text-mountain-mist-700 dark:text-mountain-mist-200'>{selectedOption.label}</span>
+                                <span className="flex items-center gap-2">
+                                    <img
+                                        className="h-5 w-5"
+                                        src={selectedOption.image}
+                                        alt={selectedOption.label}
+                                    />
+                                    <span className="text-sm text-mountain-mist-700 dark:text-mountain-mist-200">
+                                        {selectedOption.label}
+                                    </span>
                                 </span>
                             ) : (
-                                <span className='text-sm text-mountain-mist-700 dark:text-mountain-mist-300'>{t('files')}</span>
+                                <span className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">
+                                    {t('files')}
+                                </span>
                             )}
                         </span>
-                        <span className='absolute inset-y-0 right-0 flex pr-3 items-center pointer-events-none'>
-                            <TiArrowSortedDown className={`transition-transform ${isPopoverOpen ? 'rotate-180' : ''} text-mountain-mist-700 dark:text-mountain-mist-300`} />
+                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                            <TiArrowSortedDown
+                                className={`transition-transform ${isPopoverOpen ? 'rotate-180' : ''} text-mountain-mist-700 dark:text-mountain-mist-300`}
+                            />
                         </span>
                     </button>
                     {isPopoverOpen && (
-                        <ul 
-                            className='absolute z-[200] bg-mountain-mist-50 dark:bg-shark-700 w-full mt-1 py-1 overflow-auto text-base border border-gray-300 dark:border-shark-600 rounded-md shadow-xl max-h-56 ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm'
-                            role='listbox'
-                            aria-labelledby='listbox-label'
+                        <ul
+                            className="ring-black absolute z-[200] mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-300 bg-mountain-mist-50 py-1 text-base shadow-xl ring-1 ring-opacity-5 focus:outline-none dark:border-shark-600 dark:bg-shark-700 sm:text-sm"
+                            role="listbox"
+                            aria-labelledby="listbox-label"
                         >
                             {fileOptions.map((option, index) => (
-                                <li 
-                                    key={option.label} 
-                                    className={`flex flex-row items-center gap-2 px-3 py-2 cursor-pointer hover:bg-curious-blue-100 dark:hover:bg-shark-600 ${
-                                        selectedOption?.label === option.label ? 'bg-curious-blue-50 dark:bg-shark-700' : ''
+                                <li
+                                    key={option.label}
+                                    className={`flex cursor-pointer flex-row items-center gap-2 px-3 py-2 hover:bg-curious-blue-100 dark:hover:bg-shark-600 ${
+                                        selectedOption?.label === option.label
+                                            ? 'bg-curious-blue-50 dark:bg-shark-700'
+                                            : ''
                                     }`}
                                     tabIndex={0}
-                                    role='option'
+                                    role="option"
                                     aria-selected={selectedOption?.label === option.label}
                                     onClick={() => handleOptionSelect(option, index)}
                                     onKeyDown={(e) => {
@@ -282,8 +307,14 @@ function NewFileDlg(newFileProps: NewFileProps) {
                                         }
                                     }}
                                 >
-                                    <img className='h-5 w-5' src={option.image} alt={option.label} />
-                                    <span className='text-sm text-mountain-mist-700 dark:text-mountain-mist-200 flex-1'>{option.label}</span>
+                                    <img
+                                        className="h-5 w-5"
+                                        src={option.image}
+                                        alt={option.label}
+                                    />
+                                    <span className="flex-1 text-sm text-mountain-mist-700 dark:text-mountain-mist-200">
+                                        {option.label}
+                                    </span>
                                     {selectedOption?.label === option.label && (
                                         <span className="flex items-center pr-2 text-curious-blue-600 dark:text-curious-blue-400">
                                             <FiCheckSquare />
@@ -294,11 +325,13 @@ function NewFileDlg(newFileProps: NewFileProps) {
                         </ul>
                     )}
                 </div>
-                <span className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">{t('filename')}</span>
+                <span className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">
+                    {t('filename')}
+                </span>
                 <div className="flex flex-col items-center gap-1">
                     <input
                         ref={filenameInputRef}
-                        className={`w-full rounded border ${isFileExists ? 'border-cinnabar-800' : 'border-shark-300 dark:border-shark-600'} p-2 text-md text-mountain-mist-700 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-200`}
+                        className={`w-full rounded border ${isFileExists ? 'border-cinnabar-800' : 'border-shark-300 dark:border-shark-600'} text-md p-2 text-mountain-mist-700 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-200`}
                         id="filenameId"
                         type="text"
                         placeholder={t('enterFilename')}
@@ -313,9 +346,11 @@ function NewFileDlg(newFileProps: NewFileProps) {
                         <span className="text-sm text-cinnabar-800">{t('fileExists')}</span>
                     )}
                 </div>
-                <span className="text-mountain-mist-700 text-sm dark:text-mountain-mist-300">
+                <span className="text-sm text-mountain-mist-700 dark:text-mountain-mist-300">
                     {t('final-path')}
-                    {selectedFolder}{filename}{filetype === 1 ? '.blocks' : '.py'} 
+                    {selectedFolder}
+                    {filename}
+                    {filetype === 1 ? '.blocks' : '.py'}
                 </span>
             </form>
             <hr className="w-full border-mountain-mist-600" />

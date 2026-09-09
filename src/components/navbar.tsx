@@ -12,6 +12,7 @@ import fileupload from '@assets/images/upload_file.svg';
 import fileexport from '@assets/images/fileexport.svg';
 import filesave from '@assets/images/file_save.svg';
 import filesaveas from '@assets/images/save_as.svg';
+import copyfiles from '@assets/images/copy-files.svg';
 import fontplus from '@assets/images/text_increase.svg';
 import fontminus from '@assets/images/text_decrease.svg';
 import userguide from '@assets/images/developer_guide.svg';
@@ -96,6 +97,7 @@ import FirmwareLoaderDlg from '@components/dialogs/firmware-loaderdlg';
 import FirmwareBackupPromptDlg from '@components/dialogs/firmware-backup-promptdlg';
 import BackupDlg from '@components/dialogs/backupdlg';
 import RestoreDlg from '@components/dialogs/restoredlg';
+import CopyFileDlg from './dialogs/copyfiledlg';
 
 type NavBarProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -119,7 +121,8 @@ function parseBleFailure(payload: string): BleConnectFailureInfo {
         if (typeof parsed.xrpId === 'string') {
             return {
                 xrpId: parsed.xrpId,
-                reason: known.find((reason) => reason === parsed.reason) ?? BleConnectFailure.NOT_FOUND,
+                reason:
+                    known.find((reason) => reason === parsed.reason) ?? BleConnectFailure.NOT_FOUND,
                 otherXrpId: parsed.otherXrpId,
             };
         }
@@ -164,7 +167,9 @@ function NavBar({ layoutref }: NavBarProps) {
         },
     });
     const [xprID, setXrpId] = useState<{ platform?: string; XRPID?: string } | null>(null);
-    const [rememberedXrp, setRememberedXrp] = useState<RememberedXrp | null>(() => getRememberedXrp());
+    const [rememberedXrp, setRememberedXrp] = useState<RememberedXrp | null>(() =>
+        getRememberedXrp(),
+    );
     const [connectionType, setConnectionType] = useState<ConnectionType | null>(null);
     const [availableUpdate, setAvailableUpdate] = useState<
         | { kind: 'mp'; versions: Versions }
@@ -394,9 +399,7 @@ function NavBar({ layoutref }: NavBarProps) {
                         }}
                         onSecondary={() => {
                             if (reason === BleConnectFailure.NOT_FOUND) {
-                                setDialogContent(
-                                    <ConnectionDlg callback={onConnectionCommand} />,
-                                );
+                                setDialogContent(<ConnectionDlg callback={onConnectionCommand} />);
                             } else if (reason === BleConnectFailure.USB_STILL_CONNECTED) {
                                 toggleDialog();
                             } else {
@@ -708,6 +711,14 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
+     * CopyFilesToGoogleDrive - copy the current file to Google Drive
+     */
+    function CopyFilesToGoogleDrive() {
+        setDialogContent(<CopyFileDlg toggleDialog={toggleDialog} />);
+        toggleDialog();
+    }
+
+    /**
      * ViewPythonFile - view the Python file
      */
     function ViewPythonFile() {
@@ -1011,10 +1022,7 @@ function NavBar({ layoutref }: NavBarProps) {
     function onConnectBtnClicked() {
         const remembered = getRememberedXrp();
         if (remembered?.xrpId) {
-            AppMgr.getInstance().emit(
-                EventType.EVENT_CONNECTION,
-                ConnectionCMD.CONNECT_KNOWN_XRP,
-            );
+            AppMgr.getInstance().emit(EventType.EVENT_CONNECTION, ConnectionCMD.CONNECT_KNOWN_XRP);
             return;
         }
         setDialogContent(<ConnectionDlg callback={onConnectionCommand} />);
@@ -1055,12 +1063,11 @@ function NavBar({ layoutref }: NavBarProps) {
         // survive the USB session ending when the cable comes out.
         saveRememberedXrp({ xrpId, lastConnectionType: ConnectionType.BLUETOOTH });
         setRememberedXrp(getRememberedXrp());
-        const powerswitchImage =
-            CommandToXRPMgr.getInstance().isNanoXRP()
-                ? undefined
-                : CommandToXRPMgr.getInstance().getXRPDrive() === Constants.XRP_PROCESSOR_BETA
-                  ? powerswitch_beta
-                  : powerswitch_standard;
+        const powerswitchImage = CommandToXRPMgr.getInstance().isNanoXRP()
+            ? undefined
+            : CommandToXRPMgr.getInstance().getXRPDrive() === Constants.XRP_PROCESSOR_BETA
+              ? powerswitch_beta
+              : powerswitch_standard;
         setDialogContent(
             <SwitchToBluetoothDlg
                 xrpId={xrpId}
@@ -1127,8 +1134,7 @@ function NavBar({ layoutref }: NavBarProps) {
 
             // Only run from a Python or Blockly tab — not Dashboard or AI Buddy
             const tabId = (activeTab ?? '').replace(/^"|"$/g, '');
-            const canRun =
-                !isOtherTab && EditorMgr.getInstance().isRunnableCodeTab(tabId);
+            const canRun = !isOtherTab && EditorMgr.getInstance().isRunnableCodeTab(tabId);
             if (!canRun) {
                 setDialogContent(
                     <AlertDialog alertMessage={t('no-editor-run')} toggleDialog={toggleDialog} />,
@@ -1237,7 +1243,9 @@ function NavBar({ layoutref }: NavBarProps) {
                                 />,
                             );
                             toggleDialog();
-                        } else if (voltage < (CommandToXRPMgr.getInstance().isNanoXRP() ? 3.6 : 5.0)) {
+                        } else if (
+                            voltage < (CommandToXRPMgr.getInstance().isNanoXRP() ? 3.6 : 5.0)
+                        ) {
                             setDialogContent(<BatteryBadDlg cancelCallback={toggleDialog} />);
                             toggleDialog();
                         } else {
@@ -1370,10 +1378,7 @@ function NavBar({ layoutref }: NavBarProps) {
      * already current.
      */
     function onUpdateAvailableClicked() {
-        if (
-            !isConnected ||
-            AppMgr.getInstance().getConnectionType() !== ConnectionType.USB
-        ) {
+        if (!isConnected || AppMgr.getInstance().getConnectionType() !== ConnectionType.USB) {
             setDialogContent(
                 <AlertDialog
                     alertMessage={t('updateAvailableNeedUsb')}
@@ -1505,6 +1510,13 @@ function NavBar({ layoutref }: NavBarProps) {
                     clicked: SaveFileAs,
                     isFile: true,
                 },
+                {
+                    label: t('copyfiles.menuTitle'),
+                    iconImage: copyfiles,
+                    clicked: CopyFilesToGoogleDrive,
+                    isFile: true,
+                    showif: isConnected && isLogin,
+                },
             ],
         },
         {
@@ -1577,11 +1589,13 @@ function NavBar({ layoutref }: NavBarProps) {
 
     const moreMenu: MenuDataItem[] = [
         ...(isAiBuddyMenuEnabled()
-            ? [{
-                label: t('ai-chat'),
-                iconImage: chatbot,
-                clicked: onAiClicked,
-            }]
+            ? [
+                  {
+                      label: t('ai-chat'),
+                      iconImage: chatbot,
+                      clicked: onAiClicked,
+                  },
+              ]
             : []),
         {
             label: t('dashboard'),
@@ -1626,19 +1640,23 @@ function NavBar({ layoutref }: NavBarProps) {
                         {item.children && (
                             <div className="absolute left-2 top-[52] z-[100] mx-auto hidden flex-col bg-curious-blue-700 py-3 shadow-md transition-all group-hover:flex dark:bg-mountain-mist-950 dark:group-hover:bg-mountain-mist-950">
                                 <ul id="pythonId" className="flex cursor-pointer flex-col">
-                                    {item.children.map((child, ci) => (
-                                        <li
-                                            key={ci}
-                                            className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500 ${child.isFile && !isConnected && !isLogin ? 'pointer-events-none' : 'pointer-events-auto'} ${child.isView && !isBlockly ? 'hidden' : 'visible'}`}
-                                            onClick={child.clicked}
-                                        >
-                                            <MenuItem
-                                                isConnected={(isConnected || isLogin) && !isRunning}
-                                                isOther={isOtherTab}
-                                                item={child}
-                                            />
-                                        </li>
-                                    ))}
+                                    {item.children
+                                        .filter((child) => child.showif ?? true)
+                                        .map((child, ci) => (
+                                            <li
+                                                key={ci}
+                                                className={`text-neutral-200 py-1 pl-4 pr-10 hover:bg-matisse-400 dark:hover:bg-shark-500 ${child.isFile && !isConnected && !isLogin ? 'pointer-events-none' : 'pointer-events-auto'} ${child.isView && !isBlockly ? 'hidden' : 'visible'}`}
+                                                onClick={child.clicked}
+                                            >
+                                                <MenuItem
+                                                    isConnected={
+                                                        (isConnected || isLogin) && !isRunning
+                                                    }
+                                                    isOther={isOtherTab}
+                                                    item={child}
+                                                />
+                                            </li>
+                                        ))}
                                 </ul>
                                 {item.childrenExt && (
                                     <ul
@@ -1716,9 +1734,7 @@ function NavBar({ layoutref }: NavBarProps) {
                         <span>{t('updateAvailable')}</span>
                     </button>
                 )}
-                <div
-                    className={`flex h-full items-stretch ${isConnected ? 'hidden' : ''}`}
-                >
+                <div className={`flex h-full items-stretch ${isConnected ? 'hidden' : ''}`}>
                     <button
                         id="connectBtn"
                         className="text-neutral-900 flex h-full min-w-[200px] items-center justify-center gap-2 rounded-l-3xl bg-shark-200 px-4 py-2 text-matisse-900 hover:bg-curious-blue-300 dark:bg-shark-600 dark:text-shark-100 dark:hover:bg-shark-500"
@@ -1727,8 +1743,18 @@ function NavBar({ layoutref }: NavBarProps) {
                         <svg width="20" height="20" viewBox="0 0 20 20">
                             <polygon points="11 4 12 4 12 8 16 8 16 9 11 9"></polygon>
                             <polygon points="4 11 9 11 9 16 8 16 8 12 4 12"></polygon>
-                            <path fill="none" stroke="#000" strokeWidth="1.1" d="M12,8 L18,2"></path>
-                            <path fill="none" stroke="#000" strokeWidth="1.1" d="M2,18 L8,12"></path>
+                            <path
+                                fill="none"
+                                stroke="#000"
+                                strokeWidth="1.1"
+                                d="M12,8 L18,2"
+                            ></path>
+                            <path
+                                fill="none"
+                                stroke="#000"
+                                strokeWidth="1.1"
+                                d="M2,18 L8,12"
+                            ></path>
                         </svg>
                         <span>
                             {rememberedXrp?.xrpId
