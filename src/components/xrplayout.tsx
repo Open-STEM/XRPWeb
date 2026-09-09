@@ -8,6 +8,7 @@ import {
     ITabRenderValues,
 } from 'flexlayout-react';
 import React, { useEffect, useRef, useState } from 'react';
+import * as Blockly from 'blockly/core';
 import BlocklyEditor from '@components/blockly';
 import MonacoEditor from '@components/MonacoEditor';
 import XRPShell from '@components/xrpshell';
@@ -18,7 +19,7 @@ import GoogleDriveLogo from '@assets/images/Google_Drive-Logo.svg';
 import AppMgr, { EventType, Themes } from '@/managers/appmgr';
 import FolderTree from './folder-tree';
 import { Constants } from '@/utils/constants';
-import { FileType, NewFileData } from '@/utils/types';
+import { EditorType, FileType, NewFileData } from '@/utils/types';
 import { useLocalStorage } from 'usehooks-ts';
 import { StorageKeys } from '@/utils/localstorage';
 import EditorMgr, { EditorStore } from '@/managers/editormgr';
@@ -325,6 +326,12 @@ function XRPLayout({ forwardedref }: XRPLayoutProps) {
             case Actions.SELECT_TAB:
                 {
                     console.log('Selected Tab:', action.data.tabNode);
+                    if (
+                        EditorMgr.getInstance().getEditorSession(activeTab)?.type ===
+                        EditorType.BLOCKLY
+                    ) {
+                        Blockly.hideChaff();
+                    }
                     if (EditorMgr.getInstance().hasEditorSession(action.data.tabNode)) {
                         const editorType = EditorMgr.getInstance().getEditorSession(
                             action.data.tabNode,
