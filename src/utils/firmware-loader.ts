@@ -85,6 +85,13 @@ export type FirmwareProjectDoc = {
     xrplib?: string;
     /** Optional project-specific extra files: [deviceDestinationPath, sourcePathRelativeToProjectDir]. */
     files?: [string, string][];
+    /**
+     * Optional files pulled from the XRPLib release this project references, for
+     * boards that need part of a release the shared bundle leaves out (the
+     * NanoXRP's buzzer.py). Sources are relative to the resolved release dir, so
+     * bumping `xrplib` carries these along instead of pinning an old version.
+     */
+    xrplibFiles?: [string, string][];
 };
 
 /** Fully-resolved install instructions consumed by the install wizard. */
@@ -128,20 +135,23 @@ export function parseProjectDoc(raw: unknown): FirmwareProjectDoc {
         micropython: typeof o.micropython === 'string' ? o.micropython : undefined,
         uf2: typeof o.uf2 === 'string' && o.uf2 ? o.uf2 : undefined,
         xrplib: typeof o.xrplib === 'string' ? o.xrplib : undefined,
-        files: parseFileEntries(o.files),
+        files: parseFileEntries(o.files, 'files'),
+        xrplibFiles: parseFileEntries(o.xrplibFiles, 'xrplibFiles'),
     };
 }
 
 /** Validate an optional inline [deviceDest, sourceRel][] file list from project.json. */
-function parseFileEntries(raw: unknown): [string, string][] | undefined {
+function parseFileEntries(raw: unknown, field: string): [string, string][] | undefined {
     if (raw === undefined) return undefined;
     if (!Array.isArray(raw)) {
-        throw new Error('Invalid project manifest: "files" must be an array');
+        throw new Error(`Invalid project manifest: "${field}" must be an array`);
     }
     const out: [string, string][] = [];
     for (const e of raw) {
         if (!Array.isArray(e) || e.length !== 2 || typeof e[0] !== 'string' || typeof e[1] !== 'string') {
-            throw new Error('Invalid project manifest: "files" entries must be [string, string] pairs');
+            throw new Error(
+                `Invalid project manifest: "${field}" entries must be [string, string] pairs`,
+            );
         }
         out.push([e[0], e[1]]);
     }
@@ -222,6 +232,15 @@ export async function resolveInstall(
                 }
             }
         }
+
+        // Board-only files the shared bundle omits, taken from this same release.
+        for (const [deviceDest, sourceRel] of doc.xrplibFiles ?? []) {
+            libraryEntries.push([deviceDest, fileUrl(verDir, sourceRel)]);
+        }
+    }
+
+    if (doc.xrplibFiles?.length && !doc.xrplib) {
+        throw new Error('Invalid project manifest: "xrplibFiles" requires "xrplib"');
     }
 
     // --- Resolve project-specific extra files declared inline in project.json ---
