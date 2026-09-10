@@ -1,12 +1,12 @@
-import { EditorType } from "@/utils/types";
-import { CommandToXRPMgr } from "@/managers/commandstoxrpmgr";
-import { Actions, Model } from "flexlayout-react";
-import AppMgr, { EventType } from "@/managers/appmgr";
-import { StorageKeys } from "@/utils/localstorage";
-import { Constants } from "@/utils/constants";
-import { Workspace } from "react-blockly";
-import i18n from "@/utils/i18n";
-import { GoogleDriveFile } from "@/services/google-drive";
+import { EditorType } from '@/utils/types';
+import { CommandToXRPMgr } from '@/managers/commandstoxrpmgr';
+import { Actions, Model } from 'flexlayout-react';
+import AppMgr, { EventType } from '@/managers/appmgr';
+import { StorageKeys } from '@/utils/localstorage';
+import { Constants } from '@/utils/constants';
+import { Workspace } from 'react-blockly';
+import i18n from '@/utils/i18n';
+import { GoogleDriveFile } from '@/services/google-drive';
 
 /**
  * EditorSession - Editor session object
@@ -16,8 +16,8 @@ export type EditorSession = {
     id: string;
     name: string;
     path: string;
-    gpath?: string,
-    gparentId?: string,
+    gpath?: string;
+    gparentId?: string;
     type: EditorType;
     isSubscribed: boolean;
     isModified: boolean;
@@ -52,7 +52,7 @@ export type EdSearchParams = {
  */
 export type EditorStore = {
     id: string;
-    name: string,
+    name: string;
     path: string;
     gpath?: string;
     isBlockly: boolean;
@@ -65,7 +65,7 @@ export type EditorStore = {
  */
 export type LiveEditorContent = {
     id: string;
-    name: string,
+    name: string;
     type: EditorType;
     path: string;
     content: string;
@@ -94,7 +94,7 @@ export default class EditorMgr {
 
     /**
      * set the layout model for managing editor sesions
-     * @param model 
+     * @param model
      */
     public setLayoutModel(model: Model) {
         this.layoutModel = model;
@@ -102,9 +102,9 @@ export default class EditorMgr {
 
     /**
      * getLayoutModel - return the layout model
-     * @returns 
+     * @returns
      */
-    public getLayoutModel(): Model | undefined{
+    public getLayoutModel(): Model | undefined {
         return this.layoutModel;
     }
 
@@ -112,7 +112,7 @@ export default class EditorMgr {
      * AddEditor - Add a new editor session
      * @param session - Editor session object
      */
-    public AddEditor(session: EditorSession ): void {
+    public AddEditor(session: EditorSession): void {
         console.log('AddEditor: ', session);
         if (!this.editorSessions.has(session.id)) {
             this.editorSessions.set(session.id, session);
@@ -123,7 +123,7 @@ export default class EditorMgr {
      * RemoveEditor - Remove an editor session
      * @param session - Editor session object
      */
-    public RemoveEditor(id: string ): string | undefined{
+    public RemoveEditor(id: string): string | undefined {
         console.log('RemoveEditor: ', id);
         if (this.editorSessions.has(id)) {
             const sesion = this.editorSessions.get(id);
@@ -136,7 +136,7 @@ export default class EditorMgr {
             } else if (sesion?.type === EditorType.PYTHON) {
                 appMgr.eventOff(EventType.EVENT_FONTCHANGE);
             }
-            appMgr.eventOff(EventType.EVENT_SAVE_EDITOR); 
+            appMgr.eventOff(EventType.EVENT_SAVE_EDITOR);
             this.editorSessions.delete(id);
             this.RemoveFromLocalStorage(id);
         }
@@ -147,7 +147,7 @@ export default class EditorMgr {
                     EventType.EVENT_EDITOR,
                     session.type === EditorType.BLOCKLY ? EditorType.BLOCKLY : EditorType.PYTHON,
                 );
-                this.layoutModel?.doAction(Actions.selectTab(session.id));     
+                this.layoutModel?.doAction(Actions.selectTab(session.id));
                 return session?.id;
             }
         }
@@ -158,39 +158,39 @@ export default class EditorMgr {
      * RemoveEditorByName - Remove an editor session by name
      * @param searchParams - Editor session search parameters
      */
-    public RemoveEditorByName(searchParams: EdSearchParams): string | undefined{
+    public RemoveEditorByName(searchParams: EdSearchParams): string | undefined {
         for (const session of this.editorSessions.values()) {
             if (session.name === searchParams.name && session.path === searchParams.path) {
                 return this.RemoveEditor(session.id);
             }
-        };
+        }
         return undefined;
     }
 
     /**
      * RemoveEditorTabByName - Remove an editor Tab by name
      * @param searchParams - Editor session search parameters
-     * @returns 
+     * @returns
      */
     public RemoveEditorTabByName(searchParams: EdSearchParams) {
         for (const session of this.editorSessions.values()) {
             if (session.name === searchParams.name && session.path === searchParams.path) {
                 return this.RemoveEditorTab(session.id);
             }
-        };
+        }
     }
 
     /**
      * SelectEditorTabByName
      * @param searchParams - Editor session search parameters
-     * @returns 
+     * @returns
      */
     public SelectEditorTabByName(searchParams: EdSearchParams) {
         for (const session of this.editorSessions.values()) {
             if (session.name === searchParams.name && session.path === searchParams.path) {
                 return this.SelectEditorTab(session.id);
             }
-        };
+        }
     }
 
     /**
@@ -203,7 +203,7 @@ export default class EditorMgr {
 
     /**
      * RemoveEditorTab - remove specified editor id from the Editor layout
-     * @param id 
+     * @param id
      */
     public RemoveEditorTab(id: string) {
         this.layoutModel?.doAction(Actions.deleteTab(id));
@@ -212,7 +212,7 @@ export default class EditorMgr {
     /**
      * RenameEditorTab - rename editor tab
      * @param searchParams - Editor session search parameters
-     * @param newId 
+     * @param newId
      */
     public RenameEditorTab(searchParams: EdSearchParams, newId: string) {
         const oldId = searchParams.name;
@@ -233,7 +233,7 @@ export default class EditorMgr {
 
             const names = {
                 oldId: oldId,
-                newId: newId
+                newId: newId,
             };
             AppMgr.getInstance().emit(EventType.EVENT_EDITOR_NAME_CHANGED, JSON.stringify(names));
         }
@@ -241,7 +241,7 @@ export default class EditorMgr {
 
     /**
      * getEditorSession - Get an editor session
-     * @param id 
+     * @param id
      * @returns EditorSession | undefined
      */
     public getEditorSession(id: string): EditorSession | undefined {
@@ -275,26 +275,20 @@ export default class EditorMgr {
      * Dashboard, AI Buddy, and other non-code tabs are excluded.
      */
     public isRunnableCodeTab(id: string): boolean {
-        if (
-            id === Constants.DASHBOARD_TAB_ID ||
-            id === Constants.AI_CHAT_TAB_ID
-        ) {
+        if (id === Constants.DASHBOARD_TAB_ID || id === Constants.AI_CHAT_TAB_ID) {
             return false;
         }
         const session = this.editorSessions.get(id);
         if (!session || !session.path) {
             return false;
         }
-        return (
-            session.type === EditorType.PYTHON ||
-            session.type === EditorType.BLOCKLY
-        );
+        return session.type === EditorType.PYTHON || session.type === EditorType.BLOCKLY;
     }
 
     /**
      * hasEditorSessionByName - Check if an editor session exists by name
      * @param searchParams - Editor session search parameters
-     * @returns 
+     * @returns
      */
     public hasEditorSessionByName(searchParams: EdSearchParams): boolean {
         for (const session of this.editorSessions.values()) {
@@ -315,7 +309,7 @@ export default class EditorMgr {
 
     /**
      * hasSubscription - check if subscription has been established
-     * @param id 
+     * @param id
      * @returns - true / false
      */
     public hasSubscription(id: string): boolean {
@@ -324,7 +318,7 @@ export default class EditorMgr {
 
     /**
      * setSubscription - set subscription state
-     * @param id 
+     * @param id
      */
     public setSubscription(id: string) {
         const session = this.editorSessions.get(id);
@@ -335,8 +329,8 @@ export default class EditorMgr {
 
     /**
      * getFontsize - retrieve the fontsize of editor session
-     * @param id 
-     * @returns 
+     * @param id
+     * @returns
      */
     public getFontsize(id: string) {
         const session = this.editorSessions.get(id);
@@ -347,8 +341,8 @@ export default class EditorMgr {
 
     /**
      * setFontsize - set the fontsize of the editor session
-     * @param id 
-     * @param fontsize 
+     * @param id
+     * @param fontsize
      */
     public setFontsize(id: string, fontsize: number) {
         const session = this.editorSessions.get(id);
@@ -359,8 +353,8 @@ export default class EditorMgr {
 
     /**
      * saveEditor - save the editor code
-     * @param id 
-     * @param code 
+     * @param id
+     * @param code
      */
     public async saveEditor(id: string, code: string) {
         const session = this.editorSessions.get(id);
@@ -383,28 +377,52 @@ export default class EditorMgr {
             if (isConnected) {
                 // save the session to XRP
                 AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
-                await CommandToXRPMgr.getInstance().uploadFile(session.path, code, true).then(() =>{
-                    session.isModified = false;
-                    AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
-                    this.SelectEditorTab(id);
-                });
-            }
-            
-            if (AppMgr.getInstance().authService.isLogin) {
-                if (session.gpath) {
-                    const mineType = session.type === EditorType.PYTHON ? 'text/x-python' : 'application/json';
-                    const blob = new Blob([code], { type: mineType});
-                    const filename = session.path.split('/').pop();
-
-                    AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
-                    await AppMgr.getInstance().driveService.upsertFileToGoogleDrive(blob, filename ?? '', mineType, session.gpath).then(() => {
+                await CommandToXRPMgr.getInstance()
+                    .uploadFile(session.path, code, true)
+                    .then(() => {
                         session.isModified = false;
-                        AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');
                         AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
                         this.SelectEditorTab(id);
                     });
+            }
+
+            if (AppMgr.getInstance().authService.isLogin) {
+                if (session.gpath) {
+                    const mineType =
+                        session.type === EditorType.PYTHON ? 'text/x-python' : 'application/json';
+                    const blob = new Blob([code], { type: mineType });
+                    const filename = session.path.split('/').pop();
+
+                    AppMgr.getInstance().emit(
+                        EventType.EVENT_SHOWPROGRESS,
+                        Constants.SHOW_PROGRESS,
+                    );
+                    await AppMgr.getInstance()
+                        .driveService.upsertFileToGoogleDrive(
+                            blob,
+                            filename ?? '',
+                            mineType,
+                            session.gpath,
+                        )
+                        .then(() => {
+                            session.isModified = false;
+                            AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');
+                            AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
+                            this.SelectEditorTab(id);
+                        });
                 } else if (!isConnected) {
-                    AppMgr.getInstance().emit(EventType.EVENT_ALERT, i18n.t('not-google-drive-file'));
+                    AppMgr.getInstance().emit(
+                        EventType.EVENT_ALERT,
+                        i18n.t('not-google-drive-file'),
+                    );
+                }
+            }
+
+            // only if the XRP is connected and not a google drive file
+            if (session.path && isConnected && !session.gpath) {
+                // if the file does not exist in the folder tree, get the onboard file system tree
+                if (!AppMgr.getInstance().IsFileExistsAtPath(session.path)) {
+                    CommandToXRPMgr.getInstance().getOnBoardFSTree();
                 }
             }
         }
@@ -414,7 +432,7 @@ export default class EditorMgr {
      * SaveToLocalStorage - save the editor session to local storage
      * @param session - editor session
      * @param code - editor content
-     * @returns 
+     * @returns
      */
     public SaveToLocalStorage(session: EditorSession, code: string) {
         // save the session to local storage
@@ -506,7 +524,7 @@ export default class EditorMgr {
                     type: session.type,
                     path: session.path,
                     content: session.content || '',
-                    lastUpdated: session.lastUpdated || new Date(0)
+                    lastUpdated: session.lastUpdated || new Date(0),
                 });
             }
         });
@@ -539,59 +557,67 @@ export default class EditorMgr {
 
         // Show progress dialog
         AppMgr.getInstance().emit(EventType.EVENT_SHOWPROGRESS, Constants.SHOW_PROGRESS);
-        
+
         try {
             const failedFiles: string[] = [];
-            
+
             // Save each editor sequentially
             for (let i = 0; i < unsavedSessions.length; i++) {
                 const { id, session } = unsavedSessions[i];
-                
+
                 // Update progress item name
                 const fileName = session.path.split('/').pop() || session.name;
                 AppMgr.getInstance().emit(EventType.EVENT_PROGRESS_ITEM, fileName);
-                
+
                 try {
                     // Get the current content for this editor
-                    const content = session.content
-                    
+                    const content = session.content;
+
                     if (content) {
                         if (isLogin && session.gpath) {
                             // If Google user login, save to Google drive
-                            const mineType = session.type === EditorType.PYTHON ? 'text/x-python' : 'application/json';
-                            const blob = new Blob([content], { type: mineType});
-                            await AppMgr.getInstance().driveService.upsertFileToGoogleDrive(blob, fileName, mineType, session.gpath);
+                            const mineType =
+                                session.type === EditorType.PYTHON
+                                    ? 'text/x-python'
+                                    : 'application/json';
+                            const blob = new Blob([content], { type: mineType });
+                            await AppMgr.getInstance().driveService.upsertFileToGoogleDrive(
+                                blob,
+                                fileName,
+                                mineType,
+                                session.gpath,
+                            );
                         }
 
                         // Save the editor
                         await CommandToXRPMgr.getInstance().uploadFile(session.path, content, true);
-                        
+
                         // Update session as saved
                         session.isModified = false;
-                        
+
                         // Save to localStorage
                         this.SaveToLocalStorage(session, content);
-                        
                     }
 
                     // If Google user login, also save to Google drive
-
                 } catch (error) {
                     console.error(`Error saving editor ${id} (${fileName}):`, error);
                 }
             }
-            
+
             if (failedFiles.length > 0) {
-                console.warn(`Failed to save ${failedFiles.length} file(s): ${failedFiles.join(', ')}`);
+                console.warn(
+                    `Failed to save ${failedFiles.length} file(s): ${failedFiles.join(', ')}`,
+                );
             }
-            
+
             if (unsavedSessions.length > 0) {
                 this.SelectEditorTab(activeTab);
             }
 
             // Set progress to 100%
             AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');
-            
+
             // Close progress dialog
             AppMgr.getInstance().emit(EventType.EVENT_UPLOAD_DONE, '');
         } catch (error) {
@@ -611,8 +637,8 @@ export default class EditorMgr {
 
     /**
      * saveAllFilesInGoogleDriveToXRP
-     * @param sessionId 
-     * @returns 
+     * @param sessionId
+     * @returns
      */
     public async saveAllFilesInGoogleDriveToXRP(sessionId: string): Promise<void> {
         const lastSaveTime = localStorage.getItem(StorageKeys.LAST_GOOGLE_DRIVE_TO_XRP_SAVE_TIME);
@@ -639,10 +665,11 @@ export default class EditorMgr {
                 return;
             }
 
-            const fileList = await AppMgr.getInstance().driveService.getFileListByFolderId(parentId);
+            const fileList =
+                await AppMgr.getInstance().driveService.getFileListByFolderId(parentId);
 
             const googleFilesTobeUploadedToXRP: GoogleDriveFile[] = [];
-            
+
             // Iterate through files and upload to XRP if modified since last save
             for (let i = 0; i < fileList.length; i++) {
                 const file = fileList[i];
@@ -650,7 +677,6 @@ export default class EditorMgr {
                 AppMgr.getInstance().emit(EventType.EVENT_PROGRESS_ITEM, fileName);
 
                 try {
-
                     if (file.mimeType === 'application/vnd.google-apps.folder') {
                         // Skip folders
                         continue;
@@ -663,9 +689,11 @@ export default class EditorMgr {
                     }
 
                     googleFilesTobeUploadedToXRP.push(file);
-
                 } catch (error) {
-                    console.error(`Error identifying Google Drive modified file ${fileName} to XRP:`, error);
+                    console.error(
+                        `Error identifying Google Drive modified file ${fileName} to XRP:`,
+                        error,
+                    );
                 }
             }
 
@@ -683,20 +711,29 @@ export default class EditorMgr {
 
                 try {
                     // Get file content from Google Drive
-                    await AppMgr.getInstance().driveService.getFileContents(file.id).then(async (fileContent) => {;
-                        // Determine XRP path
-                        const xrpPath = `${session.path.split('/').slice(0, -1).join('/')}/${fileName}`; // Adjust path as needed
+                    await AppMgr.getInstance()
+                        .driveService.getFileContents(file.id)
+                        .then(async (fileContent) => {
+                            // Determine XRP path
+                            const xrpPath = `${session.path.split('/').slice(0, -1).join('/')}/${fileName}`; // Adjust path as needed
 
-                        // Upload to XRP
-                        await CommandToXRPMgr.getInstance().uploadFile(xrpPath, fileContent || '', true);
-                    });
+                            // Upload to XRP
+                            await CommandToXRPMgr.getInstance().uploadFile(
+                                xrpPath,
+                                fileContent || '',
+                                true,
+                            );
+                        });
                 } catch (error) {
                     console.error(`Error saving Google Drive file ${fileName} to XRP:`, error);
                 }
             }
 
             // Update the last save time in local storage
-            localStorage.setItem(StorageKeys.LAST_GOOGLE_DRIVE_TO_XRP_SAVE_TIME, Date.now().toString());
+            localStorage.setItem(
+                StorageKeys.LAST_GOOGLE_DRIVE_TO_XRP_SAVE_TIME,
+                Date.now().toString(),
+            );
 
             // Set progress to 100%
             AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, '100');
