@@ -38,7 +38,23 @@ const XRPLIB_STORE = path.join(FW_ROOT, 'boards', 'XRPLib');
 const LIB_DIRS = new Set(['XRPLib', 'AgXRPLib', 'ble', 'phew']);
 
 // Names that are never copied to the device as content.
-const EXCLUDE_NAMES = new Set(['files.json', 'version.py', '.DS_Store']);
+const EXCLUDE_NAMES = new Set(['files.json', 'board-only.json', 'version.py', '.DS_Store']);
+
+// A release declares which of its files belong only on boards that have the
+// matching hardware (the NanoXRP's buzzer). The list ships with the release, so
+// no filenames are hardcoded here; XRP_MicroPython owns it and its publish
+// workflow copies it in. Boards opt in via project.json `xrplibFiles`.
+const BOARD_ONLY_MANIFEST = 'board-only.json';
+
+async function readBoardOnly(verDir) {
+    try {
+        const raw = await fs.readFile(path.join(verDir, BOARD_ONLY_MANIFEST), 'utf8');
+        return new Set(JSON.parse(raw).boardOnly ?? []);
+    } catch {
+        // Releases published before the manifest existed simply have no board-only files.
+        return new Set();
+    }
+}
 
 function isExcludedFile(name) {
     // .uf2 = firmware blobs; .zip = LSP stub bundles (e.g. xrplib.zip) that ship
@@ -51,7 +67,9 @@ async function listFilesRel(dir, base) {
     const out = [];
     const entries = await fs.readdir(dir, { withFileTypes: true });
     for (const entry of entries) {
-        if (entry.name === '.DS_Store') continue;
+        // Skip dotfiles and dot-directories (.DS_Store, stray .vscode/, ...) --
+        // editor/OS cruft that must never be copied onto the robot.
+        if (entry.name.startsWith('.')) continue;
         const abs = path.join(dir, entry.name);
         if (entry.isDirectory()) {
             out.push(...(await listFilesRel(abs, base)));
@@ -88,7 +106,8 @@ async function generateXrplibManifests() {
     for (const entry of entries) {
         if (!entry.isDirectory()) continue;
         const verDir = path.join(XRPLIB_STORE, entry.name);
-        const sources = await listFilesRel(verDir, verDir);
+        const boardOnly = await readBoardOnly(verDir);
+        const sources = (await listFilesRel(verDir, verDir)).filter((rel) => !boardOnly.has(rel));
         const manifest = sources.map((rel) => [deviceDestFor(rel), rel]);
         const out = path.join(verDir, 'files.json');
         await writeJson(out, manifest);
