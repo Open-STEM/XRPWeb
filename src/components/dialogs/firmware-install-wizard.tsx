@@ -632,9 +632,10 @@ export default function FirmwareInstallWizard({
                         <h2 className="mb-4 text-center text-lg font-bold text-mountain-mist-900 dark:text-shark-100">
                             {t('firmwareWizardSuccessTitle')}
                         </h2>
-                        <p className="mb-6 text-center text-sm text-mountain-mist-700 dark:text-shark-300">
-                            {t('firmwareWizardSuccessBody')}
-                        </p>
+                        <div className="mb-6 space-y-3 text-center text-sm text-mountain-mist-700 dark:text-shark-300">
+                            <p>{t('firmwareWizardSuccessBody')}</p>
+                            {!skipUf2 && <p>{t('firmwareWizardSuccessBluetoothReset')}</p>}
+                        </div>
                         <div className="flex justify-center">
                             <Button onClicked={() => void handleComplete()}>{t('okButton')}</Button>
                         </div>
