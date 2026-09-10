@@ -4,9 +4,10 @@ import { useTranslation } from 'react-i18next';
 
 type BatteryBadDlgProps = {
     cancelCallback: () => void;
+    okayCallback: () => void;
 }
 
-export default function BatteryBadDlg({cancelCallback}: BatteryBadDlgProps) {
+export default function BatteryBadDlg({cancelCallback, okayCallback}: BatteryBadDlgProps) {
     const { t } = useTranslation();
     return (
         <div className="flex h-auto w-96 flex-col gap-2 rounded-md border border-mountain-mist-700 p-8 shadow-md transition-all dark:border-shark-500 dark:bg-shark-950">
@@ -17,7 +18,7 @@ export default function BatteryBadDlg({cancelCallback}: BatteryBadDlgProps) {
             <hr className="w-full border-mountain-mist-600" />
             <img src={SadBattery} width={'400px'} height={'400px'} alt={t('sad-battery-title')} />
             <hr className="w-full border-mountain-mist-600" />
-            <DialogFooter disabledAccept={false} btnAcceptLabel={t('okButton')} btnCancelCallback={cancelCallback} btnAcceptCallback={cancelCallback} />
+            <DialogFooter disabledAccept={false} btnAcceptLabel={t('okButton')} btnCancelCallback={cancelCallback} btnAcceptCallback={okayCallback} />
         </div>
     )
 }

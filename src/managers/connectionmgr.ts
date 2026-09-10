@@ -190,6 +190,19 @@ export default class ConnectionMgr {
     }
 
     /**
+     * Cable was plugged in while the page is open. If Bluetooth still owns
+     * the REPL, drop it and route commands to USB before auto-connect finishes.
+     */
+    public async handoffBluetoothToUsb(): Promise<void> {
+        const ble = this.connections[ConnectionType.BLUETOOTH] as BluetoothConnection | undefined;
+        await ble?.closeForUsbHandoff();
+        const usb = this.connections[ConnectionType.USB];
+        if (usb) {
+            this.cmdToXRPMgr.setConnection(usb);
+        }
+    }
+
+    /**
      * connectCallback
      */
     public async connectCallback(state: ConnectionState, connType: ConnectionType) {

@@ -39,7 +39,7 @@ export class USBConnection extends Connection {
             navigator.serial.addEventListener('connect', () => {
                 this.connLogger.debug('USB Connection: detected connect event');
                 if (this.isManualConnection == false) {
-                    this.tryAutoConnect();
+                    this.tryAutoConnect(true);
                 }
             });
 
@@ -153,8 +153,12 @@ export class USBConnection extends Connection {
      * The single-port autoselect covers the common case (one XRP previously
      * authorized) without prompting; the picker covers first-time setup and
      * disambiguation between multiple boards.
+     *
+     * @param fromCablePlugIn true when Web Serial reported a newly attached
+     * port. That is the only path that can interrupt an active Bluetooth
+     * session (the Connect USB button is hidden while already connected).
      */
-    private async tryAutoConnect(): Promise<boolean> {
+    private async tryAutoConnect(fromCablePlugIn = false): Promise<boolean> {
         this.connLogger.debug('Entering tryAutoConnection');
         if (this.connectionStates === ConnectionState.Busy) {
             return false;
@@ -190,6 +194,9 @@ export class USBConnection extends Connection {
         this.port = matching[0];
         this.connectionStates = ConnectionState.Connected;
         if (await this.openPort()) {
+            if (fromCablePlugIn) {
+                await this.connMgr?.handoffBluetoothToUsb();
+            }
             this.onConnected();
             this.connectionStates = ConnectionState.Connected;
             this.connLogger.debug('tryAutoConnect: connected to sole matching port');

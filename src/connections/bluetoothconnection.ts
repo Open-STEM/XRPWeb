@@ -48,6 +48,12 @@ export class BluetoothConnection extends Connection {
     private reconnectSuccess: boolean = true;
     private readWorkerRunning: boolean = false;
     private lastConnectCancelled: boolean = false;
+    private reconnectInProgress: boolean = false;
+    // USB has taken the REPL; gattserverdisconnected must not auto-reconnect.
+    private handoffToUsb: boolean = false;
+    private readonly gattDisconnectedHandler = () => {
+        void this.disconnect();
+    };
 
     // Devices the user has already picked in this page session, keyed by XRP id.
     // navigator.bluetooth.getDevices() is behind a Chrome flag, so holding the
@@ -231,10 +237,59 @@ export class BluetoothConnection extends Connection {
         }
     }
 
+    private detachGattDisconnectHandler(device?: BluetoothDevice): void {
+        device?.removeEventListener('gattserverdisconnected', this.gattDisconnectedHandler);
+    }
+
+    private attachGattDisconnectHandler(device: BluetoothDevice): void {
+        this.detachGattDisconnectHandler(device);
+        device.addEventListener('gattserverdisconnected', this.gattDisconnectedHandler);
+    }
+
+    /**
+     * Shared USB-handoff teardown: drop characteristics, hide the spinner,
+     * and disconnect GATT without auto-reconnect.
+     */
+    private tearDownForUsbHandoff(reason: string): void {
+        this.connLogger.info(reason);
+        this.connectionStates = ConnectionState.Disconnected;
+        this.bleWriter = undefined;
+        this.bleReader = undefined;
+        this.bleDataWriter = undefined;
+        this.bleDataReader = undefined;
+        AppMgr.getInstance().emit(
+            EventType.EVENT_HIDE_BLUETOOTH_CONNECTING,
+            'hide-bluetooth-connecting',
+        );
+        try {
+            this.detachGattDisconnectHandler(this.bleDevice);
+            if (this.bleDevice?.gatt?.connected) {
+                this.bleDevice.gatt.disconnect();
+            }
+        } catch (error) {
+            this.connLogger.debug(error);
+        }
+    }
+
+    /**
+     * Drop GATT if USB already claimed the REPL. Used to abort an in-flight
+     * BLE connect or reconnect that finished after the cable was plugged in.
+     */
+    private abortIfUsbHandoff(): boolean {
+        if (!this.handoffToUsb) {
+            return false;
+        }
+        this.tearDownForUsbHandoff('Aborting BLE after USB handoff');
+        return true;
+    }
+
     /**
      * onConnected
      */
     private async onConnected() {
+        if (this.abortIfUsbHandoff()) {
+            return;
+        }
         this.connectionStates = ConnectionState.Connected;
         this.lastProgramRan = undefined;
         if (this.connMgr) { 
@@ -417,7 +472,11 @@ export class BluetoothConnection extends Connection {
      */
     public async connectToDevice(device: BluetoothDevice): Promise<boolean> {
         this.lastConnectCancelled = false;
+        this.handoffToUsb = false;
+        this.reconnectSuccess = true;
+        this.reconnectInProgress = false;
         this.connectionStates = ConnectionState.Busy;
+        this.detachGattDisconnectHandler(this.bleDevice);
         this.bleDevice = device;
         this.rememberPermittedDevice(undefined, device);
         this.connLogger.info('Connecting to device...');
@@ -425,6 +484,9 @@ export class BluetoothConnection extends Connection {
 
         try {
             const servers = await this.connectWithTimeout(device, 10000);
+            if (this.abortIfUsbHandoff()) {
+                return false;
+            }
             this.connLogger.info('Getting UART Service...');
             const btService = await servers.getPrimaryService(this.UART_SERVICE_UUID);
             this.btService = btService;
@@ -453,13 +515,23 @@ export class BluetoothConnection extends Connection {
                     throw error;
                 }
             }
-            this.bleDevice.addEventListener('gattserverdisconnected', () => {
-                this.disconnect();
-            });
+            this.attachGattDisconnectHandler(this.bleDevice);
+            if (this.abortIfUsbHandoff()) {
+                return false;
+            }
             this.onConnected();
             this.connLogger.debug('Exiting BLE connect');
             return true;
         } catch (error) {
+            if (this.handoffToUsb) {
+                this.connLogger.info('BLE connect aborted by USB handoff');
+                AppMgr.getInstance().emit(
+                    EventType.EVENT_HIDE_BLUETOOTH_CONNECTING,
+                    'hide-bluetooth-connecting',
+                );
+                this.connectionStates = ConnectionState.Disconnected;
+                return false;
+            }
             this.connLogger.info(error);
             AppMgr.getInstance().emit(
                 EventType.EVENT_HIDE_BLUETOOTH_CONNECTING,
@@ -488,9 +560,15 @@ export class BluetoothConnection extends Connection {
 
     public async disconnect(): Promise<void> {
         this.connLogger.info('Entering BLE disconnect');
+        if (this.reconnectInProgress) {
+            this.connLogger.info('BLE reconnect already in progress');
+            return;
+        }
         //this.bleDisconnectTime = Date.now();
         this.bleWriter = undefined;
         this.bleReader = undefined;
+        this.bleDataWriter = undefined;
+        this.bleDataReader = undefined;
         this.connectionStates = ConnectionState.Disconnected; // Will stop certain events and break any EOT waiting functions
         //TODO: handle UI state here???
         // if (!this.STOP) { //If they pushed the STOP button then don't make it look disconnected it will be right back
@@ -501,14 +579,43 @@ export class BluetoothConnection extends Connection {
         //TODO: These are UI states - should we kept in the connection logics?
         // this.RUN_BUSY = false;
         // this.STOP = false;
-        this.reconnect();
+        if (this.handoffToUsb) {
+            this.connLogger.info('BLE reconnect skipped (USB handoff)');
+            return;
+        }
+        await this.reconnect();
+    }
+
+    /**
+     * Drop the GATT session without reconnecting. USB is taking the REPL.
+     * Does not emit Disconnected so the USB handshake can keep the UI and file tree.
+     */
+    public async closeForUsbHandoff(): Promise<void> {
+        const gattConnected = Boolean(this.bleDevice?.gatt?.connected);
+        if (this.connectionStates === ConnectionState.Disconnected && !gattConnected) {
+            return;
+        }
+        this.handoffToUsb = true;
+        this.reconnectSuccess = false;
+        this.tearDownForUsbHandoff('Closing BLE for USB handoff');
     }
 
     private async reconnect() {
         this.connLogger.info('Entering reconnect');
+        if (this.abortIfUsbHandoff()) {
+            return;
+        }
+        if (this.reconnectInProgress) {
+            this.connLogger.info('BLE reconnect already running');
+            return;
+        }
         if (this.connectionStates === ConnectionState.Disconnected) {
+            this.reconnectInProgress = true;
             try {
                 const server = await this.connectWithTimeout(this.bleDevice!, 10000); //wait for 10seconds to see if it reconnects
+                if (this.abortIfUsbHandoff()) {
+                    return;
+                }
                 //const server = await this.BLE_DEVICE.gatt.connect();
                 this.btService = await server.getPrimaryService(this.UART_SERVICE_UUID);
                 //this.connLogger.debug('Getting TX Characteristic...');
@@ -528,18 +635,25 @@ export class BluetoothConnection extends Connection {
 
                 this.bleReader.startNotifications();
                 this.bleDataReader.startNotifications();
+                this.attachGattDisconnectHandler(this.bleDevice!);
                 await this.onConnected();
                 this.reconnectSuccess = true;
                 
                 //return true;
                 // Perform operations after successful connection
             } catch (error) {
+                if (this.handoffToUsb) {
+                    this.connLogger.info('BLE reconnect aborted by USB handoff');
+                    return;
+                }
                 if (error instanceof Error) {
                     this.connLogger.debug(`timed out:  ${error.stack ?? error.message}`);
                 }
                 this.bleDevice = undefined;
                 this.onDisconnected();
                 //throw new Error('Failed BLE reconnect' + error); TODO: I don't think we want to throw an error here
+            } finally {
+                this.reconnectInProgress = false;
             }
         }
         this.connLogger.info('Existing reconnect');
