@@ -1246,7 +1246,23 @@ function NavBar({ layoutref }: NavBarProps) {
                         } else if (
                             voltage < (CommandToXRPMgr.getInstance().isNanoXRP() ? 3.6 : 5.0)
                         ) {
-                            setDialogContent(<BatteryBadDlg cancelCallback={toggleDialog} />);
+                            const handleBatteryBadOK = async () => {
+                                setRunning(true);
+                                broadcastRunningState(true);
+                                closeDialog();
+                                beginExecution();
+                            };
+                            const handleBatteryBadCancel = () => {
+                                setRunning(false);
+                                broadcastRunningState(false);
+                                closeDialog();
+                            };
+                            setDialogContent(
+                                <BatteryBadDlg
+                                    cancelCallback={handleBatteryBadCancel}
+                                    okayCallback={handleBatteryBadOK}
+                                />,
+                            );
                             toggleDialog();
                         } else {
                             beginExecution();
