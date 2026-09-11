@@ -35,15 +35,30 @@ class GoogleAuthService {
     private _timeoutId: NodeJS.Timeout | undefined;
     private _userProfile: UserProfile;
     private _modeLogger = logger.child({ module: 'googleapi' });
+    private _tokenExpiryTime: number = 0;
     
-
     constructor() {
         this._googleAuthBackendUrl = import.meta.env.GOOGLE_AUTH_URL;
         this._userProfile = { id: '', email: '', name: '', picture: '' };
         this.initHandshake(); // Initiate handshake on service creation
+        
+        document.addEventListener('visibilitychange', this.onVisibilityChange);
     }
 
+    private onVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+            if (this._isLogin && this._refreshToken && this._tokenExpiryTime > 0) {
+                const timeRemaining = this._tokenExpiryTime - Date.now();
+                if (timeRemaining < 300000) { // Less than 5 mins left or expired
+                    this._modeLogger.info('Token near expiry upon tab visible, refreshing now.');
+                    this.refreshToken();
+                }
+            }
+        }
+    };
+
     dispose() {
+        document.removeEventListener('visibilitychange', this.onVisibilityChange);
         if (this._timeoutId) {
             clearTimeout(this._timeoutId);
             this._timeoutId = undefined;
@@ -151,12 +166,18 @@ class GoogleAuthService {
      */
     private async refreshToken() 
     {        
+        if (this._timeoutId) {
+            clearTimeout(this._timeoutId);
+            this._timeoutId = undefined;
+        }
+
         if (this._refreshToken && this._handshakeToken) {
-            this.getAccessToken().then((token) => {
+            try {
+                const token = await this.getAccessToken();
                 this._accessToken = token;
-            }).catch((error) => {
-                this._modeLogger.error('Error refreshing access token:', error);
-            });
+            } catch (error) {
+                this._modeLogger.error(`Error refreshing access token: ${error}`);
+            }
         } else {
             this._modeLogger.warn('No refresh token or handshake token available to refresh access token.');
         }
@@ -227,6 +248,7 @@ class GoogleAuthService {
             if (data.access_token) {
                 this._accessToken = data.access_token;
                 this._expiresIn = data.expires_in;
+                this._tokenExpiryTime = Date.now() + (data.expires_in * 1000);
                 return data.access_token;
             } else {
                 throw new Error('Failed to get access token from backend response');
@@ -274,6 +296,7 @@ class GoogleAuthService {
                 this._accessToken = data.access_token;
                 this._refreshToken = data.refresh_token; // Backend returns refresh token on first exchange
                 this._expiresIn = data.expires_in;
+                this._tokenExpiryTime = Date.now() + (data.expires_in * 1000);
                 return { access_token: data.access_token, refresh_token: data.refresh_token, expires_in: data.expires_in };
             } else {
                 throw new Error('Failed to get refresh token from backend response');
