@@ -1,6 +1,10 @@
-# Version 2.0.29
+# Version 2.0.35
 
-#### XRPCode V2 Beta What’s New
+#### User Guide for XRPCode V2
+* <a href="https://xrpusersguide.readthedocs.io/en/latest/course/XRPCodeV2.html" target="_blank" rel="noopener noreferrer">User Guide</a>
+
+
+#### XRPCode V2 What’s New
 * Rewritten with modern web tools for more solid and expandable future
 * Google Drive
     * Files are available even without an XRP attached
@@ -28,5 +32,7 @@
     * Backup and Restore
         * XRPCode users can backup the XRP Robot’s files on the Robot to Google Drive. These files can be restored back to the XRP from Google Drive.
 
+
 #### Bugs and Feature requests
-* Please report bugs and add feature requests at [XRP Forums](https://xrp.discourse.group/c/support/)
+* Please report bugs and feature requests at <a href="https://xrp.discourse.group/c/support/" target="_blank" rel="noopener noreferrer">XRP Forums</a>
+
