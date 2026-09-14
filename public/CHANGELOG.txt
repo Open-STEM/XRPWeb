@@ -1,4 +1,4 @@
-# Version 2.0.35
+# Version 2.0.36
 
 #### User Guide for XRPCode V2
 * <a href="https://xrpusersguide.readthedocs.io/en/latest/course/XRPCodeV2.html" target="_blank" rel="noopener noreferrer">User Guide</a>
