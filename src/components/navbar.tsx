@@ -380,6 +380,14 @@ function NavBar({ layoutref }: NavBarProps) {
                 }
             });
 
+            AppMgr.getInstance().on(EventType.EVENT_SHOWUSB_CONNECTING, () => {
+                openDialog(<BusyDialog title={t('connecting-usb')} />);
+            });
+
+            AppMgr.getInstance().on(EventType.EVENT_HIDEUSB_CONNECTING, () => {
+                closeDialog();
+            });
+
             AppMgr.getInstance().on(EventType.EVENT_BLE_RECONNECT_FAILED, (payload: string) => {
                 const { xrpId, reason, otherXrpId } = parseBleFailure(payload);
                 setDialogContent(

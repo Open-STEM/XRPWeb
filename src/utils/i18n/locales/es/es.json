@@ -29,6 +29,7 @@
     "cancelButton": "Cancelar",
     "connections": "Conexiones",
     "connecting-bluetooth": "Conectando vía Bluetooth...",
+    "connecting-usb": "Conectando vía USB...",
     "selectConnection": "Por favor seleccione su conexión deseada para comenzar...",
     "usbConnection": "Conexión USB",
     "bluetoothConnection": "Conexión Bluetooth",
