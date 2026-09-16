@@ -56,8 +56,8 @@ export enum EventType {
     EVENT_ISRUNNING = 'is-running', // XRP is running user code
     EVENT_LOGIN_STATUS = 'login-status', // Google login status
     EVENT_PROGRAM_EXECUTED = 'runstop-complete', // Run/Stop command complete
-    EVENT_SHOW_SPINNER_CONNECTING = 'show-bluetooth-connecting', // Show Bluetooth connecting dialog
-    EVENT_HIDE_SPINNER_CONNECTING = 'hide-bluetooth-connecting', // Hide Bluetooth connecting dialog
+    EVENT_SHOW_SPINNER_CONNECTING = 'show-spinner-connecting', // Show Bluetooth connecting dialog
+    EVENT_HIDE_SPINNER_CONNECTING = 'hide-spinner-connecting', // Hide Bluetooth connecting dialog
     EVENT_BLE_RECONNECT_FAILED = 'ble-reconnect-failed', // Known-robot Bluetooth connect failed
     EVENT_EDITOR_NAME_CHANGED = 'editor-name-changed', // Editor name changed
     EVENT_EDITOR_TAB_SELECTED = 'editor-tab-selected', // Editor tab id selected in layout
