@@ -93,11 +93,7 @@ export default class ConnectionMgr {
         }
     }
 
-    private reportBleFailure(
-        xrpId: string,
-        reason: BleConnectFailure,
-        otherXrpId?: string,
-    ): void {
+    private reportBleFailure(xrpId: string, reason: BleConnectFailure, otherXrpId?: string): void {
         const info: BleConnectFailureInfo = { xrpId, reason, otherXrpId };
         this.appMgr.emit(EventType.EVENT_BLE_RECONNECT_FAILED, JSON.stringify(info));
     }
@@ -208,31 +204,40 @@ export default class ConnectionMgr {
     public async connectCallback(state: ConnectionState, connType: ConnectionType) {
         this.activeConnection = this.connections[connType];
         if (state === ConnectionState.Connected) {
-            if (await this.activeConnection.getToREPL()) {
-                this.appMgr.emit(
-                    EventType.EVENT_CONNECTION_STATUS,
-                    ConnectionState.Connected.toString(),
+            try {
+                if (await this.activeConnection.getToREPL()) {
+                    this.appMgr.emit(
+                        EventType.EVENT_CONNECTION_STATUS,
+                        ConnectionState.Connected.toString(),
+                    );
+                    await this.cmdToXRPMgr.getOnBoardFSTree();
+                    await this.activeConnection.getToNormal();
+                    if (connType == ConnectionType.USB) {
+                        //if we connected via USB then we can release the BLE terminal
+                        await this.cmdToXRPMgr.resetTerminal();
+                    }
+                    await this.cmdToXRPMgr.clearIsRunning();
+                    this.xrpID = await this.cmdToXRPMgr.checkIfNeedUpdate();
+                    if (await this.rejectUnwantedUsbXrp(connType)) {
+                        return;
+                    }
+                    this.IDSet(connType);
+
+                    // Check for plugins after connection is established
+                    await this.pluginMgr.pluginCheck();
+
+                    // After successufully connected to the bluetooth, hide the connecting dialog
+                    AppMgr.getInstance().emit(
+                        EventType.EVENT_HIDE_SPINNER_CONNECTING,
+                        'hide-connection-spinner',
+                    );
+                }
+            } catch (error) {
+                console.error('Error in connectCallback', error);
+                AppMgr.getInstance().emit(
+                    EventType.EVENT_HIDE_SPINNER_CONNECTING,
+                    'hide-connection-spinner',
                 );
-                await this.cmdToXRPMgr.getOnBoardFSTree();
-                await this.activeConnection.getToNormal();
-                if (connType == ConnectionType.USB) {
-                    //if we connected via USB then we can release the BLE terminal
-                    await this.cmdToXRPMgr.resetTerminal();
-                }
-                await this.cmdToXRPMgr.clearIsRunning();
-                this.xrpID = await this.cmdToXRPMgr.checkIfNeedUpdate();
-                if (await this.rejectUnwantedUsbXrp(connType)) {
-                    return;
-                }
-                this.IDSet(connType);
-                
-                // Check for plugins after connection is established
-                await this.pluginMgr.pluginCheck();
-                
-                // After successufully connected to the bluetooth, hide the connecting dialog
-                if (connType === ConnectionType.BLUETOOTH) {
-                    AppMgr.getInstance().emit(EventType.EVENT_HIDE_BLUETOOTH_CONNECTING, 'hide-bluetooth-connecting');
-                }
             }
         } else if (state === ConnectionState.Disconnected) {
             this.appMgr.emit(
@@ -246,8 +251,8 @@ export default class ConnectionMgr {
             // this callback, so the spinner stays up until reconnect finishes.
             if (connType === ConnectionType.BLUETOOTH) {
                 AppMgr.getInstance().emit(
-                    EventType.EVENT_HIDE_BLUETOOTH_CONNECTING,
-                    'hide-bluetooth-connecting',
+                    EventType.EVENT_HIDE_SPINNER_CONNECTING,
+                    'hide-connection-spinner',
                 );
             }
         }
@@ -311,7 +316,8 @@ export default class ConnectionMgr {
         if (!conn || !conn.isConnected()) {
             return;
         }
-        const connType = conn instanceof USBConnection ? ConnectionType.USB : ConnectionType.BLUETOOTH;
+        const connType =
+            conn instanceof USBConnection ? ConnectionType.USB : ConnectionType.BLUETOOTH;
         if (this.xrpID === undefined) {
             this.xrpID = await this.cmdToXRPMgr.checkIfNeedUpdate();
         }

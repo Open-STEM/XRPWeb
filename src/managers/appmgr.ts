@@ -16,34 +16,34 @@ import GoogleDriveService from '@/services/google-drive';
 
 export enum Themes {
     DARK = 'dark',
-    LIGHT = 'light'
+    LIGHT = 'light',
 }
 
 export enum LoginStatus {
     LOGGED_IN = 'logged-in',
-    LOGGED_OUT = 'logged-out'
+    LOGGED_OUT = 'logged-out',
 }
 
 export enum EventType {
     EVENT_FILESYS = 'filesys', // directoy tree from filesystem of the XRP
     EVENT_SHELL = 'shell', // shell updates from XRP
     EVENT_CONNECTION_STATUS = 'connection-status', // connection status updates
-    EVENT_THEME = 'theme-change',    // System theme change event
+    EVENT_THEME = 'theme-change', // System theme change event
     EVENT_CONNECTION = 'connection',
-    EVENT_ID = 'id',    // XRP platform ID
+    EVENT_ID = 'id', // XRP platform ID
     EVENT_EDITOR = 'editor', // editor events
     EVENT_OPEN_FILE = 'open-file', // open file event
-    EVENT_EDITOR_LOAD = 'editor-load',  // loading data into editor
-    EVENT_FONTCHANGE = 'font-change',   // change manoco editor fontsize
-    EVENT_GENPYTHON = 'gen-python',     // change python requestion
-    EVENT_GENPYTHON_DONE = 'gen-python-done',   // python code generation completed
-    EVENT_SAVE_EDITOR = 'save-editor',          // save editor event
-    EVENT_PROGRESS = 'progress',        // progressbar event
-    EVENT_UPLOAD_DONE = 'progress-done',      // progress done event
-    EVENT_MICROPYTHON_UPDATE = 'micropython-update',    // request micropythong update
-    EVENT_MICROPYTHON_UPDATE_DONE = 'micropython-update-done',  // micropython update done
-    EVENT_XRPLIB_UPDATE = 'xrplib-update',              // XRP update request
-    EVENT_XRPLIB_UPDATE_DONE = 'xrplib-update-done',    // XRP update done
+    EVENT_EDITOR_LOAD = 'editor-load', // loading data into editor
+    EVENT_FONTCHANGE = 'font-change', // change manoco editor fontsize
+    EVENT_GENPYTHON = 'gen-python', // change python requestion
+    EVENT_GENPYTHON_DONE = 'gen-python-done', // python code generation completed
+    EVENT_SAVE_EDITOR = 'save-editor', // save editor event
+    EVENT_PROGRESS = 'progress', // progressbar event
+    EVENT_UPLOAD_DONE = 'progress-done', // progress done event
+    EVENT_MICROPYTHON_UPDATE = 'micropython-update', // request micropythong update
+    EVENT_MICROPYTHON_UPDATE_DONE = 'micropython-update-done', // micropython update done
+    EVENT_XRPLIB_UPDATE = 'xrplib-update', // XRP update request
+    EVENT_XRPLIB_UPDATE_DONE = 'xrplib-update-done', // XRP update done
     EVENT_SHOWCHANGELOG = 'show-changelog', // show changelog
     EVENT_DASHBOARD_DATA = 'dashboard-data', // dashboard event
     EVENT_SHOWPROGRESS = 'show-progress', // show progress
@@ -56,8 +56,8 @@ export enum EventType {
     EVENT_ISRUNNING = 'is-running', // XRP is running user code
     EVENT_LOGIN_STATUS = 'login-status', // Google login status
     EVENT_PROGRAM_EXECUTED = 'runstop-complete', // Run/Stop command complete
-    EVENT_SHOWBLUETOOTH_CONNECTING = 'show-bluetooth-connecting', // Show Bluetooth connecting dialog
-    EVENT_HIDE_BLUETOOTH_CONNECTING = 'hide-bluetooth-connecting', // Hide Bluetooth connecting dialog
+    EVENT_SHOW_SPINNER_CONNECTING = 'show-bluetooth-connecting', // Show Bluetooth connecting dialog
+    EVENT_HIDE_SPINNER_CONNECTING = 'hide-bluetooth-connecting', // Hide Bluetooth connecting dialog
     EVENT_BLE_RECONNECT_FAILED = 'ble-reconnect-failed', // Known-robot Bluetooth connect failed
     EVENT_EDITOR_NAME_CHANGED = 'editor-name-changed', // Editor name changed
     EVENT_EDITOR_TAB_SELECTED = 'editor-tab-selected', // Editor tab id selected in layout
@@ -95,8 +95,8 @@ type Events = {
     [EventType.EVENT_ISRUNNING]: string;
     [EventType.EVENT_LOGIN_STATUS]: string;
     [EventType.EVENT_PROGRAM_EXECUTED]: string;
-    [EventType.EVENT_SHOWBLUETOOTH_CONNECTING]: string;
-    [EventType.EVENT_HIDE_BLUETOOTH_CONNECTING]: string;
+    [EventType.EVENT_SHOW_SPINNER_CONNECTING]: string;
+    [EventType.EVENT_HIDE_SPINNER_CONNECTING]: string;
     [EventType.EVENT_BLE_RECONNECT_FAILED]: string;
     [EventType.EVENT_EDITOR_NAME_CHANGED]: string;
     [EventType.EVENT_EDITOR_TAB_SELECTED]: string;
@@ -113,8 +113,8 @@ export default class AppMgr {
     private static _instance: AppMgr;
     private _emitter = mitt<Events>();
     private _connectionMgr: connecionMgr | null = null;
-    private _folderData : FolderItem[] | null = null;
-    private _folderDataJson : string | null = null;
+    private _folderData: FolderItem[] | null = null;
+    private _folderDataJson: string | null = null;
     private _authService: GoogleAuthService = new GoogleAuthService();
     private _driveService: GoogleDriveService = new GoogleDriveService();
 
@@ -150,9 +150,15 @@ export default class AppMgr {
      */
     public start(): void {
         // onload theme selection
-        this.onThemeChange(window.matchMedia('(prefers-color-scheme: dark)').matches ? Themes.DARK : Themes.LIGHT);
+        this.onThemeChange(
+            window.matchMedia('(prefers-color-scheme: dark)').matches ? Themes.DARK : Themes.LIGHT,
+        );
         // listen to system theme change event
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => this.onThemeChange(e.matches ? Themes.DARK : Themes.LIGHT));
+        window
+            .matchMedia('(prefers-color-scheme: dark)')
+            .addEventListener('change', (e) =>
+                this.onThemeChange(e.matches ? Themes.DARK : Themes.LIGHT),
+            );
         this._connectionMgr = new connecionMgr(this);
         const themeFromLocalStorage = localStorage.getItem('Theme')?.replace(/"/g, '');
         if (themeFromLocalStorage) {
@@ -173,16 +179,16 @@ export default class AppMgr {
      * onThemeChange event
      * @param theme
      */
-    private onThemeChange(theme:string) {
+    private onThemeChange(theme: string) {
         if (theme === Themes.DARK) {
             this._theme = Themes.DARK;
             this._emitter.emit(EventType.EVENT_THEME, this._theme);
-            document.documentElement.classList.add(theme)
+            document.documentElement.classList.add(theme);
             document.documentElement.classList.remove(Themes.LIGHT);
         } else {
             this._theme = Themes.LIGHT;
             this._emitter.emit(EventType.EVENT_THEME, this._theme);
-            document.documentElement.classList.add(theme)
+            document.documentElement.classList.add(theme);
             document.documentElement.classList.remove(Themes.DARK);
         }
     }
@@ -197,12 +203,12 @@ export default class AppMgr {
 
     /**
      * setTheme
-     * @param theme 
+     * @param theme
      */
     public setTheme(theme: Themes): void {
         this._theme = theme;
         this._emitter.emit(EventType.EVENT_THEME, this._theme);
-    }        
+    }
 
     /**
      * Subscribe to events
@@ -216,7 +222,7 @@ export default class AppMgr {
 
     /**
      * eventOff - turn off an event subscription
-     * @param eventName 
+     * @param eventName
      */
     public eventOff(eventName: EventType) {
         this._emitter.off(eventName);
@@ -274,13 +280,15 @@ export default class AppMgr {
      * @returns ConnectionType
      */
     public getConnectionType(): ConnectionType {
-        const connection = this._connectionMgr?.getConnection() 
-        return connection instanceof BluetoothConnection ? ConnectionType.BLUETOOTH : ConnectionType.USB;
+        const connection = this._connectionMgr?.getConnection();
+        return connection instanceof BluetoothConnection
+            ? ConnectionType.BLUETOOTH
+            : ConnectionType.USB;
     }
 
     /**
      * setFolderData - save a list of folder names for use with New File dialog
-     * @param folderData 
+     * @param folderData
      */
     public setFoderData(folderJson: string) {
         this._folderData = JSON.parse(folderJson);
@@ -289,20 +297,24 @@ export default class AppMgr {
 
     /**
      * Fileter out folders that do not have children, but including the root folder
-     * @param folders 
-     * @returns 
+     * @param folders
+     * @returns
      */
     private filterFolders(folders: FolderItem[]): FolderItem[] | null {
-        for (let i=0; i < folders.length; i++) {
+        for (let i = 0; i < folders.length; i++) {
             const children = folders[i].children;
             if (children !== null) {
-                folders[i].children = children.filter(folder => (folder.children !== null)).map(folder => ({
-                    name: folder.name,
-                    id: folder.id,
-                    isReadOnly: folder.isReadOnly,
-                    path: folder.path.endsWith('/') ? folder.path + folder.name + '/' : folder.path + '/' + folder.name + '/',
-                    children: folder.children        
-                }))
+                folders[i].children = children
+                    .filter((folder) => folder.children !== null)
+                    .map((folder) => ({
+                        name: folder.name,
+                        id: folder.id,
+                        isReadOnly: folder.isReadOnly,
+                        path: folder.path.endsWith('/')
+                            ? folder.path + folder.name + '/'
+                            : folder.path + '/' + folder.name + '/',
+                        children: folder.children,
+                    }));
                 this.filterFolders(children);
             }
         }
@@ -312,7 +324,7 @@ export default class AppMgr {
     /**
      * IsFileExists - check if a file exists in the folder data
      * @param foldername
-     * @param filename 
+     * @param filename
      * @returns true if file exists, false otherwise
      */
     public IsFileExists(foldername: string, filename: string): boolean {
@@ -375,23 +387,30 @@ export default class AppMgr {
     /**
      * getFolderList - return a list of XRP folder except the 'lib' directory
      */
-    public getFolderList() : FolderItem[] | null {
+    public getFolderList(): FolderItem[] | null {
         if (!this._folderData) {
             return null;
         }
 
-        if (this._folderData?.at(0)?.children?.length === 0  || this._folderData?.at(0)?.children === null) {
+        if (
+            this._folderData?.at(0)?.children?.length === 0 ||
+            this._folderData?.at(0)?.children === null
+        ) {
             return this._folderData;
         }
 
         // remove the non folder items
-        const folders = this._folderData?.at(0)?.children?.filter(folder => (folder.children !== null)).map(folder => ({ 
-            name: folder.name,
-            id: folder.id,
-            isReadOnly: folder.isReadOnly,
-            path: folder.path + folder.name + '/',
-            children: folder.children
-        })) ?? null;
+        const folders =
+            this._folderData
+                ?.at(0)
+                ?.children?.filter((folder) => folder.children !== null)
+                .map((folder) => ({
+                    name: folder.name,
+                    id: folder.id,
+                    isReadOnly: folder.isReadOnly,
+                    path: folder.path + folder.name + '/',
+                    children: folder.children,
+                })) ?? null;
 
         const filteredFolders = this.filterFolders(folders || []);
         const returnfolders = {
@@ -399,9 +418,9 @@ export default class AppMgr {
             id: this._folderData.at(0)?.id || '',
             isReadOnly: this._folderData.at(0)?.isReadOnly || false,
             path: this._folderData.at(0)?.path || '',
-            children: filteredFolders
-        }
-        
+            children: filteredFolders,
+        };
+
         return returnfolders ? [returnfolders] : null;
     }
 
@@ -416,25 +435,31 @@ export default class AppMgr {
         }
 
         // find the user folder
-        const userFolders = this._folderData?.at(0)?.children?.filter(folder => (folder.name === 'users' && folder.children !== null)).map(folder => ({ 
-            name: folder.name,
-            id: folder.id,
-            isReadOnly: folder.isReadOnly,
-            path: folder.path,
-            children: folder.children
-        })) ?? null;
+        const userFolders =
+            this._folderData
+                ?.at(0)
+                ?.children?.filter((folder) => folder.name === 'users' && folder.children !== null)
+                .map((folder) => ({
+                    name: folder.name,
+                    id: folder.id,
+                    isReadOnly: folder.isReadOnly,
+                    path: folder.path,
+                    children: folder.children,
+                })) ?? null;
 
         let userlist: FolderItem[] | null = null;
         // if users folder's children not null, list all of the users folder's children
         if (userFolders && userFolders.length > 0 && userFolders[0].children) {
             // filter out folders that do not have children
-            userlist = userFolders[0].children.filter(folder => (folder.children !== null)).map(folder => ({
-                name: folder.name,
-                id: folder.id,
-                isReadOnly: folder.isReadOnly,
-                path: folder.path,
-                children: folder.children
-            }));
+            userlist = userFolders[0].children
+                .filter((folder) => folder.children !== null)
+                .map((folder) => ({
+                    name: folder.name,
+                    id: folder.id,
+                    isReadOnly: folder.isReadOnly,
+                    path: folder.path,
+                    children: folder.children,
+                }));
         }
 
         return userlist;
