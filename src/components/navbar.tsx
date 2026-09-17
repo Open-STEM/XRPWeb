@@ -367,11 +367,11 @@ function NavBar({ layoutref }: NavBarProps) {
                 }
             });
 
-            AppMgr.getInstance().on(EventType.EVENT_SHOWBLUETOOTH_CONNECTING, () => {
-                openDialog(<BusyDialog title={t('connecting-bluetooth')} />);
+            AppMgr.getInstance().on(EventType.EVENT_SHOW_SPINNER_CONNECTING, (title: string) => {
+                openDialog(<BusyDialog title={t(title)} />);
             });
 
-            AppMgr.getInstance().on(EventType.EVENT_HIDE_BLUETOOTH_CONNECTING, () => {
+            AppMgr.getInstance().on(EventType.EVENT_HIDE_SPINNER_CONNECTING, () => {
                 closeDialog();
                 if (stoppingRef.current) {
                     setIsStopping(false);
@@ -1012,8 +1012,8 @@ function NavBar({ layoutref }: NavBarProps) {
             toggleDialog();
             return;
         }
-        AppMgr.getInstance().emit(EventType.EVENT_CONNECTION, cmd);
         toggleDialog();
+        AppMgr.getInstance().emit(EventType.EVENT_CONNECTION, cmd);
     }
 
     /**

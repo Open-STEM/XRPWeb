@@ -18,18 +18,17 @@ export class USBConnection extends Connection {
     // Define USB connection constants
     readonly USB_VENDOR_ID_BETA: number = 11914; // For filtering ports during auto or manual selection
     readonly USB_VENDOR_ID: number = 6991; // For filtering ports during auto or manual selection
-    readonly USB_VENDOR_ID_NANOXRP: number = 0x2E8A; // For filtering ports during auto or manual selection
+    readonly USB_VENDOR_ID_NANOXRP: number = 0x2e8a; // For filtering ports during auto or manual selection
     readonly USB_PRODUCT_ID_BETA: number = 5; // For filtering ports during auto or manual selection
     readonly USB_PRODUCT_ID: number = 70; // For filtering ports during auto or manual selection
-    readonly USB_PRODUCT_ID_NANOXRP: number = 0x110A; // For filtering ports during auto or manual selection
+    readonly USB_PRODUCT_ID_NANOXRP: number = 0x110a; // For filtering ports during auto or manual selection
 
     constructor(connMgr: ConnectionMgr) {
         super();
         this.connMgr = connMgr;
         this.isManualConnection = false;
         this.Table = new TableMgr();
-        if(this.joyStick)
-            this.joyStick.writeToDevice = this.writeToDevice.bind(this);
+        if (this.joyStick) this.joyStick.writeToDevice = this.writeToDevice.bind(this);
 
         // setup USB connection listeners
         // Check if browser can use WebSerial
@@ -92,15 +91,15 @@ export class USBConnection extends Connection {
                             this.reader.releaseLock();
                             break;
                         }
-                        
+
                         // Extract XPP packets and regular data from the incoming stream
                         const { packets, regularData } = this.extractCompleteXPPPackets(value);
-                        
+
                         // Process complete XPP packets
                         for (const packet of packets) {
                             this.processXPPPacket(packet, this.Table);
                         }
-                        
+
                         // Pass any regular (non-XPP) data to readData for normal processing
                         if (regularData.length > 0) {
                             this.readData(regularData);
@@ -163,6 +162,8 @@ export class USBConnection extends Connection {
         if (this.connectionStates === ConnectionState.Busy) {
             return false;
         }
+
+        AppMgr.getInstance().emit(EventType.EVENT_SHOW_SPINNER_CONNECTING, 'connecting-usb');
 
         // The port is already open and we hold its writer. Re-running
         // onConnected() would ask the same WritableStream for a second writer,
@@ -297,13 +298,13 @@ export class USBConnection extends Connection {
      */
     private onDisconnected() {
         this.connLogger.debug('USB connection is lost');
-        if(this.port != undefined){
+        if (this.port != undefined) {
             //this.disconnect = true;
-            if(this.reader != undefined){
+            if (this.reader != undefined) {
                 this.reader.cancel();
                 this.reader.releaseLock();
             }
-            if(this.writer != undefined){
+            if (this.writer != undefined) {
                 this.writer.releaseLock();
             }
             this.port.close();
@@ -316,13 +317,12 @@ export class USBConnection extends Connection {
         this.connMgr?.connectCallback(this.connectionStates, ConnectionType.USB);
     }
 
-    
     /**
      * getToREPL - Make sure the XRP is at the REPL prompt and not running a program.
      * @returns boolean
      */
-    public async getToREPL():Promise<boolean>{
-        if(await this.checkPrompt()){
+    public async getToREPL(): Promise<boolean> {
+        if (await this.checkPrompt()) {
             return true;
         }
         return await this.stopTheRobot();
@@ -388,7 +388,6 @@ export class USBConnection extends Connection {
 
         this.connLogger.debug('Existing connect');
     }
-
 
     /**
      * disconnection - disconnect the USB session without hanging the UI.

@@ -17,7 +17,7 @@ export type BluetoothConnectOptions = {
 
 /**
  * BluetoothConnection class
- * 
+ *
  * This class is responsible for establish a bluetooth connection with the XRP Robot
  */
 export class BluetoothConnection extends Connection {
@@ -44,7 +44,7 @@ export class BluetoothConnection extends Connection {
     private ble2Data: Uint8Array | null = null;
     private ble2DataResolveFunc: ((value: Uint8Array) => void) | null = null;
 
-    private readonly BLE_STOP_MSG  = "##XRPSTOP##"
+    private readonly BLE_STOP_MSG = '##XRPSTOP##';
     private reconnectSuccess: boolean = true;
     private readWorkerRunning: boolean = false;
     private lastConnectCancelled: boolean = false;
@@ -60,13 +60,12 @@ export class BluetoothConnection extends Connection {
     // BluetoothDevice is the only way to reconnect without the chooser.
     private permittedDevices: Map<string, BluetoothDevice> = new Map();
 
-    private  Table: TableMgr | undefined = undefined;
+    private Table: TableMgr | undefined = undefined;
 
     constructor(connMgr: ConnectionMgr) {
         super();
         this.connMgr = connMgr;
-        if(this.joyStick)
-            this.joyStick.writeToDevice = this.writeToDataDevice.bind(this);
+        if (this.joyStick) this.joyStick.writeToDevice = this.writeToDataDevice.bind(this);
         this.Table = new TableMgr();
     }
 
@@ -85,7 +84,7 @@ export class BluetoothConnection extends Connection {
                 reject(new Error('Connection timed out'));
             }, timeoutMs);
 
-            if(device.gatt?.connected){
+            if (device.gatt?.connected) {
                 device.gatt!.disconnect();
             }
             device
@@ -113,10 +112,7 @@ export class BluetoothConnection extends Connection {
             if (this.bleData == null) {
                 this.bleData = new Uint8Array(value!.buffer); //just in case the resolve is not ready
             } else {
-                this.bleData = this.concatUint8Arrays(
-                    this.bleData,
-                    new Uint8Array(value!.buffer),
-                );
+                this.bleData = this.concatUint8Arrays(this.bleData, new Uint8Array(value!.buffer));
             }
             if (this.bleDataResolveFunc) {
                 this.bleDataResolveFunc(this.bleData);
@@ -128,7 +124,7 @@ export class BluetoothConnection extends Connection {
         });
         // Optional: Reject the promise on some condition, e.g., timeout or error
 
-        if(this.bleDataReader != undefined){
+        if (this.bleDataReader != undefined) {
             this.bleDataReader!.addEventListener('characteristicvaluechanged', (event) => {
                 const charEvent = event as Event & { target: BluetoothRemoteGATTCharacteristic };
                 const value = charEvent.target.value;
@@ -150,17 +146,16 @@ export class BluetoothConnection extends Connection {
                 //resolve(new Uint8Array(value.buffer)); // Resolve the promise with the received string
             });
         }
-
     }
 
     /**
      * getBLEData - received BLE data from XRP Robot
-     * @param timeout 
-     * @returns 
+     * @param timeout
+     * @returns
      */
     async getBLEData(timeout = 10): Promise<Uint8Array | undefined> {
         return new Promise((resolve) => {
-            if(this.bleData != null && this.bleData?.length > 0){
+            if (this.bleData != null && this.bleData?.length > 0) {
                 const data = this.bleData;
                 this.bleData = null;
                 resolve(data);
@@ -179,12 +174,12 @@ export class BluetoothConnection extends Connection {
 
     /**
      * get2BLEData - received BLE data from the bleDataReader from XRP Robot
-     * @param timeout 
-     * @returns 
+     * @param timeout
+     * @returns
      */
     async get2BLEData(timeout = 10): Promise<Uint8Array | undefined> {
         return new Promise((resolve) => {
-            if(this.ble2Data != null && this.ble2Data?.length > 0){
+            if (this.ble2Data != null && this.ble2Data?.length > 0) {
                 const data = this.ble2Data;
                 this.ble2Data = null;
                 resolve(data);
@@ -201,8 +196,6 @@ export class BluetoothConnection extends Connection {
         });
     }
 
-
-
     /**
      * readWorker - this worker read data from the XRP robot
      */
@@ -215,11 +208,11 @@ export class BluetoothConnection extends Connection {
                     let values: Uint8Array | undefined = undefined;
                     values = await this.getBLEData();
                     this.readData(values);
-                
+
                     let valuesD: Uint8Array | undefined = undefined;
-                    if(this.bleDataReader != undefined){
+                    if (this.bleDataReader != undefined) {
                         valuesD = await this.get2BLEData();
-                        if(valuesD != undefined) {
+                        if (valuesD != undefined) {
                             // Extract complete XPP packets and only process those
                             // Note: regularData is ignored since bleDataReader only receives XPP packets
                             const { packets } = this.extractCompleteXPPPackets(valuesD);
@@ -228,10 +221,9 @@ export class BluetoothConnection extends Connection {
                             }
                         }
                     }
-                
                 }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } catch(err: any) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } catch (err: any) {
                 throw new Error('read work exception: ' + err.message);
             }
         }
@@ -258,8 +250,8 @@ export class BluetoothConnection extends Connection {
         this.bleDataWriter = undefined;
         this.bleDataReader = undefined;
         AppMgr.getInstance().emit(
-            EventType.EVENT_HIDE_BLUETOOTH_CONNECTING,
-            'hide-bluetooth-connecting',
+            EventType.EVENT_HIDE_SPINNER_CONNECTING,
+            'hide-connection-spinner',
         );
         try {
             this.detachGattDisconnectHandler(this.bleDevice);
@@ -292,13 +284,13 @@ export class BluetoothConnection extends Connection {
         }
         this.connectionStates = ConnectionState.Connected;
         this.lastProgramRan = undefined;
-        if (this.connMgr) { 
+        if (this.connMgr) {
             this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
         }
-        if(!this.readWorkerRunning){  // if the read worker is not running then restart it  
+        if (!this.readWorkerRunning) {
+            // if the read worker is not running then restart it
             this.readWorker();
-        }
-        else{
+        } else {
             this.startBLEData(); // the readers may have been updated so start them again
         }
         //await this.getToNormal();
@@ -309,7 +301,8 @@ export class BluetoothConnection extends Connection {
      */
     private onDisconnected() {
         this.connectionStates = ConnectionState.Disconnected;
-        if (this.connLogger) { //BUGBUG: why is this dependent on the connLogger?
+        if (this.connLogger) {
+            //BUGBUG: why is this dependent on the connLogger?
             this.connMgr?.connectCallback(this.connectionStates, ConnectionType.BLUETOOTH);
         }
     }
@@ -448,7 +441,9 @@ export class BluetoothConnection extends Connection {
         if (useExact && options?.xrpId) {
             const known = await this.findKnownDevice(options.xrpId);
             if (known) {
-                this.connLogger.info(`Using permitted device ${known.id} (${known.name ?? 'unnamed'})`);
+                this.connLogger.info(
+                    `Using permitted device ${known.id} (${known.name ?? 'unnamed'})`,
+                );
                 return known;
             }
         }
@@ -480,7 +475,7 @@ export class BluetoothConnection extends Connection {
         this.bleDevice = device;
         this.rememberPermittedDevice(undefined, device);
         this.connLogger.info('Connecting to device...');
-        AppMgr.getInstance().emit(EventType.EVENT_SHOWBLUETOOTH_CONNECTING, 'show-bluetooth-connecting');
+        AppMgr.getInstance().emit(EventType.EVENT_SHOW_SPINNER_CONNECTING, 'connecting-bluetooth');
 
         try {
             const servers = await this.connectWithTimeout(device, 10000);
@@ -496,9 +491,13 @@ export class BluetoothConnection extends Connection {
             this.bleReader = await btService.getCharacteristic(this.RX_CHARACTERISTIC_UUID);
             this.connLogger.info('Connected to RX Characteristic');
             try {
-                this.bleDataWriter = await btService.getCharacteristic(this.DATA_TX_CHARACTERISTIC_UUID);
+                this.bleDataWriter = await btService.getCharacteristic(
+                    this.DATA_TX_CHARACTERISTIC_UUID,
+                );
                 this.connLogger.info('Connected to DATA TX Characteristic');
-                this.bleDataReader = await btService.getCharacteristic(this.DATA_RX_CHARACTERISTIC_UUID);
+                this.bleDataReader = await btService.getCharacteristic(
+                    this.DATA_RX_CHARACTERISTIC_UUID,
+                );
                 this.connLogger.info('Connected to DATA RX Characteristic');
                 await this.bleReader.startNotifications();
                 await this.bleDataReader.startNotifications();
@@ -526,16 +525,16 @@ export class BluetoothConnection extends Connection {
             if (this.handoffToUsb) {
                 this.connLogger.info('BLE connect aborted by USB handoff');
                 AppMgr.getInstance().emit(
-                    EventType.EVENT_HIDE_BLUETOOTH_CONNECTING,
-                    'hide-bluetooth-connecting',
+                    EventType.EVENT_HIDE_SPINNER_CONNECTING,
+                    'hide-connection-spinner',
                 );
                 this.connectionStates = ConnectionState.Disconnected;
                 return false;
             }
             this.connLogger.info(error);
             AppMgr.getInstance().emit(
-                EventType.EVENT_HIDE_BLUETOOTH_CONNECTING,
-                'hide-bluetooth-connecting',
+                EventType.EVENT_HIDE_SPINNER_CONNECTING,
+                'hide-connection-spinner',
             );
             this.onDisconnected();
             return false;
@@ -625,7 +624,7 @@ export class BluetoothConnection extends Connection {
                 this.bleReader = await this.btService.getCharacteristic(
                     this.RX_CHARACTERISTIC_UUID,
                 );
-            
+
                 this.bleDataWriter = await this.btService.getCharacteristic(
                     this.DATA_TX_CHARACTERISTIC_UUID,
                 );
@@ -638,7 +637,7 @@ export class BluetoothConnection extends Connection {
                 this.attachGattDisconnectHandler(this.bleDevice!);
                 await this.onConnected();
                 this.reconnectSuccess = true;
-                
+
                 //return true;
                 // Perform operations after successful connection
             } catch (error) {
@@ -668,7 +667,7 @@ export class BluetoothConnection extends Connection {
 
     /**
      * writeToDevice
-     * @param str 
+     * @param str
      */
     public async writeToDevice(str: string | Uint8Array) {
         this.connLogger.debug('writeToDevice BLE: ' + str);
@@ -686,17 +685,16 @@ export class BluetoothConnection extends Connection {
         }
     }
 
-     /**
+    /**
      * writeToDataDevice
-     * @param Uint8Array 
+     * @param Uint8Array
      */
-     public async writeToDataDevice(data: Uint8Array) {
+    public async writeToDataDevice(data: Uint8Array) {
         this.connLogger.debug('writeToDataDevice BLE: ' + data);
 
         try {
             //this.connLogger.debug("writing: " + this.TEXT_DECODER.decode(str));
             await this.bleDataWriter?.writeValue(data as BufferSource);
-            
         } catch (error) {
             this.connLogger.debug(error);
         }
@@ -706,10 +704,10 @@ export class BluetoothConnection extends Connection {
 
     /**
      *  bleQueue - If we haven't come back from the ble.writeValue then the GATT is still busy and we will miss items that are being sent
-     * This can be seen if you type very fast in the Shell 
+     * This can be seen if you type very fast in the Shell
      */
-    private Queue:Promise<void> = Promise.resolve();
-    private async  bleQueue(value: BufferSource){
+    private Queue: Promise<void> = Promise.resolve();
+    private async bleQueue(value: BufferSource) {
         this.Queue = this.Queue.then(async () => {
             try {
                 await this.bleWriter?.writeValue(value);
@@ -719,14 +717,14 @@ export class BluetoothConnection extends Connection {
         });
     }
 
-    public async getToREPL():Promise<boolean>{
-        this.connLogger.info("BLE getToREPL")
-        if(await this.checkPrompt()){
+    public async getToREPL(): Promise<boolean> {
+        this.connLogger.info('BLE getToREPL');
+        if (await this.checkPrompt()) {
             //this.connLogger.info("BLE getToREPL: checkPrompt succeeded");
             return true;
         }
 
-        if(!this.reconnectSuccess){
+        if (!this.reconnectSuccess) {
             //this.connLogger.info("BLE getToREPL: leaving nothing done");
             return false;
         }
