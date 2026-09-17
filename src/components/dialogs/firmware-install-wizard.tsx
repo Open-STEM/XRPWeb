@@ -38,11 +38,6 @@ function expectedDriveForBoard(boardId: string): string {
     return boardId === 'xrp-2350' ? 'RP2350' : 'RPI-RP2';
 }
 
-/** Returns the *other* board's BOOTSEL drive name, used to reject mis-picks. */
-function otherBoardDriveName(boardId: string): string {
-    return boardId === 'xrp-2350' ? 'RPI-RP2' : 'RP2350';
-}
-
 function pickImage(map: Record<string, string>, key: string, fallback: string): string {
     return map[key] ?? fallback;
 }
@@ -271,13 +266,11 @@ export default function FirmwareInstallWizard({
                 throw new Error(t('firmwareWizardNoFolder'));
             }
 
-            // Belt-and-suspenders: pickFolder already rejects the wrong
-            // board's BOOTSEL drive, but if state was carried over from a
-            // previous run or a different board's flow, double-check here
-            // before we actually write any bytes to the drive.
-            const wrongDrive = otherBoardDriveName(boardId);
-            if (dirHandle.name === wrongDrive) {
-                const expected = expectedDriveForBoard(boardId);
+            // Belt-and-suspenders: pickFolder validates the BOOTSEL drive, but
+            // state may have been carried over from a previous run. Confirm
+            // the exact expected drive again before writing any bytes.
+            const expected = expectedDriveForBoard(boardId);
+            if (dirHandle.name !== expected) {
                 throw new Error(
                     t('firmwareWizardWrongDrive', { picked: dirHandle.name, expected }),
                 );
@@ -426,6 +419,9 @@ export default function FirmwareInstallWizard({
 
     const pickFolder = async () => {
         setError(null);
+        // A new selection replaces the old one. Keep firmware copy disabled
+        // unless this picker result is the expected BOOTSEL drive.
+        setDirHandle(null);
         try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const w = window as any;
@@ -440,15 +436,10 @@ export default function FirmwareInstallWizard({
             // resulting in a SecurityError "aborted due to security policy".
             const h = await w.showDirectoryPicker({ mode: 'readwrite' });
 
-            // Reject the other board's BOOTSEL drive — writing a 2350 UF2
-            // to an RP2040 (or vice versa) would brick the board or fail
-            // silently. We only reject when the picked drive name matches
-            // the *wrong* board's well-known BOOTSEL volume name; any other
-            // folder name (including the right one or something unrelated)
-            // is left to the user.
-            const wrongDrive = otherBoardDriveName(boardId);
-            if (h.name === wrongDrive) {
-                const expected = expectedDriveForBoard(boardId);
+            // Only the expected BOOTSEL volume is safe. Reject other XRP
+            // drives, thumb drives, and ordinary folders.
+            const expected = expectedDriveForBoard(boardId);
+            if (h.name !== expected) {
                 throw new Error(t('firmwareWizardWrongDrive', { picked: h.name, expected }));
             }
             setDirHandle(h);
