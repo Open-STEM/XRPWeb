@@ -21,6 +21,7 @@ function SettingsDlg({ toggleDialog }: SettingsProps) {
     const languageOptions = [
         { code: 'en', label: 'English', nativeName: 'English' },
         { code: 'es', label: 'Spanish', nativeName: 'Español' },
+        { code: 'de', label: 'German', nativeName: 'Deutsch' },
     ];
 
     /**
