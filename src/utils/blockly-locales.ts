@@ -9,12 +9,14 @@ import * as Blockly from 'blockly/core';
 import type { Workspace } from 'blockly/core';
 import * as EnMsg from 'blockly/msg/en';
 import * as EsMsg from 'blockly/msg/es';
+import * as DeMsg from 'blockly/msg/de';
 import i18n from '@/utils/i18n';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const localeMessages: Record<string, any> = {
     en: EnMsg,
     es: EsMsg,
+    de: DeMsg,
 };
 
 export function getSupportedLanguages(): string[] {
