@@ -101,7 +101,7 @@
     "firmwareWizardRetryLibrary": "Dateikopie wiederholen",
     "firmwareWizardNoFolder": "Wähle zuerst den Ordner des Boot-Laufwerks.",
     "firmwareWizardNoFolderPicker": "Dein Browser unterstützt die Ordnerauswahl nicht. Versuche es mit Chrome oder Edge.",
-    "firmwareWizardWrongDrive": "Du hast '{{ picked }}' ausgewählt, das Boot-Laufwerk eines anderen XRP-Prozessors. Diese Firmware ist für '{{ expected }}'. Wähle stattdessen das passende Boot-Laufwerk. Oder beende den Firmware-Lader und wähle die richtige XRP-Platine.",
+    "firmwareWizardWrongDrive": "Du hast '{{ picked }}' ausgewählt, aber das Boot-Laufwerk dieser Platine sollte '{{ expected }}' sein. Wähle den Ordner erneut aus und wähle das Laufwerk '{{ expected }}'.",
     "firmwareWizardSuccessTitle": "Update abgeschlossen",
     "firmwareWizardSuccessBody": "Die Firmware (und alle ausgewählten Dateien) wurden installiert. Du kannst zur IDE zurückkehren, wenn du bereit bist.",
     "firmwareWizardSuccessBluetoothReset": "Da MicroPython aktualisiert wurde, setze den XRP zurück oder schalte ihn komplett aus und wieder ein, bevor Bluetooth eine Verbindung herstellen kann.",
