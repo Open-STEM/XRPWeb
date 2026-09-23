@@ -101,7 +101,7 @@
     "firmwareWizardRetryLibrary": "Reintentar copia de archivos",
     "firmwareWizardNoFolder": "Primero elija la carpeta de arranque.",
     "firmwareWizardNoFolderPicker": "Su navegador no permite elegir una carpeta. Pruebe Chrome o Edge.",
-    "firmwareWizardWrongDrive": "Eligió '{{ picked }}', que es la unidad de arranque de otro procesador XRP. Este firmware es para '{{ expected }}'. Elija la unidad de arranque correspondiente. O salga del cargador de firmware y seleccione la placa XRP correcta.",
+    "firmwareWizardWrongDrive": "Seleccionó '{{ picked }}', pero la unidad de arranque de esta placa debe ser '{{ expected }}'. Vuelva a elegir la carpeta y seleccione la unidad '{{ expected }}'.",
     "firmwareWizardSuccessTitle": "Actualización completada",
     "firmwareWizardSuccessBody": "Se instaló el firmware (y los archivos seleccionados). Puede volver al IDE cuando quiera.",
     "firmwareWizardSuccessBluetoothReset": "Como se actualizó MicroPython, reinicie el XRP o apáguelo por completo y vuelva a encenderlo antes de que Bluetooth pueda conectarse.",

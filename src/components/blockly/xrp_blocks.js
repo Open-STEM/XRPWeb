@@ -167,7 +167,7 @@ Blockly.Blocks['xrp_straight_effort'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(10);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_STRAIGHT_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -184,7 +184,7 @@ Blockly.Blocks['xrp_turn_effort'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(10);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_TURN_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -203,7 +203,7 @@ Blockly.Blocks['xrp_seteffort'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(10);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_SET_EFFORT_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -244,7 +244,7 @@ Blockly.Blocks['xrp_arcade'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(10);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_ARCADE_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -257,7 +257,7 @@ Blockly.Blocks['xrp_stop_motors'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(10);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_STOP_MOTORS_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -269,7 +269,7 @@ Blockly.Blocks['xrp_resetencoders'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(10);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_RESET_ENCODERS_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -280,7 +280,7 @@ Blockly.Blocks['xrp_getleftencoder'] = {
             .appendField(xrpMsg('XRP_LEFT_ENCODER'));
         this.setOutput(true, null);
         this.setColour(10);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_LEFT_ENCODER_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -291,7 +291,7 @@ Blockly.Blocks['xrp_getrightencoder'] = {
             .appendField(xrpMsg('XRP_RIGHT_ENCODER'));
         this.setOutput(true, null);
         this.setColour(10);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_RIGHT_ENCODER_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -309,7 +309,7 @@ Blockly.Blocks['xrp_servo_deg'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(300);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_SERVO_DEG_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -321,7 +321,7 @@ Blockly.Blocks['xrp_getsonardist'] = {
             .appendField(xrpMsg('XRP_SONAR_DISTANCE'));
         this.setOutput(true, null);
         this.setColour(90);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_SONAR_DISTANCE_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -333,7 +333,7 @@ Blockly.Blocks['xrp_l_refl'] = {
             .appendField(xrpMsg('XRP_LEFT_REFLECTANCE'));
         this.setOutput(true, null);
         this.setColour(90);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_LEFT_REFLECTANCE_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -344,7 +344,7 @@ Blockly.Blocks['xrp_r_refl'] = {
             .appendField(xrpMsg('XRP_RIGHT_REFLECTANCE'));
         this.setOutput(true, null);
         this.setColour(90);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_RIGHT_REFLECTANCE_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -355,7 +355,7 @@ Blockly.Blocks['xrp_m_refl'] = {
             .appendField(xrpMsg('XRP_MIDDLE_REFLECTANCE'));
         this.setOutput(true, null);
         this.setColour(90);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_MIDDLE_REFLECTANCE_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -367,8 +367,8 @@ Blockly.Blocks['xrp_yaw'] = {
             .appendField(xrpMsg('XRP_YAW'));
         this.setOutput(true, null);
         this.setColour(90);
-        this.setTooltip('');
-        this.setHelpUrl(xrpMsg('XRP_YAW_HELP'));
+        this.setTooltip(xrpMsg('XRP_YAW_HELP'));
+        this.setHelpUrl();
     },
 };
 
@@ -389,8 +389,8 @@ Blockly.Blocks['xrp_pitch'] = {
             .appendField(xrpMsg('XRP_PITCH'));
         this.setOutput(true, null);
         this.setColour(90);
-        this.setTooltip('');
-        this.setHelpUrl(xrpMsg('XRP_PITCH_HELP'));
+        this.setTooltip(xrpMsg('XRP_PITCH_HELP'));
+        this.setHelpUrl();
     },
 };
 
@@ -401,8 +401,8 @@ Blockly.Blocks['xrp_acc_x'] = {
             .appendField(xrpMsg('XRP_ACC_X'));
         this.setOutput(true, null);
         this.setColour(90);
-        this.setTooltip('');
-        this.setHelpUrl(xrpMsg('XRP_ACC_X_HELP'));
+        this.setTooltip(xrpMsg('XRP_ACC_X_HELP'));
+        this.setHelpUrl();
     },
 };
 
@@ -412,8 +412,8 @@ Blockly.Blocks['xrp_acc_y'] = {
             .appendField(xrpMsg('XRP_ACC_Y'));
         this.setOutput(true, null);
         this.setColour(90);
-        this.setTooltip('');
-        this.setHelpUrl(xrpMsg('XRP_ACC_Y_HELP'));
+        this.setTooltip(xrpMsg('XRP_ACC_Y_HELP'));
+        this.setHelpUrl();
     },
 };
 
@@ -423,8 +423,8 @@ Blockly.Blocks['xrp_acc_z'] = {
             .appendField(xrpMsg('XRP_ACC_Z'));
         this.setOutput(true, null);
         this.setColour(90);
-        this.setTooltip('');
-        this.setHelpUrl(xrpMsg('XRP_ACC_Z_HELP'));
+        this.setTooltip(xrpMsg('XRP_ACC_Z_HELP'));
+        this.setHelpUrl();
     },
 };
 
@@ -436,7 +436,7 @@ Blockly.Blocks['xrp_led_on'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(150);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_LED_ON_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -448,7 +448,7 @@ Blockly.Blocks['xrp_led_off'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(150);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_LED_OFF_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -459,7 +459,7 @@ Blockly.Blocks['xrp_button_pressed'] = {
             .appendField(xrpMsg('XRP_USER_BUTTON'));
         this.setOutput(true, null);
         this.setColour(150);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_USER_BUTTON_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -471,7 +471,7 @@ Blockly.Blocks['xrp_wait_for_button_press'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(150);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_WAIT_FOR_BUTTON_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -486,7 +486,7 @@ Blockly.Blocks['xrp_ws_forward_button'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(190);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_WEB_FORWARD_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -500,7 +500,7 @@ Blockly.Blocks['xrp_ws_back_button'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(190);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_WEB_BACK_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -514,7 +514,7 @@ Blockly.Blocks['xrp_ws_left_button'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(190);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_WEB_LEFT_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -528,7 +528,7 @@ Blockly.Blocks['xrp_ws_right_button'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(190);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_WEB_RIGHT_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -542,7 +542,7 @@ Blockly.Blocks['xrp_ws_stop_button'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(190);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_WEB_STOP_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -557,7 +557,7 @@ Blockly.Blocks['xrp_ws_add_button'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(190);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_WEB_ADD_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -575,7 +575,7 @@ Blockly.Blocks['xrp_ws_log_data'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(190);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_WEB_LOG_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
@@ -662,7 +662,7 @@ Blockly.Blocks['xrp_sleep'] = {
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(200);
-        this.setTooltip('');
+        this.setTooltip(xrpMsg('XRP_SLEEP_TOOLTIP'));
         this.setHelpUrl('');
     },
 };
