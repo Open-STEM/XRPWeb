@@ -460,13 +460,18 @@ export default function FirmwareInstallWizard({
                     : t('firmwareWizardPhaseLibs')
                 : '';
 
+    const exitDisabled =
+        phase.kind === 'uf2' || (phase.kind === 'libs' && !phase.waitingUsb && !error);
+
     return (
         <div className="flex min-h-0 flex-1 flex-col">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-mountain-mist-600 dark:text-shark-400">
                     {headerSubtitle}
                 </p>
-                <Button onClicked={onCancel}>{t('firmwareWizardExitWizard')}</Button>
+                <Button onClicked={onCancel} disabled={exitDisabled}>
+                    {t('firmwareWizardExitWizard')}
+                </Button>
             </div>
 
             {error && (
