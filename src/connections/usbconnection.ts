@@ -163,13 +163,12 @@ export class USBConnection extends Connection {
             return false;
         }
 
-        AppMgr.getInstance().emit(EventType.EVENT_SHOW_SPINNER_CONNECTING, 'connecting-usb');
-
         // The port is already open and we hold its writer. Re-running
         // onConnected() would ask the same WritableStream for a second writer,
         // which throws, so republish the existing connection instead.
         if (this.port !== undefined && this.writer !== undefined) {
             this.connLogger.debug('tryAutoConnect: port already open, reusing it');
+            AppMgr.getInstance().emit(EventType.EVENT_SHOW_SPINNER_CONNECTING, 'connecting-usb');
             this.connectionStates = ConnectionState.Connected;
             this.connMgr?.connectCallback(this.connectionStates, ConnectionType.USB);
             return true;
@@ -194,6 +193,10 @@ export class USBConnection extends Connection {
 
         this.port = matching[0];
         this.connectionStates = ConnectionState.Connected;
+        // Show before openPort/handoff so cable autoconnect keeps the spinner
+        // through BLE teardown and REPL/FS init. Navbar ignores this when a
+        // non-spinner dialog (e.g. firmware wizard) already owns the slot.
+        AppMgr.getInstance().emit(EventType.EVENT_SHOW_SPINNER_CONNECTING, 'connecting-usb');
         if (await this.openPort()) {
             if (fromCablePlugIn) {
                 await this.connMgr?.handoffBluetoothToUsb();
@@ -206,6 +209,10 @@ export class USBConnection extends Connection {
 
         this.connLogger.debug('tryAutoConnect: openPort failed on sole matching port');
         this.connectionStates = ConnectionState.Disconnected;
+        AppMgr.getInstance().emit(
+            EventType.EVENT_HIDE_SPINNER_CONNECTING,
+            'hide-connection-spinner',
+        );
         return false;
     }
 
@@ -361,11 +368,18 @@ export class USBConnection extends Connection {
                 .then(async (port) => {
                     this.port = port;
                     this.connLogger.debug('Manually connected!');
+                    AppMgr.getInstance().emit(
+                        EventType.EVENT_SHOW_SPINNER_CONNECTING,
+                        'connecting-usb',
+                    );
                     if (await this.openPort()) {
                         this.onConnected();
                     } else {
                         this.connLogger.debug('Connection FAILED. Check cable and try again');
-                        //TODO: How report failure
+                        AppMgr.getInstance().emit(
+                            EventType.EVENT_HIDE_SPINNER_CONNECTING,
+                            'hide-connection-spinner',
+                        );
                     }
                 })
                 .catch((err) => {

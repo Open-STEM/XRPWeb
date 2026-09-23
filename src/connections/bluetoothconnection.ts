@@ -239,8 +239,10 @@ export class BluetoothConnection extends Connection {
     }
 
     /**
-     * Shared USB-handoff teardown: drop characteristics, hide the spinner,
-     * and disconnect GATT without auto-reconnect.
+     * Shared USB-handoff teardown: drop characteristics and disconnect GATT
+     * without auto-reconnect. Do not hide the connecting spinner — USB owns
+     * it through openPort / connectCallback (emitting HIDE here closed the
+     * USB spinner on cable autoconnect).
      */
     private tearDownForUsbHandoff(reason: string): void {
         this.connLogger.info(reason);
@@ -249,10 +251,6 @@ export class BluetoothConnection extends Connection {
         this.bleReader = undefined;
         this.bleDataWriter = undefined;
         this.bleDataReader = undefined;
-        AppMgr.getInstance().emit(
-            EventType.EVENT_HIDE_SPINNER_CONNECTING,
-            'hide-connection-spinner',
-        );
         try {
             this.detachGattDisconnectHandler(this.bleDevice);
             if (this.bleDevice?.gatt?.connected) {
@@ -523,11 +521,8 @@ export class BluetoothConnection extends Connection {
             return true;
         } catch (error) {
             if (this.handoffToUsb) {
+                // USB connectCallback (or USB openPort failure) hides the spinner.
                 this.connLogger.info('BLE connect aborted by USB handoff');
-                AppMgr.getInstance().emit(
-                    EventType.EVENT_HIDE_SPINNER_CONNECTING,
-                    'hide-connection-spinner',
-                );
                 this.connectionStates = ConnectionState.Disconnected;
                 return false;
             }

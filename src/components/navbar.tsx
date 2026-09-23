@@ -183,6 +183,9 @@ function NavBar({ layoutref }: NavBarProps) {
     const driveService = AppMgr.getInstance().driveService;
     const dropdownRef = useRef<HTMLDivElement>(null);
     const stoppingRef = useRef(false);
+    // True only when SHOW_SPINNER actually opened BusyDialog in this dialog slot.
+    // Prevents HIDE_SPINNER from closing an unrelated dialog (firmware wizard).
+    const connectingSpinnerShownRef = useRef(false);
     const browserCheckRef = useRef(false);
 
     // Check for Web Serial API support once on component mount.
@@ -368,11 +371,23 @@ function NavBar({ layoutref }: NavBarProps) {
             });
 
             AppMgr.getInstance().on(EventType.EVENT_SHOW_SPINNER_CONNECTING, (title: string) => {
+                // The firmware install wizard (and other flows) already own this
+                // shared dialog. Replacing their content with BusyDialog unmounts
+                // the wizard mid-update after a UF2 reboot reconnect.
+                // If we already own the slot (e.g. BLE spinner), allow USB to
+                // retitle it — cable autoconnect during BLE must not no-op.
+                if (dialogRef.current?.open && !connectingSpinnerShownRef.current) {
+                    return;
+                }
+                connectingSpinnerShownRef.current = true;
                 openDialog(<BusyDialog title={t(title)} />);
             });
 
             AppMgr.getInstance().on(EventType.EVENT_HIDE_SPINNER_CONNECTING, () => {
-                closeDialog();
+                if (connectingSpinnerShownRef.current) {
+                    connectingSpinnerShownRef.current = false;
+                    closeDialog();
+                }
                 if (stoppingRef.current) {
                     setIsStopping(false);
                     setRunning(false);
@@ -1272,6 +1287,10 @@ function NavBar({ layoutref }: NavBarProps) {
                 });
         } else {
             setIsStopping(true);
+            // Own the shared dialog slot so EVENT_HIDE_SPINNER_CONNECTING
+            // (after BLE reconnect) will close it. Without this flag, SHOW is
+            // ignored (dialog already open) and HIDE becomes a no-op — spinner stuck.
+            connectingSpinnerShownRef.current = true;
             openDialog(<BusyDialog title={t('stopRunningProgram')} />);
             CommandToXRPMgr.getInstance().stopProgram();
         }
