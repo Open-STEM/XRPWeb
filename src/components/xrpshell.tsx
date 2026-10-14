@@ -172,6 +172,16 @@ function XRPShell() {
             }
 
             fitAddon.fit();
+
+            const writeRunMarker = (data: string) => {
+                instance.write(data);
+                setTimeout(() => {
+                    const content = captureTerminalContent(instance);
+                    const lineCount = instance.buffer?.active?.length || 0;
+                    TerminalMgr.updateLiveTerminalContent(TERMINAL_ID, content, lineCount);
+                }, 10);
+            };
+            AppMgr.getInstance().on(EventType.EVENT_SHELL, writeRunMarker);
         }
 
         const handleResize = () => fitAddon.fit();
@@ -191,6 +201,7 @@ function XRPShell() {
 
         // Cleanup function to remove terminal content when component unmounts
         return () => {
+            AppMgr.getInstance().eventOff(EventType.EVENT_SHELL);
             window.removeEventListener('resize', handleResize);
             if (ref.current) {
                 resizeObserver.unobserve(ref.current);

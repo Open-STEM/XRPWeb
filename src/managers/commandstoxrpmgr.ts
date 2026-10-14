@@ -1116,7 +1116,20 @@ export class CommandToXRPMgr {
         if (this.DEBUG_CONSOLE_ON) this.cmdLogger.debug("fcg: in executeLines");
 
         this.BUSY = true;
-        //TODO: force a Terminal line feed
+
+        const stamp = new Date().toLocaleString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit',
+        });
+        // Local marker so the shell shows which output belongs to this run.
+        AppMgr.getInstance().emit(
+            EventType.EVENT_SHELL,
+            `\r\n---------- ${stamp} ----------\r\n`,
+        );
 
         //when running from the IDE, let's clean up all the memory before the program runs to give maximum space to run (especially on the beta board)
         const cleanUp = "import sys\n" +
