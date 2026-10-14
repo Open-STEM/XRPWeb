@@ -3,7 +3,24 @@ import { type PropsWithChildren, useCallback, useState, useEffect, useRef } from
 import { GridStackContext } from "./grid-stack-context";
 
 const STORAGE_KEY = 'xrp-dashboard-config';
-const STORAGE_VERSION = '1.0';
+const STORAGE_VERSION = '1.4';
+const LEGACY_STORAGE_VERSIONS = ['1.0', '1.1', '1.2', '1.3'];
+/** Matches AddWidget defaults: 4 cells so three rows fit a laptop dashboard. */
+const COMPACT_H = 4;
+const COMPACT_MIN_H = 3;
+/** Every card uses the voltage width so they stay equal as the pane scales. */
+const CARD_W = 3;
+const WIDTH_BY_NAME: Record<string, number> = {
+  Accelerometer: CARD_W,
+  Gyroscope: CARD_W,
+  Encoder: CARD_W,
+  Current: CARD_W,
+  Reflectance: CARD_W,
+  Rangefinder: CARD_W,
+  Voltage: CARD_W,
+  CustomVariable: CARD_W,
+  CustomSensor: CARD_W,
+};
 
 interface StoredConfig {
   version: string;
@@ -17,6 +34,44 @@ interface GridStackProviderProps {
   storageKey?: string;
 }
 
+/**
+ * Older layouts used tall cells (rangefinder h=8, voltage h=6) that overflow a
+ * laptop dashboard. Repack them at the voltage card width.
+ */
+function widgetName(widget: GridStackWidget): string {
+  try {
+    return (JSON.parse(widget.content ?? '{}') as { name?: string }).name ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function compactLegacyWidgets(widgets: GridStackWidget[]): GridStackWidget[] {
+  const sorted = [...widgets].sort(
+    (a, b) => (a.y ?? 0) - (b.y ?? 0) || (a.x ?? 0) - (b.x ?? 0),
+  );
+  let x = 0;
+  let y = 0;
+  return sorted.map((widget) => {
+    const w = WIDTH_BY_NAME[widgetName(widget)] ?? CARD_W;
+    if (x + w > 12) {
+      y += COMPACT_H;
+      x = 0;
+    }
+    const placed: GridStackWidget = {
+      ...widget,
+      x,
+      y,
+      w,
+      h: COMPACT_H,
+      minW: 2,
+      minH: COMPACT_MIN_H,
+    };
+    x += w;
+    return placed;
+  });
+}
+
 // Load configuration from localStorage
 function loadStoredConfig(storageKey: string): GridStackWidget[] | null {
   try {
@@ -28,7 +83,7 @@ function loadStoredConfig(storageKey: string): GridStackWidget[] | null {
 
     const config: StoredConfig = JSON.parse(stored);
 
-    if (config.version !== STORAGE_VERSION) {
+    if (config.version !== STORAGE_VERSION && !LEGACY_STORAGE_VERSIONS.includes(config.version)) {
       console.warn('[GridStack] Config version mismatch, using defaults');
       return null;
     }
@@ -41,8 +96,12 @@ function loadStoredConfig(storageKey: string): GridStackWidget[] | null {
       return null;
     }
 
-    console.log('[GridStack] Loaded', validWidgets.length, 'widgets from storage');
-    return validWidgets;
+    const widgets = LEGACY_STORAGE_VERSIONS.includes(config.version)
+      ? compactLegacyWidgets(validWidgets)
+      : validWidgets;
+
+    console.log('[GridStack] Loaded', widgets.length, 'widgets from storage');
+    return widgets;
   } catch (error) {
     console.error('[GridStack] Error loading config:', error);
     return null;
@@ -173,6 +232,21 @@ export function GridStackProvider({
       return false;
     }
   }, [storageKey]);
+
+  // Persist a migrated layout so the next load does not pack the cards again.
+  useEffect(() => {
+    if (!gridStack || !enablePersistence) return;
+    try {
+      const stored = localStorage.getItem(storageKey);
+      if (!stored) return;
+      const config = JSON.parse(stored) as StoredConfig;
+      if (config.version !== STORAGE_VERSION) {
+        saveToStorage();
+      }
+    } catch {
+      // Ignore a corrupt config; the next user edit will rewrite it.
+    }
+  }, [gridStack, enablePersistence, storageKey, saveToStorage]);
 
   // Set up event listeners when gridStack becomes available
   useEffect(() => {

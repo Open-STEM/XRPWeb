@@ -27,7 +27,7 @@ import {
   isSimulatorRunning,
 } from "./utils/devSimulator";
 
-const CELL_HEIGHT = 50;
+const CELL_HEIGHT = 36;
 const BREAKPOINTS = [
   { c: 1, w: 700 },
   { c: 3, w: 850 },
@@ -50,7 +50,7 @@ const COMPONENT_MAP = {
     const def = getCustomSensor(sensorName);
     if (!def) {
       return (
-        <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+        <div className="flex h-full items-center justify-center text-sm text-mountain-mist-600 dark:text-mountain-mist-300">
           Unknown sensor: {sensorName}
         </div>
       );
@@ -122,7 +122,7 @@ function DashboardHeader() {
 
   return (
     <div className="flex justify-between items-center mb-2 pt-2">
-      <h1 className="text-2xl font-bold text-gray-600 dark:text-gray-300">
+      <h1 className="text-2xl font-bold text-shark-700 dark:text-shark-100">
         {t('sensors')}
       </h1>
       <div className="flex items-center gap-2">
@@ -132,7 +132,7 @@ function DashboardHeader() {
             onClick={handleToggleSim}
             className={`p-2 rounded transition-colors duration-200 ${simRunning
               ? 'text-green-500 bg-green-50 hover:bg-green-100'
-              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
+              : 'text-mountain-mist-600 hover:bg-mountain-mist-200 hover:text-shark-800 dark:text-mountain-mist-300 dark:hover:bg-shark-800 dark:hover:text-shark-50'
               }`}
             title={simRunning ? 'Stop simulator' : 'Start simulator (fake XPP data)'}
           >
@@ -142,7 +142,7 @@ function DashboardHeader() {
 
         <button
           onClick={handleReset}
-          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors duration-200"
+          className="rounded p-2 text-mountain-mist-600 transition-colors duration-200 hover:bg-mountain-mist-200 hover:text-shark-800 dark:text-mountain-mist-300 dark:hover:bg-shark-800 dark:hover:text-shark-50"
           title={'Reset Dashboard'}
         >
           <FaUndo size={18} />
@@ -181,10 +181,10 @@ export default function XRPDashboard() {
   }, []);
 
   return (
-    <div ref={containerRef} className="mx-auto px-4 pb-10 bg-slate-100 min-h-full dark:bg-mountain-mist-950">
+    <div ref={containerRef} className="mx-auto min-h-full bg-mountain-mist-100 px-4 pb-10 text-shark-900 dark:bg-shark-950 dark:text-shark-50">
       <GridStackProvider initialOptions={gridOptions}>
         <DashboardHeader />
-        <div className="relative top-35 border-t-4 border-gray-300">
+        <div className="relative border-t-4 border-mountain-mist-300 dark:border-shark-700">
           <GridStackRenderProvider>
             <GridStackRender componentMap={COMPONENT_MAP} />
           </GridStackRenderProvider>
