@@ -33,11 +33,6 @@ function boardIdIsNanoXRP(boardId: string): boolean {
     return boardId === 'xrp-nano';
 }
 
-/** BOOTSEL mass-storage drive name for the given XRP board. */
-function expectedDriveForBoard(boardId: string): string {
-    return boardId === 'xrp-2350' ? 'RP2350' : 'RPI-RP2';
-}
-
 function pickImage(map: Record<string, string>, key: string, fallback: string): string {
     return map[key] ?? fallback;
 }
