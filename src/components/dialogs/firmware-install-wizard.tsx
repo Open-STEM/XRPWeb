@@ -266,16 +266,6 @@ export default function FirmwareInstallWizard({
                 throw new Error(t('firmwareWizardNoFolder'));
             }
 
-            // Belt-and-suspenders: pickFolder validates the BOOTSEL drive, but
-            // state may have been carried over from a previous run. Confirm
-            // the exact expected drive again before writing any bytes.
-            const expected = expectedDriveForBoard(boardId);
-            if (dirHandle.name !== expected) {
-                throw new Error(
-                    t('firmwareWizardWrongDrive', { picked: dirHandle.name, expected }),
-                );
-            }
-
             // Re-confirm readwrite access on the directory while the user
             // gesture from clicking "Start firmware copy" is still fresh.
             // The picker was opened with mode: 'readwrite' so this should

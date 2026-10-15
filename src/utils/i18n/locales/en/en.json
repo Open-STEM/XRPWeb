@@ -101,7 +101,6 @@
     "firmwareWizardRetryLibrary": "Retry file copy",
     "firmwareWizardNoFolder": "Choose the boot drive folder first.",
     "firmwareWizardNoFolderPicker": "Your browser does not support choosing a folder. Try Chrome or Edge.",
-    "firmwareWizardWrongDrive": "You selected '{{ picked }}', but this board's boot drive should be '{{ expected }}'. Choose the folder again and select the '{{ expected }}' drive.",
     "firmwareWizardSuccessTitle": "Update complete",
     "firmwareWizardSuccessBody": "Firmware (and any selected files) were installed. You can return to the IDE when you are ready.",
     "firmwareWizardSuccessBluetoothReset": "Because MicroPython was updated, reset the XRP or power it completely off and back on before Bluetooth will connect.",
