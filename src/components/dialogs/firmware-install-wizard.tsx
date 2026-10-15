@@ -426,12 +426,6 @@ export default function FirmwareInstallWizard({
             // resulting in a SecurityError "aborted due to security policy".
             const h = await w.showDirectoryPicker({ mode: 'readwrite' });
 
-            // Only the expected BOOTSEL volume is safe. Reject other XRP
-            // drives, thumb drives, and ordinary folders.
-            const expected = expectedDriveForBoard(boardId);
-            if (h.name !== expected) {
-                throw new Error(t('firmwareWizardWrongDrive', { picked: h.name, expected }));
-            }
             setDirHandle(h);
         } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
