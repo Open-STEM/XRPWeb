@@ -1,3 +1,4 @@
+import { BluetoothConnection } from '@/connections/bluetoothconnection';
 import AppMgr from '@/managers/appmgr';
 import { CustomVarMeta } from '@/managers/tablemgr';
 
@@ -49,7 +50,7 @@ export function buildVarUpdatePacket(meta: CustomVarMeta, value: number): Uint8A
 
 /**
  * Send a variable update to the XRP.
- * Uses the active connection's writeToDevice.
+ * Bluetooth uses the data characteristic; USB uses the serial port.
  * Returns true if sent, false if no connection available.
  */
 export async function sendVariableUpdate(meta: CustomVarMeta, value: number): Promise<boolean> {
@@ -61,7 +62,11 @@ export async function sendVariableUpdate(meta: CustomVarMeta, value: number): Pr
 
   const packet = buildVarUpdatePacket(meta, value);
   try {
-    await connection.writeToDevice(packet);
+    if (connection instanceof BluetoothConnection) {
+      await connection.writeToDataDevice(packet);
+    } else {
+      await connection.writeToDevice(packet);
+    }
     return true;
   } catch (err) {
     console.error('Error sending variable update:', err);

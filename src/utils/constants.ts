@@ -7,7 +7,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 // See the GNU General Public License for more details.
 export class Constants {
-    static readonly APP_VERSION = '2.0.37';
+    static readonly APP_VERSION = '2.0.38';
     static readonly EDITOR_TABSET_ID = 'editorTabSetId';
     static readonly SHELL_TABSET_ID = 'shellTabSetId';
     static readonly SHELL_TAB_ID = 'shellTabId';
@@ -34,10 +34,19 @@ export class Constants {
 
 export class FlowBiteConstants {
     static readonly DropdownTheme = {
-        base: 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300',
-        item: 'hover:bg-gray-100 dark:hover:bg-gray-700',
-        itemActive: 'bg-blue-500 text-white dark:bg-blue-600',
-        itemDisabled: 'text-gray-400 dark:text-gray-500',
+        // Default Tailwind white/gray utilities are not in this project's palette,
+        // so Flowbite's stock menu background never applies and the list is see-through.
+        floating: {
+            base: 'z-[2000] w-fit rounded-lg border border-mountain-mist-200 bg-mountain-mist-50 shadow-lg focus:outline-none dark:border-shark-600 dark:bg-shark-900',
+            style: {
+                dark: 'bg-shark-900 text-shark-50',
+                light: 'border border-mountain-mist-200 bg-mountain-mist-50 text-shark-900',
+                auto: 'border border-mountain-mist-200 bg-mountain-mist-50 text-shark-900 dark:border-shark-600 dark:bg-shark-900 dark:text-shark-50',
+            },
+            item: {
+                base: 'flex w-full cursor-pointer items-center justify-start bg-mountain-mist-50 px-4 py-2 text-sm text-shark-800 hover:bg-mountain-mist-200 focus:bg-mountain-mist-200 focus:outline-none dark:bg-shark-900 dark:text-shark-50 dark:hover:bg-shark-700 dark:focus:bg-shark-700',
+            },
+        },
         inlineWrapper: 'text-white bg-shark-200 hover:bg-curious-blue-300 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-shark-600 dark:hover:bg-shark-500 dark:focus:ring-blue-800',
   };
 }

@@ -31,7 +31,7 @@ function DefaultNumberView<TData>({
   const cols = channels.length <= 3 ? channels.length : Math.min(4, channels.length);
   return (
     <div
-      className="grid gap-2 text-center p-4 flex-grow"
+      className="grid gap-1 text-center px-1 py-0 leading-tight"
       style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
     >
       {channels.map((ch) => {
@@ -41,11 +41,11 @@ function DefaultNumberView<TData>({
             <span className="text-xs font-medium" style={{ color: ch.color }}>
               {ch.label}
             </span>
-            <span className="font-mono text-lg">
+            <span className="font-mono text-base text-shark-900 dark:text-shark-50">
               {typeof value === 'number' ? value.toFixed(ch.decimals ?? 2) : value}
             </span>
             {ch.unit && (
-              <span className="text-xs text-gray-500">{ch.unit}</span>
+              <span className="text-xs text-mountain-mist-600 dark:text-mountain-mist-300">{ch.unit}</span>
             )}
           </div>
         );
@@ -101,12 +101,15 @@ function SensorWidget<TData, THistoryEntry>({
 
   return (
     <SensorCard {...sensorCardProps}>
-      <div className="absolute top-4 right-4 flex items-center space-x-2">
+      <div className="absolute top-1 right-2 flex items-center space-x-1">
         <Dropdown
           label={<FaCog size={12} />}
           inline
-          theme={FlowBiteConstants.DropdownTheme}
-          className="font-bold flex items-center text-xs border border-gray-300 rounded"
+          theme={{
+            ...FlowBiteConstants.DropdownTheme,
+            inlineWrapper:
+              'inline-flex items-center rounded border border-mountain-mist-300 bg-mountain-mist-100 p-1 text-shark-700 dark:border-shark-600 dark:bg-shark-800 dark:text-shark-100',
+          }}
         >
           <DropdownItem onClick={() => handleViewChange('graph')}>
             <div className="flex items-center space-x-2">
@@ -124,7 +127,7 @@ function SensorWidget<TData, THistoryEntry>({
 
         <button
           onClick={handleDelete}
-          className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors duration-200"
+          className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors duration-200"
           title="Delete widget"
         >
           <FaTrash size={12} />
@@ -134,12 +137,12 @@ function SensorWidget<TData, THistoryEntry>({
       {/* Content */}
       {!currentData ? (
         <div className="flex items-center justify-center w-full h-full">
-          <div className="text-gray-500 dark:text-gray-400">
+          <div className="text-mountain-mist-600 dark:text-mountain-mist-300">
             {t('no-data-available')}
           </div>
         </div>
       ) : (
-        <div className="flex flex-col w-full h-full relative pt-12">
+        <div className="flex h-full w-full flex-col justify-center">
           {displayMode === 'graph' ? (
             <div className="mt-4 w-full h-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -166,7 +169,7 @@ function SensorWidget<TData, THistoryEntry>({
                     ))}
                   </LineChart>
                 </ResponsiveContainer>
-                <div className="text-xs text-gray-500 text-center mt-2 dark:text-gray-400">
+                <div className="mt-2 text-center text-xs text-mountain-mist-600 dark:text-mountain-mist-300">
                   {history.length} {t('readings-stored')}
                 </div>
               </div>

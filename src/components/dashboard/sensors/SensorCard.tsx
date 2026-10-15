@@ -82,22 +82,22 @@ const SensorCard: React.FC<SensorCardProps> = ({
 
   return (
 
-    <div ref={cardRef} className="sensor-card rounded-xl bg-white shadow w-full h-full flex flex-col border-gray-300 border-4">
-      <div className="sensor-header flex justify-between items-center p-3">
-        <div className="flex items-center gap-2">
-          <div className="text-gray-600 dark:text-gray-300 text-2xl">
+    <div ref={cardRef} className="sensor-card relative flex h-full w-full flex-col rounded-xl border-2 border-mountain-mist-300 bg-mountain-mist-50 text-shark-900 shadow dark:border-shark-600 dark:bg-shark-900 dark:text-shark-50">
+      <div className="sensor-header flex items-center py-1.5 pl-3 pr-14">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="shrink-0 text-lg text-shark-700 dark:text-shark-100">
             {icon}
           </div>
-          <h3 className="font-semibold text-gray-600 dark:text-gray-300">{title}</h3>
+          <h3 className="truncate text-sm font-semibold text-shark-700 dark:text-shark-100">{title}</h3>
         </div>
       </div>
 
-      <div className="sensor-content-area flex-grow flex justify-center items-center p-2 overflow-hidden">
+      <div className="sensor-content-area flex flex-grow items-center justify-center overflow-hidden px-2 py-1">
         {children}
       </div>
 
-      <div className="sensor-footer flex justify-between items-center p-3">
-        <div className="text-xs text-gray-400 dark:text-gray-300">
+      <div className="sensor-footer flex items-center justify-between px-3 py-1">
+        <div className="text-xs text-mountain-mist-600 dark:text-mountain-mist-300">
           {lastUpdated && (
             <span>Updated: {new Date(lastUpdated).toLocaleTimeString()}</span>
           )}

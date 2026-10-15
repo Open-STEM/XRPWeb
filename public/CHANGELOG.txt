@@ -1,8 +1,12 @@
-# Version 2.0.37
+# Version 2.0.38
 
 #### User Guide for XRPCode V2
 * <a href="https://xrpusersguide.readthedocs.io/en/latest/course/XRPCodeV2.html" target="_blank" rel="noopener noreferrer">User Guide</a>
 
+#### V 2.0.38 fixes
+* Better sized dashboard boxes and full support for dark mode
+* Fix for dashboard send to variable over Bluetooth
+* Added separator to Shell for each run
 
 #### XRPCode V2 What’s New
 * Rewritten with modern web tools for more solid and expandable future
@@ -32,9 +36,10 @@
     * Backup and Restore
         * XRPCode users can backup the XRP Robot’s files on the Robot to Google Drive. These files can be restored back to the XRP from Google Drive.
 
-#### XRPLib updates version 2026.09.2
+#### XRPLib updates version 2026.10.1
 * Fix for better completing turns
-* Dashboard support
+* Dashboard now runs at 20hz
+* Fix for `defaults.py` exception
 
 #### Bugs and Feature requests
 * Please report bugs and feature requests at <a href="https://xrp.discourse.group/c/support/" target="_blank" rel="noopener noreferrer">XRP Forums</a>

@@ -20,13 +20,14 @@ interface BuiltinSensorDef {
   componentName: string;
 }
 
+// Voltage width (w=3 on a 12-column grid). Four of these fit a laptop dashboard pane.
 const BUILTIN_SENSORS: BuiltinSensorDef[] = [
-  { action: 'accelerometer', icon: MdSpeed, titleKey: 'accelerometer', gridH: 5, gridW: 4, minW: 2, minH: 5, componentName: 'Accelerometer' },
-  { action: 'gyroscope', icon: FaGlobe, titleKey: 'gyroscope', gridH: 4, gridW: 4, minW: 2, minH: 5, componentName: 'Gyroscope' },
-  { action: 'encoder', icon: FaCog, titleKey: 'encoders', gridH: 5, gridW: 4, minW: 1, minH: 4, componentName: 'Encoder' },
-  { action: 'reflectance', icon: FaEye, titleKey: 'reflectance', gridH: 5, gridW: 4, minW: 2, minH: 5, componentName: 'Reflectance' },
-  { action: 'rangefinder', icon: BsRulers, titleKey: 'rangefinder', gridH: 8, gridW: 4, minW: 2, minH: 8, componentName: 'Rangefinder' },
-  { action: 'voltage', icon: FaBatteryHalf, titleKey: 'voltage', gridH: 6, gridW: 4, minW: 2, minH: 6, componentName: 'Voltage' },
+  { action: 'accelerometer', icon: MdSpeed, titleKey: 'accelerometer', gridH: 4, gridW: 3, minW: 2, minH: 3, componentName: 'Accelerometer' },
+  { action: 'gyroscope', icon: FaGlobe, titleKey: 'gyroscope', gridH: 4, gridW: 3, minW: 2, minH: 3, componentName: 'Gyroscope' },
+  { action: 'encoder', icon: FaCog, titleKey: 'encoders', gridH: 4, gridW: 3, minW: 2, minH: 3, componentName: 'Encoder' },
+  { action: 'reflectance', icon: FaEye, titleKey: 'reflectance', gridH: 4, gridW: 3, minW: 2, minH: 3, componentName: 'Reflectance' },
+  { action: 'rangefinder', icon: BsRulers, titleKey: 'rangefinder', gridH: 4, gridW: 3, minW: 2, minH: 3, componentName: 'Rangefinder' },
+  { action: 'voltage', icon: FaBatteryHalf, titleKey: 'voltage', gridH: 4, gridW: 3, minW: 2, minH: 3, componentName: 'Voltage' },
 ];
 
 const AddWidgets: React.FC = () => {
@@ -39,8 +40,7 @@ const AddWidgets: React.FC = () => {
     addWidget(() => ({
       h: def.gridH,
       w: def.gridW,
-      x: 0,
-      y: 2,
+      autoPosition: true,
       minW: def.minW,
       minH: def.minH,
       content: JSON.stringify({
@@ -56,12 +56,11 @@ const AddWidgets: React.FC = () => {
 
     const grid = def.gridDefaults ?? {};
     addWidget(() => ({
-      h: grid.h ?? 5,
-      w: grid.w ?? 4,
-      x: 0,
-      y: 2,
+      h: grid.h ?? 4,
+      w: grid.w ?? 3,
+      autoPosition: true,
       minW: grid.minW ?? 2,
-      minH: grid.minH ?? 5,
+      minH: grid.minH ?? 3,
       content: JSON.stringify({
         name: 'CustomSensor',
         props: { sensorName: def.sensorName, viewMode: 'data' },
@@ -75,7 +74,6 @@ const AddWidgets: React.FC = () => {
         label={<FaPlus size={20} />}
         inline={true}
         theme={FlowBiteConstants.DropdownTheme}
-        className="flex items-center mt-4 sm:mt-0"
       >
         {/* Built-in sensors */}
         {BUILTIN_SENSORS.map((def) => (
@@ -94,12 +92,11 @@ const AddWidgets: React.FC = () => {
           icon={FaSlidersH}
           onClick={() => {
             addWidget(() => ({
-              h: 5,
-              w: 4,
-              x: 0,
-              y: 2,
+              h: 4,
+              w: 3,
+              autoPosition: true,
               minW: 2,
-              minH: 4,
+              minH: 3,
               content: JSON.stringify({
                 name: 'CustomVariable',
                 props: {},
