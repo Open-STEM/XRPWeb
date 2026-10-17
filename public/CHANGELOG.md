@@ -1,12 +1,13 @@
-# Version 2.0.38
+# Welcome to XRPCode 2.0
+
+ We have worked hard to bring you this new architecture and lots of new features. If for some reason you need the older v1 version, for a limited time you can find it at https://xrpcode.wpi.edu/v1/ 
+ You can get back to this Change Log via the help menu.
+
+
+# Version 2.1.0
 
 #### User Guide for XRPCode V2
 * <a href="https://xrpusersguide.readthedocs.io/en/latest/course/XRPCodeV2.html" target="_blank" rel="noopener noreferrer">User Guide</a>
-
-#### V 2.0.38 fixes
-* Better sized dashboard boxes and full support for dark mode
-* Fix for dashboard send to variable over Bluetooth
-* Added separator to Shell for each run
 
 #### XRPCode V2 What’s New
 * Rewritten with modern web tools for more solid and expandable future
@@ -39,7 +40,6 @@
 #### XRPLib updates version 2026.10.1
 * Fix for better completing turns
 * Dashboard now runs at 20hz
-* Fix for `defaults.py` exception
 
 #### Bugs and Feature requests
 * Please report bugs and feature requests at <a href="https://xrp.discourse.group/c/support/" target="_blank" rel="noopener noreferrer">XRP Forums</a>
