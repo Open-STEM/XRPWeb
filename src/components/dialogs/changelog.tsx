@@ -8,7 +8,7 @@ type changelogProps = {
     closeDialog: () => void;
     /**
      * Optional URL of the changelog file to fetch. Defaults to the
-     * application-wide CHANGELOG.txt at the site root.
+     * application-wide CHANGELOG.md at the site root.
      */
     changelogUrl?: string;
 };
@@ -24,7 +24,7 @@ const md = new MarkdownIt({
  * ChangeLogDlg - A component that displays the changelog of the application.
  * @returns ChangeLogDlg
  */
-function ChangeLogDlg({ closeDialog, changelogUrl = 'CHANGELOG.txt' }: changelogProps) {
+function ChangeLogDlg({ closeDialog, changelogUrl = 'CHANGELOG.md' }: changelogProps) {
     const [markdown, setMarkdown] = useState<string>('');
 
     useEffect(() => {
