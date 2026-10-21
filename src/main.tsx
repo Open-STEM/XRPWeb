@@ -19,6 +19,11 @@ function Root() {
     const googleAuthBackendUrl = import.meta.env.GOOGLE_AUTH_URL;
 
     useEffect(() => {
+        // debug mode via environment to turn on debug-screens class
+        if (import.meta.env.DEV) {
+            document.body.classList.add('debug-screens');
+        }
+
         if (!googleAuthBackendUrl) {
             console.warn('GOOGLE_AUTH_URL is not set - Google sign-in is disabled.');
             return;
