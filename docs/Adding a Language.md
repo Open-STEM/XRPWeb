@@ -36,6 +36,12 @@ const resources = {
 };
 ```
 
+Also add the code to `supportedLngs` in the same file. With `load: 'languageOnly'`, a browser set to a regional code like `de-DE` or `de-AT` is mapped to `de`:
+
+```ts
+supportedLngs: ['en', 'es', 'de'],
+```
+
 ## 4. Register the Blockly core locale in `src/utils/blockly-locales.ts`
 
 This translates the standard blocks (Logic, Loops, Math, ...). Check that `node_modules/blockly/msg/<code>.js` exists.
@@ -66,4 +72,4 @@ const languageOptions = [
 
 ## 7. Submit
 
-Open a pull request to [Open-STEM/XRPWeb](https://github.com/Open-STEM/XRPWeb) with the new locale folder and the three code changes.
+Open a pull request to [Open-STEM/XRPWeb](https://github.com/Open-STEM/XRPWeb) with the new locale folder and the code changes.

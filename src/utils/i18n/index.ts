@@ -29,6 +29,8 @@ i18n
     .use(initReactI18next) // passes i18n down to react-i18next
     .init({
         resources,
+        supportedLngs: ['en', 'es', 'de'],
+        load: 'languageOnly', // map regional codes like 'de-DE' to 'de'
         fallbackLng: 'en',
         interpolation: {
             escapeValue: false, // react already safes from xss
