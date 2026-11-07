@@ -9,12 +9,14 @@ import * as Blockly from 'blockly/core';
 import type { Workspace } from 'blockly/core';
 import * as EnMsg from 'blockly/msg/en';
 import * as EsMsg from 'blockly/msg/es';
+import * as DeMsg from 'blockly/msg/de';
 import i18n from '@/utils/i18n';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const localeMessages: Record<string, any> = {
     en: EnMsg,
     es: EsMsg,
+    de: DeMsg,
 };
 
 export function getSupportedLanguages(): string[] {
@@ -39,7 +41,13 @@ function getCustomBlocklyMessages(language: string): Record<string, string> {
  */
 export function applyBlocklyLocale(language: string): void {
     const defaultLanguage = 'en';
-    const targetLanguage = isLanguageSupported(language) ? language : defaultLanguage;
+    // Regional codes like 'de-DE' fall back to their base language 'de'
+    const baseLanguage = language.split('-')[0];
+    const targetLanguage = isLanguageSupported(language)
+        ? language
+        : isLanguageSupported(baseLanguage)
+          ? baseLanguage
+          : defaultLanguage;
     const coreMessages = localeMessages[targetLanguage];
     const customMessages = getCustomBlocklyMessages(targetLanguage);
 

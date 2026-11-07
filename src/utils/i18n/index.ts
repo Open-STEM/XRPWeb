@@ -4,8 +4,10 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 import enLang from '@/utils/i18n/locales/en/en.json';
 import esLang from '@/utils/i18n/locales/es/es.json';
+import deLang from '@/utils/i18n/locales/de/de.json';
 import enBlockly from '@/utils/i18n/locales/en/blockly.json';
 import esBlockly from '@/utils/i18n/locales/es/blockly.json';
+import deBlockly from '@/utils/i18n/locales/de/blockly.json';
 
 // the translations
 // (tip move them in a JSON file and import them,
@@ -17,6 +19,9 @@ const resources = {
     es: {
         translation: { ...esLang, blockly: esBlockly },
     },
+    de: {
+        translation: { ...deLang, blockly: deBlockly },
+    },
 };
 
 i18n
@@ -24,6 +29,8 @@ i18n
     .use(initReactI18next) // passes i18n down to react-i18next
     .init({
         resources,
+        supportedLngs: ['en', 'es', 'de'],
+        load: 'languageOnly', // map regional codes like 'de-DE' to 'de'
         fallbackLng: 'en',
         interpolation: {
             escapeValue: false, // react already safes from xss

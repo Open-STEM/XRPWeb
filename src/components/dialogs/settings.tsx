@@ -21,6 +21,7 @@ function SettingsDlg({ toggleDialog }: SettingsProps) {
     const languageOptions = [
         { code: 'en', label: 'English', nativeName: 'English' },
         { code: 'es', label: 'Spanish', nativeName: 'Español' },
+        { code: 'de', label: 'German', nativeName: 'Deutsch' },
     ];
 
     /**
@@ -71,7 +72,7 @@ function SettingsDlg({ toggleDialog }: SettingsProps) {
                         <select
                             id="languageSelectedId"
                             className="dark:text-white block rounded border border-s-2 border-shark-300 border-s-curious-blue-500 bg-mountain-mist-100 p-2.5 text-sm text-mountain-mist-700 focus:border-mountain-mist-500 focus:ring-curious-blue-500 dark:border-shark-600 dark:border-s-shark-500 dark:bg-shark-500 dark:text-mountain-mist-200 dark:placeholder-mountain-mist-400 dark:focus:border-matisse-500 dark:focus:ring-shark-300"
-                            value={i18n.language}
+                            value={i18n.resolvedLanguage}
                             onChange={handleLanguageChange}
                         >
                             {languageOptions.map((option) => (
