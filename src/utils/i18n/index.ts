@@ -25,6 +25,10 @@ i18n
     .init({
         resources,
         fallbackLng: 'en',
+        supportedLngs: ['en', 'es'],
+        detection: {
+            convertDetectedLanguage: (lng: string) => lng.split('-')[0],
+        },
         interpolation: {
             escapeValue: false, // react already safes from xss
         },

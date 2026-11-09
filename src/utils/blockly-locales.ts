@@ -10,6 +10,7 @@ import type { Workspace } from 'blockly/core';
 import * as EnMsg from 'blockly/msg/en';
 import * as EsMsg from 'blockly/msg/es';
 import i18n from '@/utils/i18n';
+import { registerBlockMessages } from '@components/blockly/block-messages';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const localeMessages: Record<string, any> = {
@@ -36,10 +37,15 @@ function getCustomBlocklyMessages(language: string): Record<string, string> {
 
 /**
  * Apply Blockly core locale plus custom XRP block messages from i18n.
+ * Accepts regional codes such as es-ES or es-419 by using their base language.
+ * Also makes the XRP blocks build their text from the locale's sentence templates
+ * ({@link registerBlockMessages}, which runs only once).
  */
 export function applyBlocklyLocale(language: string): void {
+    registerBlockMessages();
     const defaultLanguage = 'en';
-    const targetLanguage = isLanguageSupported(language) ? language : defaultLanguage;
+    const baseLanguage = language.split('-')[0];
+    const targetLanguage = isLanguageSupported(baseLanguage) ? baseLanguage : defaultLanguage;
     const coreMessages = localeMessages[targetLanguage];
     const customMessages = getCustomBlocklyMessages(targetLanguage);
 
