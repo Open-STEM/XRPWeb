@@ -27,7 +27,6 @@
     "@codingame/monaco-vscode-textmate-service-override": "^11.1.2",
     "@codingame/monaco-vscode-theme-defaults-default-extension": "^11.1.2",
     "@codingame/monaco-vscode-theme-service-override": "^11.1.2",
-    "@google/genai": "^1.6.0",
     "@react-oauth/google": "^0.12.2",
     "@tailwindcss/typography": "^0.5.16",
     "@typefox/pyright-browser": "^1.1.299",
