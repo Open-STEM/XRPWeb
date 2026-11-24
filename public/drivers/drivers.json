@@ -17,6 +17,14 @@
             "url": "drivers/qwiic_i2c/package.json"
         },
         {
+            "friendlyName": "GPIO",
+            "name": "gpio.py",
+            "manufacturer": "General",
+            "version": "1.2.0",
+            "docUrl": "https://docs.sparkfun.com/SparkFun_XRP_Controller/hardware_overview/",
+            "url": "drivers/gpio/package.json"
+        },
+        {
             "friendlyName": "BME280 Atospheric Sensor Breakout",
             "name": "qwiic_bme280.py",
             "manufacturer": "SparkFun Electronics",
