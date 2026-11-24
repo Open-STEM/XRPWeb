@@ -26,6 +26,14 @@ import curriculum from '@assets/images/curriculum.svg';
 import changelog from '@assets/images/changelog.svg';
 import privacy from '@assets/images/privacy.svg';
 import settings from '@assets/images/settings.svg';
+import downloadIcon from '@assets/images/download.svg';
+import OfflineServiceWorker from '@components/offline-service-worker';
+import {
+    enableOfflineVersion,
+    isOfflineVersionSupported,
+    removeOfflineVersion,
+    useOfflineVersionEnabled,
+} from '@/utils/offline-mode';
 import chatbot from '@assets/images/chatbot.svg';
 import gamepad from '@assets/images/gamepad.svg';
 import bugs from '@assets/images/bugs.svg';
@@ -141,6 +149,7 @@ function parseBleFailure(payload: string): BleConnectFailureInfo {
 function NavBar({ layoutref }: NavBarProps) {
     const { t } = useTranslation();
     const [isMoreMenuOpen, setMoreMenuOpen] = useState(false);
+    const isOfflineVersion = useOfflineVersionEnabled();
     const [isConnected, setConnected] = useState(false);
     const [isLogin, setLogin] = useState(false);
     const [isRunning, setRunning] = useState(false);
@@ -178,6 +187,8 @@ function NavBar({ layoutref }: NavBarProps) {
         | { kind: 'must-mp' }
         | null
     >(null);
+    // Reloads into a newly cached deployment of the offline version.
+    const [appUpdateReload, setAppUpdateReload] = useState<(() => void) | null>(null);
     const [activeTab, setActiveTab] = useLocalStorage(StorageKeys.ACTIVETAB, '');
     const authService = AppMgr.getInstance().authService;
     const driveService = AppMgr.getInstance().driveService;
@@ -1377,6 +1388,85 @@ function NavBar({ layoutref }: NavBarProps) {
     }
 
     /**
+     * onOfflineVersionClicked - download the offline version, or remove it if
+     * it is already installed
+     */
+    function onOfflineVersionClicked() {
+        setMoreMenuOpen(false);
+        if (isOfflineVersion) {
+            openDialog(
+                <ConfirmationDlg
+                    acceptCallback={async () => {
+                        await removeOfflineVersion();
+                        setAppUpdateReload(null);
+                        openDialog(
+                            <AlertDialog
+                                alertMessage={t('offline-version.removed')}
+                                toggleDialog={toggleDialog}
+                            />,
+                        );
+                    }}
+                    toggleDialog={toggleDialog}
+                    confirmationMessage={t('offline-version.remove-confirm')}
+                />,
+            );
+        } else if (!navigator.onLine) {
+            openDialog(
+                <AlertDialog
+                    alertMessage={t('offline-version.need-online')}
+                    toggleDialog={toggleDialog}
+                />,
+            );
+        } else {
+            openDialog(
+                <ConfirmationDlg
+                    acceptCallback={() => {
+                        openDialog(<ProgressDlg title="offline-version.downloading" />);
+                        enableOfflineVersion();
+                    }}
+                    toggleDialog={toggleDialog}
+                    confirmationMessage={t('offline-version.download-confirm')}
+                />,
+            );
+        }
+    }
+
+    /**
+     * onOfflineReady - the offline version has finished downloading
+     */
+    function onOfflineReady() {
+        openDialog(
+            <AlertDialog alertMessage={t('offline-version.ready')} toggleDialog={toggleDialog} />,
+        );
+    }
+
+    /**
+     * onOfflineError - the offline version could not be downloaded
+     */
+    async function onOfflineError() {
+        await removeOfflineVersion();
+        openDialog(
+            <AlertDialog
+                alertMessage={t('offline-version.download-failed')}
+                toggleDialog={toggleDialog}
+            />,
+        );
+    }
+
+    /**
+     * onAppUpdateClicked - reload into the new version of the offline app
+     */
+    function onAppUpdateClicked() {
+        openDialog(
+            <ConfirmationDlg
+                acceptCallback={() => appUpdateReload?.()}
+                toggleDialog={toggleDialog}
+                confirmationMessage={t('offline-version.new-version-confirm')}
+            />,
+        );
+    }
+
+    /**
      * onDashboardClicked - handle the Dashboard button click event
      */
     function onDashboardClicked() {
@@ -1658,6 +1748,17 @@ function NavBar({ layoutref }: NavBarProps) {
             iconImage: firmwareLoaderIcon,
             clicked: onFirmwareLoaderClicked,
         },
+        ...(isOfflineVersionSupported()
+            ? [
+                  {
+                      label: isOfflineVersion
+                          ? t('offline-version.menu-remove')
+                          : t('offline-version.menu-download'),
+                      iconImage: downloadIcon,
+                      clicked: onOfflineVersionClicked,
+                  },
+              ]
+            : []),
         {
             label: t('settings'),
             iconImage: settings,
@@ -1775,6 +1876,19 @@ function NavBar({ layoutref }: NavBarProps) {
                         <span>{t('updateAvailable')}</span>
                     </button>
                 )}
+                {appUpdateReload && (
+                    <button
+                        type="button"
+                        id="appUpdateBtn"
+                        onClick={onAppUpdateClicked}
+                        title={t('offline-version.new-version-tooltip')}
+                        aria-label={t('offline-version.new-version')}
+                        className="flex items-center gap-1 rounded-full bg-curious-blue-100 px-2.5 py-1 text-xs font-medium text-curious-blue-900 ring-1 ring-curious-blue-300 hover:bg-curious-blue-200 dark:bg-curious-blue-900/40 dark:text-curious-blue-100 dark:ring-curious-blue-700 dark:hover:bg-curious-blue-900/70"
+                    >
+                        <IoArrowUpCircle size={14} />
+                        <span>{t('offline-version.new-version')}</span>
+                    </button>
+                )}
                 <div className={`flex h-full items-stretch ${isConnected ? 'hidden' : ''}`}>
                     <button
                         id="connectBtn"
@@ -1861,6 +1975,16 @@ function NavBar({ layoutref }: NavBarProps) {
                     )}
                 </div>
             </div>
+            {isOfflineVersion && (
+                <OfflineServiceWorker
+                    onProgress={(percent) =>
+                        AppMgr.getInstance().emit(EventType.EVENT_PROGRESS, String(percent))
+                    }
+                    onOfflineReady={onOfflineReady}
+                    onNeedRefresh={(reload) => setAppUpdateReload(() => reload)}
+                    onError={onOfflineError}
+                />
+            )}
             <Dialog isOpen={isDlgOpen} toggleDialog={toggleDialog} ref={dialogRef}>
                 {dialogContent}
             </Dialog>

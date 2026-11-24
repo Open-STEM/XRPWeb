@@ -250,7 +250,22 @@
         "placeholder": "Message XRPCode Buddy...",
         "stopGeneration": "Stop generation",
         "sendMessage": "Send message",
-        "buddyTyping": "XRPCode Buddy is typing..."
+        "buddyTyping": "XRPCode Buddy is typing...",
+        "offline": "XRPCode Buddy needs an internet connection. It will reconnect when you are back online."
+    },
+    "offline-version": {
+        "menu-download": "Download Offline Version",
+        "menu-remove": "Remove Offline Version",
+        "download-confirm": "Download the offline version of XRP Web App (about 55 MB)? Afterwards it will open even without an internet connection.",
+        "downloading": "Downloading Offline Version",
+        "ready": "The offline version is ready. XRP Web App will now open even without an internet connection. You can also install it as an app from your browser's address bar.",
+        "download-failed": "The offline version could not be downloaded. Check your internet connection and try again.",
+        "need-online": "Connect to the internet to download the offline version.",
+        "remove-confirm": "Remove the offline version? XRP Web App will need an internet connection to open.",
+        "removed": "The offline version has been removed. XRP Web App now needs an internet connection.",
+        "new-version": "New version",
+        "new-version-tooltip": "A new version of XRP Web App is available. Click to reload.",
+        "new-version-confirm": "A new version of XRP Web App is available. Save your work, then click OK to reload."
     },
     "editor": {
         "saveconnect": "To save a file, please connect to the XRP or login to your Google Drive account."

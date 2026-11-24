@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 import importMetaUrlPlugin from '@codingame/esbuild-import-meta-url-plugin';
 import { visualizer } from "rollup-plugin-visualizer";
 import { viteStaticCopy } from 'vite-plugin-static-copy'
+import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath, URL } from 'url';
 import { extname, join, normalize, resolve } from 'path';
 
@@ -49,6 +50,23 @@ function devPublicPrefixPlugin(): PluginOption {
     };
 }
 
+/**
+ * vite-plugin-pwa always links the web manifest from index.html. Drop that
+ * link so browsers only offer to install the app once the offline version has
+ * been downloaded - src/utils/offline-mode.ts adds it back at runtime.
+ */
+function stripManifestLinkPlugin(): PluginOption {
+    return {
+        name: 'strip-manifest-link',
+        apply: 'build',
+        enforce: 'post',
+        transformIndexHtml: {
+            order: 'post',
+            handler: (html) => html.replace(/<link rel="manifest"[^>]*>/, ''),
+        },
+    };
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
@@ -77,8 +95,54 @@ export default defineConfig(({ mode }) => {
                 {
                     src: 'node_modules/gridstack/dist/gridstack.css',
                     dest: './node_modules/gridstack/dist/'
+                },
+                {
+                    // Blockly's sprites (trashcan, zoom controls), sounds and
+                    // cursors - served locally instead of blockly-demo.appspot.com.
+                    src: 'node_modules/blockly/media/*',
+                    dest: './blockly-media/'
                 }        ]
-        })],
+        }),
+            // Offline support: precache the whole build (app, Monaco/Pyright,
+            // firmware-loader UF2s, XRPLib, drivers) so the IDE, firmware
+            // updates and library installs work with no network after the
+            // first visit. Updates wait for the user to reload so a new
+            // version never interrupts unsaved work.
+            VitePWA({
+                registerType: 'prompt',
+                injectRegister: false,
+                manifest: {
+                    name: 'XRP Web App',
+                    short_name: 'XRPWeb',
+                    description: 'XRP Web Development Environment',
+                    start_url: './',
+                    scope: './',
+                    display: 'standalone',
+                    background_color: '#ffffff',
+                    theme_color: '#005a9e',
+                    icons: [
+                        { src: 'pwa/icon-192.png', sizes: '192x192', type: 'image/png' },
+                        { src: 'pwa/icon-512.png', sizes: '512x512', type: 'image/png' },
+                        {
+                            src: 'pwa/maskable-512.png',
+                            sizes: '512x512',
+                            type: 'image/png',
+                            purpose: 'maskable',
+                        },
+                    ],
+                },
+                workbox: {
+                    globPatterns: ['**/*'],
+                    globIgnores: ['**/*.map'],
+                    // The Monaco chunk alone is ~13 MB.
+                    maximumFileSizeToCacheInBytes: 32 * 1024 * 1024,
+                    navigateFallback: 'index.html',
+                    navigateFallbackDenylist: [/^\/api\//],
+                    cleanupOutdatedCaches: true,
+                },
+            }),
+            stripManifestLinkPlugin(),
+        ],
         resolve: {
             alias: [
                 { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },

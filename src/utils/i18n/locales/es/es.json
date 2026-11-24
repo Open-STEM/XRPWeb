@@ -250,7 +250,22 @@
         "placeholder": "Mensaje para el Compañero de Código XRP...",
         "stopGeneration": "Detener generación",
         "sendMessage": "Enviar mensaje",
-        "buddyTyping": "El Compañero de Código XRP está escribiendo..."
+        "buddyTyping": "El Compañero de Código XRP está escribiendo...",
+        "offline": "El Compañero de Código XRP necesita conexión a internet. Se volverá a conectar cuando vuelvas a estar en línea."
+    },
+    "offline-version": {
+        "menu-download": "Descargar versión sin conexión",
+        "menu-remove": "Eliminar versión sin conexión",
+        "download-confirm": "¿Descargar la versión sin conexión de la aplicación web XRP (unos 55 MB)? Después se abrirá incluso sin conexión a internet.",
+        "downloading": "Descargando versión sin conexión",
+        "ready": "La versión sin conexión está lista. La aplicación web XRP ahora se abrirá incluso sin conexión a internet. También puedes instalarla como aplicación desde la barra de direcciones del navegador.",
+        "download-failed": "No se pudo descargar la versión sin conexión. Revisa tu conexión a internet e inténtalo de nuevo.",
+        "need-online": "Conéctate a internet para descargar la versión sin conexión.",
+        "remove-confirm": "¿Eliminar la versión sin conexión? La aplicación web XRP necesitará conexión a internet para abrirse.",
+        "removed": "Se eliminó la versión sin conexión. La aplicación web XRP ahora necesita conexión a internet.",
+        "new-version": "Nueva versión",
+        "new-version-tooltip": "Hay una nueva versión de la aplicación web XRP. Haz clic para recargar.",
+        "new-version-confirm": "Hay una nueva versión de la aplicación web XRP. Guarda tu trabajo y luego haz clic en Aceptar para recargar."
     },
     "editor": {
         "saveconnect": "Para guardar el archivo, por favor conecte su XRP o inicie sesión en Google Drive."

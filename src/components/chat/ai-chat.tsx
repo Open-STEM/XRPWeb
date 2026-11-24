@@ -6,6 +6,7 @@ import ChatMessageComponent from './chat-message';
 import { IoSend, IoSparkles, IoDocument, IoStop } from 'react-icons/io5';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from 'react-i18next';
+import { useOnlineStatus } from '@/utils/use-online-status';
 
 export default function AIChat() {
     const { t, i18n } = useTranslation();
@@ -17,6 +18,7 @@ export default function AIChat() {
     const [textQueue, setTextQueue] = useState<string>('');
     const [sessionId, setSessionId] = useState<string>('');
     const [showHeader, setShowHeader] = useState<boolean>(true);
+    const isOnline = useOnlineStatus();
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -24,8 +26,14 @@ export default function AIChat() {
     const contextLoader = useRef<GeminiContextLoader | null>(null);
     const abortController = useRef<AbortController | null>(null);
 
-    // Initialize client, context loader, and session on component mount
+    // Initialize client, context loader, and session on mount, and again when
+    // the network comes back - the backend cannot be reached while offline.
     useEffect(() => {
+        if (!isOnline) {
+            setContextStatus('idle');
+            return;
+        }
+
         geminiClient.current = new GeminiClient();
         contextLoader.current = createContextLoader();
 
@@ -64,7 +72,7 @@ export default function AIChat() {
                 geminiClient.current.cleanupSession(newSessionId);
             }
         };
-    }, []);
+    }, [isOnline]);
 
     // Cleanup session when user closes browser tab or navigates away
     useEffect(() => {
@@ -315,6 +323,11 @@ export default function AIChat() {
 
             {/* Input */}
             <div className="border-t border-mountain-mist-200 dark:border-mountain-mist-700 p-4">
+                {!isOnline && (
+                    <div className="mb-3 text-sm text-center text-mountain-mist-600 dark:text-mountain-mist-300">
+                        {t('aiChat.offline')}
+                    </div>
+                )}
                 <div className="flex gap-3 items-center">
                     <div className="flex-1 relative">
                         <textarea
@@ -323,7 +336,7 @@ export default function AIChat() {
                             onChange={(e) => setInputValue(e.target.value)}
                             onKeyPress={handleKeyPress}
                             placeholder={t('aiChat.placeholder')}
-                            disabled={status === ChatStatus.STREAMING}
+                            disabled={status === ChatStatus.STREAMING || !isOnline}
                             className="w-full px-4 py-3 border border-mountain-mist-300 dark:border-mountain-mist-600 rounded-xl bg-white dark:bg-mountain-mist-900 text-mountain-mist-900 dark:text-mountain-mist-100 placeholder-mountain-mist-500 dark:placeholder-mountain-mist-400 focus:ring-2 focus:ring-curious-blue-500 focus:border-curious-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-[52px] max-h-32"
                             rows={1}
                         />
@@ -331,7 +344,7 @@ export default function AIChat() {
                     
                     <button
                         onClick={status === ChatStatus.STREAMING ? stopGeneration : sendMessage}
-                        disabled={status === ChatStatus.STREAMING ? false : !inputValue.trim()}
+                        disabled={status === ChatStatus.STREAMING ? false : !inputValue.trim() || !isOnline}
                         className="p-3 bg-curious-blue-600 hover:bg-curious-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl transition-colors flex-shrink-0"
                         title={status === ChatStatus.STREAMING ? t('aiChat.stopGeneration') : t('aiChat.sendMessage')}
                     >

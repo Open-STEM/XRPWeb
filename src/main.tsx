@@ -36,12 +36,19 @@ function Root() {
                 }
                 const data = await response.json();
                 setGoogleClientId(data.client_id ?? '');
+                window.removeEventListener('online', fetchClientId);
             } catch (error) {
                 // The IDE stays usable without Google - only Drive sign-in is lost.
                 console.error('Error fetching Google Client ID:', error);
             }
         };
-        fetchClientId();
+        // Started offline from the service worker cache: try again once the
+        // network is back so Drive sign-in becomes available.
+        window.addEventListener('online', fetchClientId);
+        if (navigator.onLine) {
+            fetchClientId();
+        }
+        return () => window.removeEventListener('online', fetchClientId);
     }, [googleAuthBackendUrl]);
 
     return (

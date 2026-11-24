@@ -271,16 +271,15 @@ export default class ConnectionMgr {
             };
 
             // Send this information back to the WPI server
-            try {
+            // (skipped when offline; the app runs from the service worker cache)
+            if (navigator.onLine) {
                 fetch('https://xrpid-464879733234.us-central1.run.app/data', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify(data),
-                });
-            } catch (err) {
-                console.log(err);
+                }).catch((err) => console.log(err));
             }
             if (isBLE) {
                 // A robot reached over Bluetooth becomes the saved XRP. USB does
