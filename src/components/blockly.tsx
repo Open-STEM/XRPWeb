@@ -556,6 +556,9 @@ function BlocklyEditor({ tabId, tabName }: BlocklyEditorProps) {
             className="h-full"
             toolboxConfiguration={toolboxConfiguration}
             workspaceConfiguration={{
+                // Local copy of node_modules/blockly/media (see vite.config.ts).
+                // Without this, Blockly falls back to blockly-demo.appspot.com.
+                media: './blockly-media/',
                 move:{
                     scrollbars: {horizontal: true, vertical: true},
                     drag: true,
