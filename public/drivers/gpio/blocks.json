@@ -1,0 +1,20 @@
+[
+  {
+    "kind": "BLOCK",
+    "type": "gpio_set_value",
+    "inputs": {
+      "VALUE": {
+        "shadow": {
+          "type": "math_number",
+          "fields": {
+            "NUM": 1
+          }
+        }
+      }
+    }
+  },
+  {
+    "kind": "BLOCK",
+    "type": "gpio_get_value"
+  }
+]

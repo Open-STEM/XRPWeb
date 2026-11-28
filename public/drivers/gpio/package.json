@@ -1,0 +1,16 @@
+{
+  "urls": [
+    [
+      "gpio.py",
+      "drivers/gpio/gpio.py"
+    ]
+  ],
+  "blocks": [
+    {
+      "friendly_name": "GPIO",
+      "blocks_url": "drivers/gpio/blocks.json",
+      "script_url": "drivers/gpio/blocks.js"
+    }
+  ],
+  "version": "1.2.0"
+}
