@@ -140,12 +140,7 @@ pythonGenerator.forBlock['xrp_getrightencoder'] = function (block) {
 pythonGenerator.forBlock['xrp_servo_deg'] = function (block) {
   pythonGenerator.definitions_['import_servo'] = 'from XRPLib.servo import Servo';
   var index = block.getFieldValue("SERVO");
-  if(index == 1){
-    pythonGenerator.definitions_[`servo_setup`] = `servo1 = Servo.get_default_servo(1)`;
-  }
-  else {
-    pythonGenerator.definitions_[`servo2_setup`] = `servo2 = Servo.get_default_servo(2)`;
-  }
+  pythonGenerator.definitions_[`servo` + index + `_setup`] = `servo` + index + ` = Servo.get_default_servo(` + index +`)`;
   var value_degrees = pythonGenerator.valueToCode(block, 'degrees', pythonGenerator.ORDER_ATOMIC);
   var code = `servo${index}.set_angle(${value_degrees})\n`;
   return code;

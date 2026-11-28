@@ -77,7 +77,14 @@ export default defineConfig(({ mode }) => {
                 {
                     src: 'node_modules/gridstack/dist/gridstack.css',
                     dest: './node_modules/gridstack/dist/'
-                }        ]
+                },
+                {
+                    // Blockly sprites (trashcan, zoom), sounds, and cursors —
+                    // served locally instead of blockly-demo.appspot.com.
+                    src: 'node_modules/blockly/media/*',
+                    dest: './blockly-media/'
+                },
+            ]
         })],
         resolve: {
             alias: [
